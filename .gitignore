@@ -1,0 +1,20 @@
+.DS_Store
+.idea/
+.claude/CLAUDE.md
+.claude/settings.local.json
+.claude/cache/
+
+vendor/
+composer.lock
+tests/reports/
+
+
+*.tmp
+*.cache
+*.log
+/.env
+*.key
+
+# dev-skills Skill-Backups — lokal, nie committen
+.claude/skills/*.backup/
+AGENTS.md.backup

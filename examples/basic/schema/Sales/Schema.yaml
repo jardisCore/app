@@ -1,0 +1,435 @@
+connection: __test__
+tables:
+    addresses:
+        columns:
+            - autoincrement: true
+              name: id
+              nullable: false
+              phpType: int
+              primary: true
+              type: int
+            - length: 255
+              name: street
+              nullable: false
+              phpType: string
+              type: varchar
+            - length: 100
+              name: city
+              nullable: false
+              phpType: string
+              type: varchar
+            - length: 20
+              name: postal_code
+              nullable: false
+              phpType: string
+              type: varchar
+            - length: 2
+              name: country
+              nullable: false
+              phpType: string
+              type: varchar
+        foreignKeys: {}
+        indexes:
+            - columns:
+                - id
+              name: PRIMARY
+              type: primary
+        name: addresses
+    customers:
+        columns:
+            - autoincrement: true
+              name: id
+              nullable: false
+              phpType: int
+              primary: true
+              type: int
+            - length: 36
+              name: identifier
+              nullable: false
+              phpType: string
+              type: varchar
+            - length: 255
+              name: email
+              nullable: false
+              phpType: string
+              type: varchar
+            - length: 255
+              name: name
+              nullable: false
+              phpType: string
+              type: varchar
+            - length: 50
+              name: phone
+              nullable: true
+              phpType: string
+              type: varchar
+            - name: billing_address_id
+              nullable: true
+              phpType: int
+              type: int
+            - default: CURRENT_TIMESTAMP
+              name: created_at
+              nullable: true
+              phpType: datetime
+              type: timestamp
+        foreignKeys:
+            - column: billing_address_id
+              referencedColumn: id
+              referencedTable: addresses
+        indexes:
+            - columns:
+                - id
+              name: PRIMARY
+              type: primary
+            - columns:
+                - identifier
+              name: identifier
+              type: unique
+            - columns:
+                - email
+              name: email
+              type: unique
+            - columns:
+                - billing_address_id
+              name: idx_customers_billing_address_id
+              type: index
+        name: customers
+    invoice_lines:
+        columns:
+            - autoincrement: true
+              name: id
+              nullable: false
+              phpType: int
+              primary: true
+              type: int
+            - length: 36
+              name: identifier
+              nullable: false
+              phpType: string
+              type: varchar
+            - name: invoice_id
+              nullable: false
+              phpType: int
+              type: int
+            - name: position
+              nullable: false
+              phpType: int
+              type: int
+            - length: 500
+              name: description
+              nullable: false
+              phpType: string
+              type: varchar
+            - name: quantity
+              nullable: false
+              phpType: float
+              precision: 10
+              scale: 3
+              type: decimal
+            - length: 20
+              name: unit
+              nullable: false
+              phpType: string
+              type: varchar
+            - name: unit_price
+              nullable: false
+              phpType: float
+              precision: 12
+              scale: 4
+              type: decimal
+            - name: discount_percent
+              nullable: true
+              phpType: float
+              precision: 5
+              scale: 2
+              type: decimal
+            - name: line_total
+              nullable: false
+              phpType: float
+              precision: 12
+              scale: 2
+              type: decimal
+            - name: tax_included
+              nullable: false
+              phpType: int
+              type: tinyint
+            - default: CURRENT_TIMESTAMP
+              name: created_at
+              nullable: true
+              phpType: datetime
+              type: timestamp
+        foreignKeys:
+            - column: invoice_id
+              referencedColumn: id
+              referencedTable: invoices
+        indexes:
+            - columns:
+                - id
+              name: PRIMARY
+              type: primary
+            - columns:
+                - identifier
+              name: identifier
+              type: unique
+            - columns:
+                - invoice_id
+              name: idx_invoice_lines_invoice_id
+              type: index
+        name: invoice_lines
+    invoices:
+        columns:
+            - autoincrement: true
+              name: id
+              nullable: false
+              phpType: int
+              primary: true
+              type: int
+            - length: 36
+              name: identifier
+              nullable: false
+              phpType: string
+              type: varchar
+            - length: 50
+              name: invoice_number
+              nullable: false
+              phpType: string
+              type: varchar
+            - length: 50
+              name: order_number
+              nullable: false
+              phpType: string
+              type: varchar
+            - length: 36
+              name: customer_identifier
+              nullable: false
+              phpType: string
+              type: varchar
+            - enumValues:
+                - draft
+                - sent
+                - paid
+                - overdue
+                - cancelled
+                - refunded
+              name: status
+              nullable: false
+              phpType: string
+              type: enum
+            - enumValues:
+                - bank_transfer
+                - credit_card
+                - paypal
+                - invoice
+              name: payment_method
+              nullable: true
+              phpType: string
+              type: enum
+            - name: total_net
+              nullable: false
+              phpType: float
+              precision: 12
+              scale: 2
+              type: decimal
+            - name: tax_rate
+              nullable: false
+              phpType: float
+              precision: 5
+              scale: 2
+              type: decimal
+            - name: total_gross
+              nullable: false
+              phpType: float
+              precision: 12
+              scale: 2
+              type: decimal
+            - length: 3
+              name: currency
+              nullable: false
+              phpType: string
+              type: varchar
+            - name: note
+              nullable: true
+              phpType: string
+              type: text
+            - name: issued_at
+              nullable: true
+              phpType: datetime
+              type: datetime
+            - name: due_at
+              nullable: true
+              phpType: datetime
+              type: date
+            - name: paid_at
+              nullable: true
+              phpType: datetime
+              type: datetime
+            - default: CURRENT_TIMESTAMP
+              name: created_at
+              nullable: true
+              phpType: datetime
+              type: timestamp
+        foreignKeys: []
+        indexes:
+            - columns:
+                - id
+              name: PRIMARY
+              type: primary
+            - columns:
+                - identifier
+              name: identifier
+              type: unique
+            - columns:
+                - invoice_number
+              name: invoice_number
+              type: unique
+        name: invoices
+    item_discounts:
+        columns:
+            - autoincrement: true
+              name: id
+              nullable: false
+              phpType: int
+              primary: true
+              type: int
+            - name: item_id
+              nullable: false
+              phpType: int
+              type: int
+            - length: 50
+              name: discount_code
+              nullable: false
+              phpType: string
+              type: varchar
+            - name: amount
+              nullable: false
+              phpType: float
+              precision: 10
+              scale: 2
+              type: decimal
+        foreignKeys:
+            - column: item_id
+              referencedColumn: id
+              referencedTable: order_items
+        indexes:
+            - columns:
+                - id
+              name: PRIMARY
+              type: primary
+            - columns:
+                - item_id
+              name: idx_item_discounts_item_id
+              type: index
+        name: item_discounts
+    order_items:
+        columns:
+            - autoincrement: true
+              name: id
+              nullable: false
+              phpType: int
+              primary: true
+              type: int
+            - length: 36
+              name: identifier
+              nullable: false
+              phpType: string
+              type: varchar
+            - name: order_id
+              nullable: false
+              phpType: int
+              type: int
+            - length: 36
+              name: product_identifier
+              nullable: false
+              phpType: string
+              type: varchar
+            - name: quantity
+              nullable: false
+              phpType: int
+              type: int
+              unsigned: true
+            - name: unit_price
+              nullable: false
+              phpType: float
+              precision: 10
+              scale: 2
+              type: decimal
+            - name: subtotal
+              nullable: false
+              phpType: float
+              precision: 10
+              scale: 2
+              type: decimal
+        foreignKeys:
+            - column: order_id
+              referencedColumn: id
+              referencedTable: orders
+        indexes:
+            - columns:
+                - id
+              name: PRIMARY
+              type: primary
+            - columns:
+                - identifier
+              name: identifier
+              type: unique
+            - columns:
+                - order_id
+              name: idx_order_items_order_id
+              type: index
+        name: order_items
+    orders:
+        columns:
+            - autoincrement: true
+              name: id
+              nullable: false
+              phpType: int
+              primary: true
+              type: int
+            - length: 50
+              name: order_number
+              nullable: false
+              phpType: string
+              type: varchar
+            - name: customer_id
+              nullable: false
+              phpType: int
+              type: int
+            - name: total_amount
+              nullable: false
+              phpType: float
+              precision: 10
+              scale: 2
+              type: decimal
+            - enumValues:
+                - pending
+                - confirmed
+                - shipped
+                - delivered
+                - cancelled
+              name: status
+              nullable: false
+              phpType: string
+              type: enum
+            - default: CURRENT_TIMESTAMP
+              name: created_at
+              nullable: true
+              phpType: datetime
+              type: timestamp
+        foreignKeys:
+            - column: customer_id
+              referencedColumn: id
+              referencedTable: customers
+        indexes:
+            - columns:
+                - id
+              name: PRIMARY
+              type: primary
+            - columns:
+                - order_number
+              name: order_number
+              type: unique
+            - columns:
+                - customer_id
+              name: idx_orders_customer_id
+              type: index
+        name: orders

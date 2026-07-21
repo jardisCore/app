@@ -1,0 +1,65 @@
+{
+    "name": "jardiscore/app",
+    "description": "HTTP delivery layer for Jardis domains — FastRoute routing behind an own interface, a PSR-15 middleware pipeline, and the canonical DomainResponse-to-PSR-7 envelope mapper. No generated domain ever imports it.",
+    "type": "library",
+    "license": "MIT",
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "authors": [
+        {
+            "name": "Headgent Development",
+            "email": "jardisDev@headgent.com"
+        }
+    ],
+    "require": {
+        "php": ">=8.3",
+        "jardiscore/kernel": "^1.0",
+        "jardissupport/contracts": "^1.0",
+        "nikic/fast-route": "^1.3",
+        "nyholm/psr7": "^1.8",
+        "nyholm/psr7-server": "^1.1",
+        "psr/http-message": "^2",
+        "psr/http-factory": "^1",
+        "psr/http-server-handler": "^1",
+        "psr/http-server-middleware": "^1"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0",
+        "phpstan/phpstan": "^2.0.4",
+        "squizlabs/php_codesniffer": "^3.11.2",
+        "jardissupport/data": "^1.0",
+        "jardissupport/dbquery": "^1.0",
+        "jardissupport/repository": "^1.0",
+        "jardissupport/validation": "^1.0",
+        "jardissupport/workflow": "^1.0",
+        "middlewares/client-ip": "^2.1",
+        "ext-pdo": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "JardisCore\\App\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "JardisCore\\App\\Tests\\": "tests/",
+            "Ecommerce\\": "examples/basic/domain/Ecommerce/",
+            "ExampleApp\\": "examples/basic/app/",
+            "ExampleApp\\PhpStan\\": "examples/basic/phpstan-rules/"
+        }
+    },
+    "homepage": "https://github.com/jardisCore/app",
+    "support": {
+        "issues": "https://github.com/jardisCore/app/issues",
+        "email": "jardisDev@headgent.com"
+    },
+    "keywords": [
+        "app",
+        "domain driven design",
+        "jardis",
+        "Headgent",
+        "psr-15",
+        "psr-7",
+        "router"
+    ]
+}

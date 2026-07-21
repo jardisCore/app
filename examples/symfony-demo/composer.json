@@ -1,0 +1,29 @@
+{
+    "name": "jardis/symfony-demo",
+    "description": "N3 austauschbarkeits-illustration (PRD N3, PLAN P8 Block A): the vendored Ecommerce fixture behind a Symfony front controller that fulfils the jardissupport/contracts response-envelope contract WITHOUT importing jardiscore/app.",
+    "type": "project",
+    "license": "MIT",
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "require": {
+        "php": ">=8.3",
+        "ext-pdo": "*",
+        "jardiscore/kernel": "^1.0",
+        "jardissupport/contracts": "^1.0",
+        "jardissupport/classversion": "^1.0",
+        "jardissupport/factory": "^1.0",
+        "jardissupport/data": "^1.0",
+        "jardissupport/dbquery": "^1.0",
+        "jardissupport/repository": "^1.0",
+        "jardissupport/validation": "^1.0",
+        "jardissupport/workflow": "^1.0",
+        "symfony/http-foundation": "^7.1",
+        "symfony/routing": "^7.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "SymfonyDemo\\": "src/",
+            "Ecommerce\\": "../basic/domain/Ecommerce/"
+        }
+    }
+}
