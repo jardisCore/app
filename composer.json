@@ -26,7 +26,7 @@
     "require-dev": {
         "phpunit/phpunit": "^11.0",
         "phpstan/phpstan": "^2.0.4",
-        "squizlabs/php_codesniffer": "^3.11.2",
+        "squizlabs/php_codesniffer": "^3.11.2 || ^4.0.0",
         "jardissupport/data": "^1.0",
         "jardissupport/dbquery": "^1.0",
         "jardissupport/repository": "^1.0",
