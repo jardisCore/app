@@ -42,12 +42,12 @@ final class ResolveRouteHandlerTest extends TestCase
         $factory = new Psr17Factory();
         $resolve = $this->resolveRouteHandler();
 
-        $wrapped = $resolve(static fn () => new DomainResponse(status: 200, data: ['ok' => true]));
+        $wrapped = $resolve(static fn () => new DomainResponse(status: 200, data: ['Sales' => ['ok' => true]]));
         $response = $wrapped->handle($factory->createServerRequest('GET', '/x'));
 
         $this->assertSame(200, $response->getStatusCode());
         $body = json_decode((string) $response->getBody(), true);
-        $this->assertSame(['ok' => true], $body['data']);
+        $this->assertSame(['Sales' => ['ok' => true]], $body['data']);
     }
 
     public function testClosureReturningAResponseInterfaceIsPassedThroughViaResolveResponse(): void

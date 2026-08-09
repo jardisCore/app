@@ -34,8 +34,15 @@ use JardisSupport\Contract\Kernel\EventScope;
 final readonly class StaticDomainResponse implements DomainResponseInterface
 {
     /**
-     * @param array<string, mixed> $data
-     * @param array<string, mixed> $errors
+     * `$data` and `$errors` carry the SAME shape the implemented Contract
+     * promises — both keyed by context name, never flat. That is also what
+     * this app already passes in: `RegisterOrderRoutes` hands over
+     * `$confirmed->getData()` unchanged and reads it back through its
+     * context key. Declaring them wider than the interface would make this
+     * example show a shape the generated pipeline never produces.
+     *
+     * @param array<string, array<string, mixed>> $data
+     * @param array<string, array<int, string>> $errors
      * @param array<string, mixed> $metadata
      * @param array<string, array<int, object>> $events
      */

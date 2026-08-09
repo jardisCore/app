@@ -43,8 +43,8 @@ final class MapDomainResponseTest extends TestCase
         $map = $this->map();
         $domainResponse = new DomainResponse(
             status: $status->value,
-            data: ['id' => '42'],
-            errors: ['field' => 'must not be blank'],
+            data: ['Sales' => ['id' => '42']],
+            errors: ['Sales' => ['must not be blank']],
             metadata: ['duration' => 12],
         );
 
@@ -61,8 +61,8 @@ final class MapDomainResponseTest extends TestCase
         $this->assertSame('application/json', $response->getHeaderLine('Content-Type'));
         $body = json_decode((string) $response->getBody(), true);
         $this->assertSame($status->value, $body['status']);
-        $this->assertSame(['id' => '42'], $body['data']);
-        $this->assertSame(['field' => 'must not be blank'], $body['errors']);
+        $this->assertSame(['Sales' => ['id' => '42']], $body['data']);
+        $this->assertSame(['Sales' => ['must not be blank']], $body['errors']);
         $this->assertSame(['duration' => 12], $body['meta']);
     }
 
@@ -82,7 +82,10 @@ final class MapDomainResponseTest extends TestCase
     public function testNoContentResponseHasNoBodyAndNoContentTypeHeader(): void
     {
         $map = $this->map();
-        $domainResponse = new DomainResponse(status: ResponseStatus::NoContent->value, data: ['ignored' => true]);
+        $domainResponse = new DomainResponse(
+            status: ResponseStatus::NoContent->value,
+            data: ['Sales' => ['ignored' => true]],
+        );
 
         $response = $map($domainResponse);
 
@@ -95,10 +98,19 @@ final class MapDomainResponseTest extends TestCase
     public function testRuleViolation422PayloadIsPassedThroughByteTreu(): void
     {
         $map = $this->map();
+
+        // The `{rule, messageKey, context}` payload sits UNDER the context key,
+        // exactly as the generated Command handlers produce it: they call
+        // `$this->result()->setData(['rule' => …, 'messageKey' => …,
+        // 'context' => …])`, and `ContextResponse::getData()` returns
+        // `[$context => $data]` — verified in the generated corpus, e.g.
+        // `Order/Command/Handler/UpdateOrder.php` (RuleViolation branch).
         $payload = [
-            'rule' => 'OrderMustNotBeShipped',
-            'messageKey' => 'order.already_shipped',
-            'context' => ['orderId' => '42'],
+            'Ordering' => [
+                'rule' => 'OrderMustNotBeShipped',
+                'messageKey' => 'order.already_shipped',
+                'context' => ['orderId' => '42'],
+            ],
         ];
         $domainResponse = new DomainResponse(status: ResponseStatus::RuleViolation->value, data: $payload);
 
