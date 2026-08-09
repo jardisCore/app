@@ -1,3 +1,31 @@
+# `tests` in `paths:` is a DELIBERATE, repo-local exception to the fleet rule.
+# Every other Jardis package analyses `src` only — Bescheid Rolf 2026-08-09:
+# "ich dachte es reicht wenn src sauber geprüft ist, die tests habe ich bewusst
+# ausgeklammert". That decision is right for test-code hygiene: a finding in a
+# test reaches no consumer, and `composer.json`'s `autoload` covers only
+# `JardisCore\App\ -> src/` (tests and examples are `autoload-dev`).
+#
+# This repo deviates for ONE reason, and the exception is meant to stay that
+# narrow: it is the only package in the fleet where a class in the test tree
+# IMPLEMENTS A PUBLISHED INTERFACE — `tests/Support/DomainResponse` against
+# `JardisSupport\Contract\Kernel\DomainResponseInterface`. That is not hygiene;
+# it is a second, competing statement about the API, and an unchecked one is
+# free to contradict the Contract.
+#
+# It did. Until 2026-08-09 that fake declared `$data`/`$errors` as flat
+# `array<string, mixed>` while the interface promises context-keyed maps, and
+# seven test sites built a response shape the generated pipeline cannot produce
+# (every generated `ContextResponse::getData()` returns `[$context => $data]` —
+# 13 of 13 instances in the corpus, identical). Tests are the most-read form of
+# documentation; a wrong shape there teaches the wrong shape.
+#
+# Cost of this exception, measured: 0 findings. Both `analyse /app/src` and the
+# paths below report `[OK] No errors` at level 8. If that ever changes, the
+# question to ask first is whether a test contradicts a Contract — not whether
+# to drop `tests` from this list.
+#
+# Full evidence: claude/docs/standortbestimmung-php-2026-08/belege-s55/
+# NACHPRUEFUNG-p45-hauptdialog.md
 parameters:
     level: 8
     paths:
