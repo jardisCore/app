@@ -30,13 +30,13 @@ final class ResolveResponseTest extends TestCase
     public function testDomainResponseInterfaceIsMappedThroughTheCanonicalEnvelopeMapper(): void
     {
         $resolve = $this->resolve();
-        $domainResponse = new DomainResponse(status: ResponseStatus::Created->value, data: ['id' => '42']);
+        $domainResponse = new DomainResponse(status: ResponseStatus::Created->value, data: ['Sales' => ['id' => '42']]);
 
         $response = $resolve($domainResponse);
 
         $this->assertSame(201, $response->getStatusCode());
         $body = json_decode((string) $response->getBody(), true);
-        $this->assertSame(['id' => '42'], $body['data']);
+        $this->assertSame(['Sales' => ['id' => '42']], $body['data']);
     }
 
     public function testPsr7ResponseInterfaceIsPassedThroughUnchanged(): void
