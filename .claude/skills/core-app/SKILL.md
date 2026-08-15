@@ -11,35 +11,6 @@ next: []
 # APP_COMPONENT_SKILL
 > `jardiscore/app` | NS: `JardisCore\App` | PHP 8.3+
 
-## ARCHITECTURE
-```
-BuildDomainKernelFromEnv (jardiscore/kernel)
-    → packs
-DomainKernel implements DomainKernelInterface       ("the Koffer")
-    ↓ constructor injection
-new {Domain}($kernel)                                ← Builder-generated domain(s), K8, not this package
-    ↓ route handler closures read from the domain's read-facades/process()/exposed rules
-
-Routes (registration collector)                      get/post/put/patch/delete/middleware/health
-    ↓ ->routes() consumed exactly once
-Router implements Contract\RouterInterface            wraps FastRoute, dispatcher built lazily on first dispatch
-    ↓
-App (Closure-Orchestrator, immutable after construction)
-    handle(ServerRequestInterface): ResponseInterface   ← pure, no shared state across calls
-    run(): void                                          ← impure: SAPI globals → handle() → emit
-
-Call chain inside handle():
-HandleThrowable (outermost, F9)
-  → DispatchAndRespond
-      NotFound          → BuildErrorResponse(404)
-      MethodNotAllowed  → BuildErrorResponse(405, allowedMethods: Allow header)
-      Found             → ApplyRouteAttributes (path params) → RunMiddlewarePipeline (global outer, route inner)
-                            → ResolveRouteHandler/ResolveResponse (E6 auto-map)
-                                DomainResponseInterface → MapDomainResponse → BuildErrorResponse
-                                ResponseInterface       → pass-through unchanged
-                                anything else           → UnresolvableHandlerResult (propagates to HandleThrowable → 500)
-```
-
 ## CLASSES
 | Class | Responsibility |
 |-------|---------------|
@@ -53,7 +24,6 @@ HandleThrowable (outermost, F9)
 | `Handler\Response\BuildErrorResponse` | `__construct(ResponseFactoryInterface, StreamFactoryInterface)`. `__invoke(int $status, array $data = [], array $errors = [], array $meta = [], array $allowedMethods = []): ResponseInterface` — the ONE place assembling `{status,data,errors,meta}`. |
 | `Handler\Error\HandleThrowable` | `__construct(ResponseFactoryInterface, StreamFactoryInterface, ?LoggerInterface, AppConfig)`. `__invoke(Closure $inner, ServerRequestInterface): ResponseInterface` — outermost try/catch boundary (F9). |
 | `Handler\Error\LogThrowable` | Closure the above composes — logs via the injected PSR-3 logger, falls back to `error_log` if the logger is `null` or itself throws. |
-| `Handler\Routing\*` (`BuildDispatcher`, `DispatchRequest`, `DispatchAndRespond`, `ApplyRouteAttributes`, `ResolveRouteHandler`, `WrapCallableHandler`) | Closures `App`/`Router` compose internally — FastRoute wiring, path-attribute application (F8a), PSR-15 handler wrapping. Not called directly by consumers. |
 | `Handler\Pipeline\RunMiddlewarePipeline` | `__invoke(array $globalMiddleware, array $routeMiddleware, RequestHandlerInterface $finalHandler, ServerRequestInterface): ResponseInterface` — builds+runs the PSR-15 chain, global outer / route inner (E9). |
 | `Handler\Request\CreateServerRequest` | `__invoke(?array $server=null, ?array $headers=null, ?array $cookies=null, ?array $query=null, ?array $post=null, ?array $files=null, mixed $body=null): ServerRequestInterface` — Raw-Body-Invariante: reads `php://input` exactly once. |
 | `Handler\Response\EmitResponse` | `__invoke(ServerRequestInterface, ResponseInterface): void` — status line, headers, `Content-Length`, body (suppressed for HEAD, RFC 7231 §4.3.2). Never throws; best-effort 500 fallback on internal failure. |
