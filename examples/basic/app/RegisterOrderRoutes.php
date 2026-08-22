@@ -112,7 +112,7 @@ final class RegisterOrderRoutes
                     status: ResponseStatus::ValidationError->value,
                     errors: ['order' => [
                         'Order could not be created (validation or rule rejection);'
-                            . ' see the Koffer logger for the underlying failure.',
+                            . ' see the DomainKernel logger for the underlying failure.',
                     ]],
                 );
             }
