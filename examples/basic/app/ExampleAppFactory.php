@@ -16,7 +16,7 @@ use Nyholm\Psr7\Factory\Psr17Factory;
 use PDO;
 
 /**
- * Builds the wired example App (PLAN P7 §5): Koffer -> Ecommerce domain
+ * Builds the wired example App (PLAN P7 §5): DomainKernel -> Ecommerce domain
  * composition (K8, the Builder-generated equivalent of `App/bootstrap.php`)
  * -> Routes (F2 global middleware + F5 health + the `orders` routes) ->
  * `App`. Shared by `public/index.php` (the getting-started recipe) and

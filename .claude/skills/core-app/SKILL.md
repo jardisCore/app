@@ -1,6 +1,6 @@
 ---
 name: core-app
-description: jardiscore/app v1 - the HTTP-Delivery layer for Jardis domains, a FastRoute router hidden behind an own RouterInterface, a PSR-15 middleware pipeline, the canonical DomainResponse-to-PSR-7 envelope mapper, and a Koffer bootstrap bridge. TRIGGER: App, Routes, Router, RouterInterface, ParseJsonBody, EmitResponse, HandleThrowable, MapDomainResponse, BuildErrorResponse, jardiscore/app, response envelope, {status,data,errors,meta}, health(), auto-HEAD.
+description: jardiscore/app v1 - the HTTP-Delivery layer for Jardis domains, a FastRoute router hidden behind an own RouterInterface, a PSR-15 middleware pipeline, the canonical DomainResponse-to-PSR-7 envelope mapper, and a DomainKernel bootstrap bridge. TRIGGER: App, Routes, Router, RouterInterface, ParseJsonBody, EmitResponse, HandleThrowable, MapDomainResponse, BuildErrorResponse, jardiscore/app, response envelope, {status,data,errors,meta}, health(), auto-HEAD.
 user-invocable: false
 zone: post-active
 persona: D
@@ -100,7 +100,7 @@ Reference: `jardissupport/contracts` → `docs/response-envelope.md`. `ResponseS
   registers an `OPTIONS` route itself.
 
 ## BOOTSTRAP-REZEPT
-`BuildDomainKernelFromEnv` (packer) → `DomainKernel` (Koffer) → Builder-generated domain(s) (`new
+`BuildDomainKernelFromEnv` (packer) → `DomainKernel` (DomainKernel) → Builder-generated domain(s) (`new
 {Domain}($kernel)`, K8, not part of this package) → `Routes` + handlers → `App` → `run()`. Full runnable
 `public/index.php` incl. a fatal-error shutdown-function safety net, `AppConfig::debug` wired from
 `$kernel->env('app_debug')`, and API-versioning-by-parameter: `docs/getting-started.md`.
