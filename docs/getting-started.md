@@ -6,9 +6,9 @@ Koffer (`DomainKernel`) and one or more Builder-generated domains.
 **Measurement frame (PRD §5, K6):** the steps below take a PHP developer with a prepared
 environment (PHP 8.3 + Composer already installed) under 15 minutes, from
 `composer require` to the first successful `200` response — no lab benchmark, but a
-defined baseline. The single recipe below covers, in order: install, ENV/Koffer-Bootstrap,
-domain registration, the first route + handler, starting the server, and the first
-successful request.
+defined baseline. The single recipe below covers, in order: install, ENV/DomainKernel
+Bootstrap, domain registration, the first route + handler, starting the server, and the
+first successful request.
 
 ## 1. Install
 
@@ -16,15 +16,18 @@ successful request.
 composer require jardiscore/app
 ```
 
-## 2. ENV / Koffer-Bootstrap
+## 2. ENV / DomainKernel Bootstrap
 
-`BuildDomainKernelFromEnv` (from `jardiscore/kernel`, this package's own dependency) packs
-a Koffer from a cascading `.env` tree — see the kernel's
+`BuildDomainKernelFromEnv` (from `jardiscore/kernel`, this package's own dependency) takes
+the **project root** — the git-clone target — and packs a `DomainKernel` from the
+cascading `.env` tree it finds under the fixed `<projectRoot>/config/env/` convention (see
+the kernel's
 [`docs/env-examples/`](https://github.com/jardisCore/kernel/tree/main/docs/env-examples)
-for the full key reference (`DB_*`, `CACHE_*`, `LOG_*`, …). Every service it wires is
-optional: a Koffer without a configured logger, cache, etc. is a perfectly valid Koffer.
-`app_debug` (read via `$kernel->env('app_debug')`, step 3 below) gates whether the F9
-boundary 500-response includes exception details — keep it off in production.
+for the full key reference: `DB_*`, `CACHE_*`, `LOG_*`, …). A missing `config/env/`
+directory is created on first boot, not an error; every service it wires is optional, so a
+`DomainKernel` without a configured logger, cache, etc. is perfectly valid. `app_debug`
+(read via `$kernel->env('app_debug')`, step 3 below) gates whether the F9 boundary
+500-response includes exception details — keep it off in production.
 
 ## 3. Domain Registration
 
@@ -70,11 +73,12 @@ register_shutdown_function(static function (): void {
     }
 });
 
-// --- 1. Bootstrap the Koffer from cascading .env files (the ENV-Packer,
-// jardiscore/kernel). A throw here (e.g. missing .env, bad config path) is
-// the "Bootstrap-Fehlschlag" case (PRD F9): nothing has caught it yet, so
-// PHP's own error handling takes over - a bare 500 (via display_errors=Off
-// + the shutdown function above) and the real cause in stderr/error_log.
+// --- 1. Bootstrap the DomainKernel from the project root's cascading .env
+// files under config/env/ (the ENV-Packer, jardiscore/kernel). A throw here
+// (e.g. an unwritable config/env/) is the "Bootstrap-Fehlschlag" case (PRD
+// F9): nothing has caught it yet, so PHP's own error handling takes over - a
+// bare 500 (via display_errors=Off + the shutdown function above) and the
+// real cause in stderr/error_log.
 $kernel = (new BuildDomainKernelFromEnv())(__DIR__ . '/..');
 
 // --- 2. Domain composition (Builder-generated, K8 - not part of this

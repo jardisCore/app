@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 // Fixture for the SAPI smoke test (P6 mandatory AK, E15): a minimal
 // `public/index.php` stand-in run behind a real `php -S` built-in server.
-// The Koffer is constructed directly (`new DomainKernel(...)`) - the
+// The DomainKernel is constructed directly (`new DomainKernel(...)`) - the
 // ENV-Packer is not needed for this smoke test, only a real App wired
 // around a real Router/pipeline/mapper answering over a real HTTP
 // connection.
@@ -17,7 +17,7 @@ use JardisCore\Kernel\DomainKernel;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Psr\Http\Message\ServerRequestInterface;
 
-$kernel = new DomainKernel(domainRoot: __DIR__);
+$kernel = new DomainKernel(projectRoot: __DIR__);
 $config = new AppConfig();
 
 $routes = new Routes(new Psr17Factory());

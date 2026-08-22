@@ -100,8 +100,8 @@ stellschrauben (body-size limits, Trusted-Proxy, `display_errors`).
 ## Requirements
 
 - PHP `>=8.3`
-- `jardiscore/kernel ^1.0`
-- `jardissupport/contracts ^1.0`
+- `jardiscore/kernel ^2.0`
+- `jardissupport/contracts ^2.0`
 
 ## Related Packages
 

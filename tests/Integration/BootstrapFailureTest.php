@@ -59,7 +59,14 @@ final class BootstrapFailureTest extends TestCase
 
         $this->assertNotSame(0, $exitCode, 'A bootstrap failure must not exit successfully.');
         $this->assertSame('', trim((string) $stdout), 'No client-facing output must escape a bootstrap failure.');
-        $this->assertStringContainsString('InvalidArgumentException', (string) $stderr);
-        $this->assertStringContainsString('domainRoot must not be empty', (string) $stderr);
+        // jardiscore/kernel v2.0.0 (env-konfiguration, R2) always mkdir()s
+        // "<projectRoot>/config/env" (G1) before ever reaching DomainKernel's
+        // constructor - the fixture now trips the packer's own RuntimeException
+        // instead of DomainKernel's "projectRoot must not be empty" guard (see
+        // the fixture's comment for why this is still deterministic). Same
+        // failure mode (Fehlerfall bleibt Fehlerfall): a throw before any
+        // pipeline exists, nothing leaks to the client, cause lands in stderr.
+        $this->assertStringContainsString('RuntimeException', (string) $stderr);
+        $this->assertStringContainsString('Failed to create config directory', (string) $stderr);
     }
 }

@@ -37,7 +37,7 @@ final class AppTest extends TestCase
 
     private function kernel(?LoggerInterface $logger = null): DomainKernel
     {
-        return new DomainKernel(domainRoot: '/tmp/jardiscore-app-test', logger: $logger);
+        return new DomainKernel(projectRoot: '/tmp/jardiscore-app-test', logger: $logger);
     }
 
     private function request(string $method, string $path): ServerRequestInterface

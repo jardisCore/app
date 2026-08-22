@@ -51,6 +51,12 @@ try {
     // under examples/basic (K5/B5: this demo depends on the fixture via a
     // relative autoload path, `composer.json`'s `Ecommerce\` psr-4 entry --
     // never the other way around).
+    //
+    // This directory is its own isolated Composer project with a committed
+    // vendor/ (see README) deliberately left on jardiscore/kernel v1 -- its
+    // DomainKernel constructor still takes `domainRoot`, not the `projectRoot`
+    // the rest of this package moved to (env-konfiguration, R2). Migrating
+    // this demo is its own follow-up, not part of that move.
     $pdo = new PDO(
         sprintf(
             'mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4',
