@@ -34,7 +34,7 @@ final class ExampleAppFactory
     public function kernel(): DomainKernelInterface
     {
         return new DomainKernel(
-            domainRoot: dirname(__DIR__) . '/domain/Ecommerce',
+            projectRoot: dirname(__DIR__) . '/domain/Ecommerce',
             connection: $this->pdo,
         );
     }

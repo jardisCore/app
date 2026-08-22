@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 // Fixture for the "Bootstrap-Fehlschlag" sub-process test (F9, P6 AK): a
 // minimal stand-in for a real public/index.php (docs/getting-started.md),
-// deliberately calling the ENV-Packer with an invalid config path so it
+// deliberately calling the ENV-Packer with an invalid project root so it
 // throws BEFORE any router/pipeline exists to catch it - there is nothing
 // downstream of this to produce a client-facing envelope, only PHP's own
 // error handling (display_errors=Off + this shutdown-function net).
@@ -21,8 +21,14 @@ register_shutdown_function(static function (): void {
     }
 });
 
-// An empty config path is rejected by DomainKernel's own constructor guard
-// (domainRoot must not be empty) - a deterministic, filesystem-independent
-// way to force the packer to fail during bootstrap, before any request
-// handling exists.
-(new BuildDomainKernelFromEnv())('');
+// jardiscore/kernel v2.0.0 (env-konfiguration, R2) always derives
+// "<projectRoot>/config/env" and mkdir()s it if missing (G1) - an empty
+// string no longer reaches DomainKernel's own "projectRoot must not be
+// empty" guard deterministically, because whether mkdir('/config/env')
+// itself succeeds now depends on the host/container's filesystem
+// permissions at "/". __FILE__ is a regular file, so appending
+// "/config/env" and mkdir()'ing it fails on every POSIX filesystem
+// regardless of user/permissions (ENOTDIR) - the same deterministic,
+// environment-independent bootstrap failure the empty string used to give,
+// just via the packer's own RuntimeException instead of DomainKernel's.
+(new BuildDomainKernelFromEnv())(__FILE__);
