@@ -1,7 +1,7 @@
 # Getting started — `jardiscore/app`
 
 A minimal, runnable `public/index.php` recipe for wiring the Jardis App-Layer around a
-Koffer (`DomainKernel`) and one or more Builder-generated domains.
+DomainKernel (`DomainKernel`) and one or more Builder-generated domains.
 
 **Measurement frame (PRD §5, K6):** the steps below take a PHP developer with a prepared
 environment (PHP 8.3 + Composer already installed) under 15 minutes, from
@@ -164,8 +164,8 @@ violation (E11 governs `src/`, not example bootstrap code) and not an
 inconsistency to fix: that example wires its `DomainKernel` directly
 (`ExampleAppFactory::kernel()`, no `BuildDomainKernelFromEnv`), and `$debug`
 is a constructor argument `ExampleAppFactory` needs *before* it builds the
-kernel — there is no Koffer yet at the point `$debug` is resolved, so
-`$kernel->env(...)` isn't available to read it from. Once a Koffer exists,
+kernel — there is no DomainKernel yet at the point `$debug` is resolved, so
+`$kernel->env(...)` isn't available to read it from. Once a DomainKernel exists,
 `$kernel->env(...)` is the canonical read for any ENV key, `app_debug`
 included; before one exists (as in that example's bootstrap), `$_ENV`/
 `getenv()` is the only source there is.

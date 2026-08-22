@@ -85,7 +85,7 @@ try {
     // F9: generic 500 to the client (no message/trace/class name in the
     // body) -- but the real cause still needs a server-side trail, exactly
     // as `jardiscore/app`'s own `Handler/Error/HandleThrowable` logs before
-    // answering generically. This demo has no Koffer-Logger wired (no
+    // answering generically. This demo has no DomainKernel-Logger wired (no
     // route here needs one), so `error_log` is the same documented
     // fallback the App-Layer itself uses when its own logger throws.
     error_log(sprintf('Symfony demo: %s: %s', $exception::class, $exception->getMessage()));

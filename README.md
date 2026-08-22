@@ -14,7 +14,7 @@
 **The Request/Response-Handling offer for Jardis-generated domains.** FastRoute
 behind an own, narrow interface, a PSR-15 middleware pipeline, one canonical
 `DomainResponse` → PSR-7 mapper, and a thin bootstrap bridge around the
-Koffer (`BuildDomainKernelFromEnv`) — nothing more.
+DomainKernel (`BuildDomainKernelFromEnv`) — nothing more.
 
 **Staying is the expected default — leaving is the guaranteed freedom.** No
 Jardis domain ever imports this package (a mechanically checkable structural
@@ -43,7 +43,7 @@ closes that gap with a deliberately small core:
   `{status, data, errors, meta}` JSON envelope
   (`vendor/jardissupport/contracts/docs/response-envelope.md`). No consumer
   builds this translation by hand again.
-- **A thin bootstrap bridge.** Wraps the Koffer's own
+- **A thin bootstrap bridge.** Wraps the DomainKernel's own
   `BuildDomainKernelFromEnv` (ENV → `DomainKernel`) and the Builder-generated
   domain composition (`App/bootstrap.php`) with the one thing missing: an
   HTTP entry point around them.
@@ -78,7 +78,7 @@ composer require jardiscore/app
 ## Quickstart
 
 See [`docs/getting-started.md`](docs/getting-started.md) for the full,
-runnable `public/index.php` recipe (install → ENV/Koffer-Bootstrap → domain
+runnable `public/index.php` recipe (install → ENV/DomainKernel-Bootstrap → domain
 registration → first route + handler → start → first request — under 15
 minutes with a prepared environment, K6). It also covers API versioning
 (M9), the `jardissupport/validation` growth path, and the N1 deployment
@@ -107,7 +107,7 @@ stellschrauben (body-size limits, Trusted-Proxy, `display_errors`).
 
 | Package | Purpose |
 |---------|---------|
-| `jardiscore/kernel` | The Koffer (`DomainKernel`) + ENV-Packer this package's bootstrap bridge builds on |
+| `jardiscore/kernel` | The DomainKernel (`DomainKernel`) + ENV-Packer this package's bootstrap bridge builds on |
 | `jardissupport/contracts` | `DomainResponseInterface`, `ResponseStatus`, the response-envelope contract doc |
 | `jardissupport/validation` | Object-graph validation — the growth path beyond the handler's own trivial type coercion (F8) |
 
