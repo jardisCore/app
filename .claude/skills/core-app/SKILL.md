@@ -127,8 +127,8 @@ Reference: `jardissupport/contracts` → `docs/response-envelope.md`. `ResponseS
 
 ## DEPENDENCIES
 ```
-jardiscore/kernel            ^1.0
-jardissupport/contracts      ^1.0
+jardiscore/kernel            ^2.0
+jardissupport/contracts      ^2.0
 nikic/fast-route             ^1.3
 nyholm/psr7                  ^1.8
 nyholm/psr7-server            ^1.1
