@@ -45,7 +45,10 @@ directory, and stays green regardless of what this demo installs.
   points at `../basic/domain/Ecommerce/` — a relative autoload path into the
   **same** fixture `examples/basic/` vendors, never a second copy.
 - `public/index.php` — the front controller: matches `GET /orders/{id}`,
-  builds a `DomainKernel` against the same fixture `domainRoot`
+  builds a `DomainKernel` against the same fixture `domainRoot` (this
+  demo's committed `vendor/` deliberately stays on `jardiscore/kernel` v1,
+  whose constructor still takes `domainRoot` — kernel v2 renamed it to
+  `projectRoot`; migrating the demo is its own follow-up)
   (`examples/basic/domain/Ecommerce`), calls
   `(new Ecommerce($kernel))->sales()->order()->getOrderById(...)` (the exact
   same BC outer door `examples/basic/app/RegisterOrderRoutes.php` calls for
