@@ -48,9 +48,10 @@
             "ExampleApp\\PhpStan\\": "examples/basic/phpstan-rules/"
         }
     },
-    "homepage": "https://github.com/jardisCore/app",
+    "homepage": "https://jardis.io",
     "support": {
         "issues": "https://github.com/jardisCore/app/issues",
+        "docs": "https://docs.jardis.io/en/core/app",
         "email": "jardisDev@headgent.com"
     },
     "keywords": [

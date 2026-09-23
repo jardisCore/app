@@ -30,6 +30,20 @@ use RuntimeException;
  * package). The sub-process below passes an explicit
  * `-d error_reporting=E_ALL` override to work around it, so the fatal
  * error actually reaches stderr for this test to assert on.
+ *
+ * Cause note (2026-09-23): jardiscore/kernel v2.2.0 removed the
+ * "<projectRoot>/config/env" mkdir() convention this test/fixture used to
+ * force a deterministic bootstrap failure through (G1 dropped, see the
+ * fixture's comment). Since this repo does not commit composer.lock, a
+ * fresh `composer install` always resolves the newest matching ^2.0
+ * release - CI has been silently running against kernel >=2.2.0 since
+ * 2026-08-23, so the old mkdir-based assertions stopped matching reality.
+ * The fixture now forces failure via a load() directive passed through
+ * BuildDomainKernelFromEnv's $envContent (string) mode, which
+ * jardissupport/dotenv (a required, not optional, kernel dependency)
+ * unconditionally rejects with IncludeNotSupportedException - same
+ * contract (throw before any pipeline exists, nothing leaks to the
+ * client, cause lands in stderr), new cause.
  */
 final class BootstrapFailureTest extends TestCase
 {
@@ -59,14 +73,15 @@ final class BootstrapFailureTest extends TestCase
 
         $this->assertNotSame(0, $exitCode, 'A bootstrap failure must not exit successfully.');
         $this->assertSame('', trim((string) $stdout), 'No client-facing output must escape a bootstrap failure.');
-        // jardiscore/kernel v2.0.0 (env-konfiguration, R2) always mkdir()s
-        // "<projectRoot>/config/env" (G1) before ever reaching DomainKernel's
-        // constructor - the fixture now trips the packer's own RuntimeException
-        // instead of DomainKernel's "projectRoot must not be empty" guard (see
-        // the fixture's comment for why this is still deterministic). Same
-        // failure mode (Fehlerfall bleibt Fehlerfall): a throw before any
-        // pipeline exists, nothing leaks to the client, cause lands in stderr.
-        $this->assertStringContainsString('RuntimeException', (string) $stderr);
-        $this->assertStringContainsString('Failed to create config directory', (string) $stderr);
+        // jardiscore/kernel >=2.2.0: the fixture's load() directive in
+        // $envContent (string) mode trips jardissupport/dotenv's
+        // IncludeNotSupportedException - a required kernel dependency, so
+        // this path needs no optional adapter package installed (see the
+        // fixture's comment for the full "why").
+        $this->assertStringContainsString('IncludeNotSupportedException', (string) $stderr);
+        $this->assertStringContainsString(
+            'load() directive is not supported when loading from a string',
+            (string) $stderr,
+        );
     }
 }
