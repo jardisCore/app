@@ -21,14 +21,17 @@ register_shutdown_function(static function (): void {
     }
 });
 
-// jardiscore/kernel v2.0.0 (env-konfiguration, R2) always derives
-// "<projectRoot>/config/env" and mkdir()s it if missing (G1) - an empty
-// string no longer reaches DomainKernel's own "projectRoot must not be
-// empty" guard deterministically, because whether mkdir('/config/env')
-// itself succeeds now depends on the host/container's filesystem
-// permissions at "/". __FILE__ is a regular file, so appending
-// "/config/env" and mkdir()'ing it fails on every POSIX filesystem
-// regardless of user/permissions (ENOTDIR) - the same deterministic,
-// environment-independent bootstrap failure the empty string used to give,
-// just via the packer's own RuntimeException instead of DomainKernel's.
-(new BuildDomainKernelFromEnv())(__FILE__);
+// jardiscore/kernel v2.2.0 dropped the "<projectRoot>/config/env" mkdir()
+// convention this fixture used to rely on (G1) - the packer no longer
+// creates any directory, so the previous "__FILE__ as project root makes
+// mkdir() fail with ENOTDIR" trick stopped throwing once this repo resolved
+// kernel >=2.2.0 (composer.lock is not committed here, so every fresh
+// install picks the newest ^2.0 release).
+//
+// The $envContent (string) mode is the new deterministic, filesystem- and
+// permission-independent failure path: loadPrivateFromString() has no
+// file-system context to resolve a load()/load?() directive against, so it
+// throws IncludeNotSupportedException unconditionally (jardissupport/dotenv,
+// a required - not optional - kernel dependency, so this path needs no
+// adapter package installed).
+(new BuildDomainKernelFromEnv())(dirname(__DIR__, 3), 'load(.env.database)');
