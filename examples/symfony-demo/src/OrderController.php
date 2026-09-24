@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace SymfonyDemo;
 
 use Ecommerce\Ecommerce;
-use Ecommerce\Sales\Aggregate\Order\Query\OrderById;
+use Ecommerce\Sales\Model\Order\Query\OrderById;
 use JardisSupport\Contract\Kernel\DomainKernelInterface;
 use Symfony\Component\HttpFoundation\Response;
 
