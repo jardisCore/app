@@ -8,11 +8,11 @@ use JardisSupport\Contract\Kernel\DomainKernelInterface;
 use Ecommerce\Catalog\Catalog;
 use Ecommerce\Fulfillment\Fulfillment;
 use Ecommerce\Sales\Sales;
-use Ecommerce\Catalog\Aggregate\Category\Event\CategoryEventRouter;
-use Ecommerce\Catalog\Aggregate\Product\Event\ProductEventRouter;
-use Ecommerce\Fulfillment\Aggregate\Shipment\Event\ShipmentEventRouter;
-use Ecommerce\Sales\Aggregate\Invoice\Event\InvoiceEventRouter;
-use Ecommerce\Sales\Aggregate\Order\Event\OrderEventRouter;
+use Ecommerce\Catalog\Model\Category\Event\CategoryEventRouter;
+use Ecommerce\Catalog\Model\Product\Event\ProductEventRouter;
+use Ecommerce\Fulfillment\Model\Shipment\Event\ShipmentEventRouter;
+use Ecommerce\Sales\Model\Invoice\Event\InvoiceEventRouter;
+use Ecommerce\Sales\Model\Order\Event\OrderEventRouter;
 
 /**
  * Ecommerce Domain.

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Ecommerce\Sales\Process\OrderInvoiceUnionAlert\Command\Handler\Action;
 
 use Ecommerce\EcommerceContext;
-use Ecommerce\Sales\Aggregate\Invoice\Command\RemoveInvoice;
-use Ecommerce\Sales\Aggregate\Order\Command\RemoveOrder;
+use Ecommerce\Sales\Model\Invoice\Command\RemoveInvoice;
+use Ecommerce\Sales\Model\Order\Command\RemoveOrder;
 use Ecommerce\Sales\Process\OrderInvoiceUnionAlert\Command\OrderInvoiceUnionAlert;
 use Ecommerce\Sales\Process\OrderInvoiceUnionAlert\Event\SubjectRemovalAlerted;
 use JardisSupport\Contract\Kernel\EventScope;

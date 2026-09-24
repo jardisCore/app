@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Ecommerce\Catalog\Process\UpdateProductInCatalog\Command\Handler\Action;
 
-use Ecommerce\Catalog\Aggregate\Product\Product;
+use Ecommerce\Catalog\Model\Product\Product;
 use Ecommerce\Catalog\Process\UpdateProductInCatalog\Command\UpdateProductInCatalog;
 use Ecommerce\EcommerceContext;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;

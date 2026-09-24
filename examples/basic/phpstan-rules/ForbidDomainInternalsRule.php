@@ -46,10 +46,10 @@ final class ForbidDomainInternalsRule implements Rule
     /**
      * Denies reaching PAST the outer door into generated-domain internals:
      * Command/Query Handlers, Repositories, Rule classes, and the
-     * aggregate WRITE facade itself (`Ecommerce\{Bc}\Aggregate\{Agg}\{Agg}`
+     * aggregate WRITE facade itself (`Ecommerce\{Bc}\Model\{Agg}\{Agg}`
      * — the write facade class is always named identically to its
-     * enclosing `Aggregate\{Agg}\` segment, e.g.
-     * `Ecommerce\Sales\Aggregate\Order\Order`).
+     * enclosing `Model\{Agg}\` segment, e.g.
+     * `Ecommerce\Sales\Model\Order\Order`).
      *
      * @var list<string>
      */
@@ -59,7 +59,7 @@ final class ForbidDomainInternalsRule implements Rule
         '/^Ecommerce\\\\.*\\\\Repository\\\\/',
         '/^Ecommerce\\\\.*\\\\Rule\\\\/',
         '/^Ecommerce\\\\.*\\\\Entity\\\\/',
-        '/^Ecommerce\\\\[^\\\\]+\\\\Aggregate\\\\([^\\\\]+)\\\\\1$/',
+        '/^Ecommerce\\\\[^\\\\]+\\\\Model\\\\([^\\\\]+)\\\\\1$/',
     ];
 
     public function getNodeType(): string

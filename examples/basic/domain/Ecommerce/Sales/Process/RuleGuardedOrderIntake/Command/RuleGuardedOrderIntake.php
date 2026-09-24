@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Ecommerce\Sales\Process\RuleGuardedOrderIntake\Command;
 
-use Ecommerce\Sales\Aggregate\Order\Command\Order;
+use Ecommerce\Sales\Model\Order\Command\Order;
 
 /**
  * Process DTO for RuleGuardedOrderIntake.

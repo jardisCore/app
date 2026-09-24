@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Ecommerce\Sales\Process\RuleGuardedOrderIntake\Command\Handler\Action;
 
 use Ecommerce\EcommerceContext;
-use Ecommerce\Sales\Aggregate\Order\Order;
+use Ecommerce\Sales\Model\Order\Order;
 use Ecommerce\Sales\Process\RuleGuardedOrderIntake\Command\RuleGuardedOrderIntake;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
 use JardisSupport\Contract\Kernel\ResponseStatus;

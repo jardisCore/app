@@ -7,7 +7,7 @@ declare(strict_types=1);
  * "Umgehungsversuch" the architecture rule must catch — a route handler
  * reaching PAST the Sales BC's legitimate outer door (`order()`,
  * `process()`, `updateOrder()`) straight into the aggregate WRITE facade
- * (`Ecommerce\Sales\Aggregate\Order\Order`, family-internal per
+ * (`Ecommerce\Sales\Model\Order\Order`, family-internal per
  * `platform-usage`/PRD F6).
  *
  * Deliberately NOT mapped by any Composer `autoload-dev` PSR-4 prefix (no
@@ -19,8 +19,8 @@ declare(strict_types=1);
 
 namespace ExampleApp\NegativeFixture;
 
-use Ecommerce\Sales\Aggregate\Order\Order;
-use Ecommerce\Sales\Aggregate\Order\Command\Order as CommandOrder;
+use Ecommerce\Sales\Model\Order\Order;
+use Ecommerce\Sales\Model\Order\Command\Order as CommandOrder;
 use JardisSupport\Contract\Kernel\DomainKernelInterface;
 
 final class BypassesAggregateWriteFacade
