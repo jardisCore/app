@@ -8,7 +8,7 @@ use Ecommerce\EcommerceContext;
 use Ecommerce\Sales\Rule\Data\RuleResult;
 use Ecommerce\Sales\Rule\OrderUpdateAllowed;
 use Throwable;
-use Ecommerce\Sales\Aggregate\Order\Command\UpdateOrder as CommandUpdateOrder;
+use Ecommerce\Sales\Model\Order\Command\UpdateOrder as CommandUpdateOrder;
 
 /**
  * Rules-Layer Guard-Closure for the UpdateOrder command (docs/rules-layer/PLAN.md

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Ecommerce\Catalog\Process\UpdateProductInCatalog\Command;
 
-use Ecommerce\Catalog\Aggregate\Product\Command\UpdateProduct;
+use Ecommerce\Catalog\Model\Product\Command\UpdateProduct;
 
 /**
  * Process DTO for UpdateProductInCatalog.

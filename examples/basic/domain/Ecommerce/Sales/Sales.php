@@ -7,11 +7,11 @@ namespace Ecommerce\Sales;
 use Throwable;
 use Ecommerce\EcommerceContext;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
-use Ecommerce\Sales\Aggregate\Invoice\InvoiceRead;
-use Ecommerce\Sales\Aggregate\Order\OrderRead;
+use Ecommerce\Sales\Model\Invoice\InvoiceRead;
+use Ecommerce\Sales\Model\Order\OrderRead;
 use Ecommerce\Sales\Process\SalesProcess;
-use Ecommerce\Sales\Aggregate\Order\Command\UpdateOrder as CommandUpdateOrder;
-use Ecommerce\Sales\Aggregate\Order\Command\Handler\UpdateOrder;
+use Ecommerce\Sales\Model\Order\Command\UpdateOrder as CommandUpdateOrder;
+use Ecommerce\Sales\Model\Order\Command\Handler\UpdateOrder;
 
 /**
  * Sales Bounded Context.

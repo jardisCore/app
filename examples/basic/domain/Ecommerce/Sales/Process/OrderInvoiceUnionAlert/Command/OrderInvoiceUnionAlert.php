@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Ecommerce\Sales\Process\OrderInvoiceUnionAlert\Command;
 
-use Ecommerce\Sales\Aggregate\Invoice\Command\RemoveInvoice;
-use Ecommerce\Sales\Aggregate\Order\Command\RemoveOrder;
+use Ecommerce\Sales\Model\Invoice\Command\RemoveInvoice;
+use Ecommerce\Sales\Model\Order\Command\RemoveOrder;
 
 /**
  * Process DTO for OrderInvoiceUnionAlert.

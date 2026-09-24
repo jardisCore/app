@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Ecommerce\Sales\Process\OrderInvoiceBatch\Command;
 
-use Ecommerce\Sales\Aggregate\Invoice\Command\AddInvoiceLine;
-use Ecommerce\Sales\Aggregate\Invoice\Command\UpdateInvoice;
-use Ecommerce\Sales\Aggregate\Order\Command\AddOrderItem;
-use Ecommerce\Sales\Aggregate\Order\Command\UpdateOrder;
+use Ecommerce\Sales\Model\Invoice\Command\AddInvoiceLine;
+use Ecommerce\Sales\Model\Invoice\Command\UpdateInvoice;
+use Ecommerce\Sales\Model\Order\Command\AddOrderItem;
+use Ecommerce\Sales\Model\Order\Command\UpdateOrder;
 
 /**
  * Process DTO for OrderInvoiceBatch.

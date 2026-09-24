@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Ecommerce\Service;
 
-use Ecommerce\Catalog\Aggregate\Product\Command\UpdateProduct;
-use Ecommerce\Catalog\Aggregate\Product\Query\ProductByIdentifier as QueryProductByIdentifier;
-use Ecommerce\Catalog\Aggregate\Product\Query\Response\ProductResponse;
+use Ecommerce\Catalog\Model\Product\Command\UpdateProduct;
+use Ecommerce\Catalog\Model\Product\Query\ProductByIdentifier as QueryProductByIdentifier;
+use Ecommerce\Catalog\Model\Product\Query\Response\ProductResponse;
 use Ecommerce\Catalog\Catalog;
 use Ecommerce\Catalog\Process\UpdateProductInCatalog\Command\UpdateProductInCatalog;
 use Ecommerce\EcommerceContext;
