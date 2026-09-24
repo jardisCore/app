@@ -6,7 +6,7 @@ namespace Ecommerce\Fulfillment;
 
 use Throwable;
 use Ecommerce\EcommerceContext;
-use Ecommerce\Fulfillment\Aggregate\Shipment\ShipmentRead;
+use Ecommerce\Fulfillment\Model\Shipment\ShipmentRead;
 
 /**
  * Fulfillment Bounded Context.

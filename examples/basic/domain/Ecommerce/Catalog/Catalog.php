@@ -6,8 +6,8 @@ namespace Ecommerce\Catalog;
 
 use Throwable;
 use Ecommerce\EcommerceContext;
-use Ecommerce\Catalog\Aggregate\Category\CategoryRead;
-use Ecommerce\Catalog\Aggregate\Product\ProductRead;
+use Ecommerce\Catalog\Model\Category\CategoryRead;
+use Ecommerce\Catalog\Model\Product\ProductRead;
 use Ecommerce\Catalog\Process\CatalogProcess;
 
 /**

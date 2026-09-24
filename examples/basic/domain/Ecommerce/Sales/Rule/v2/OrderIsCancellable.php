@@ -6,7 +6,7 @@ namespace Ecommerce\Sales\Rule\v2;
 
 use Ecommerce\EcommerceContext;
 use Ecommerce\Sales\Rule\Data\RuleResult;
-use Ecommerce\Sales\Aggregate\Order\Command\Order as CommandOrder;
+use Ecommerce\Sales\Model\Order\Command\Order as CommandOrder;
 
 /**
  * v2 of OrderIsCancellable (docs/rules-layer/PLAN.md AK8, PRD §5 Frage 10 /

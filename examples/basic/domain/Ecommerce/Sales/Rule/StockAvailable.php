@@ -6,7 +6,7 @@ namespace Ecommerce\Sales\Rule;
 
 use Ecommerce\EcommerceContext;
 use Ecommerce\Sales\Rule\Data\RuleResult;
-use Ecommerce\Sales\Aggregate\Order\Command\Order as CommandOrder;
+use Ecommerce\Sales\Model\Order\Command\Order as CommandOrder;
 
 /**
  * Rule: StockAvailable.

@@ -6,7 +6,7 @@ namespace Ecommerce\Sales\Rule;
 
 use Ecommerce\EcommerceContext;
 use Ecommerce\Sales\Rule\Data\RuleResult;
-use Ecommerce\Sales\Aggregate\Invoice\Command\Invoice as CommandInvoice;
+use Ecommerce\Sales\Model\Invoice\Command\Invoice as CommandInvoice;
 
 /**
  * Rule: InvoiceNotYetPaid.

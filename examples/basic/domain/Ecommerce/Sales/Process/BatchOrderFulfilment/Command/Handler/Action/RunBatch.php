@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Ecommerce\Sales\Process\BatchOrderFulfilment\Command\Handler\Action;
 
 use Ecommerce\EcommerceContext;
-use Ecommerce\Sales\Aggregate\Invoice\Command\AddInvoiceLine;
-use Ecommerce\Sales\Aggregate\Invoice\Command\UpdateInvoice;
-use Ecommerce\Sales\Aggregate\Order\Command\AddOrderItem;
-use Ecommerce\Sales\Aggregate\Order\Command\UpdateOrder;
+use Ecommerce\Sales\Model\Invoice\Command\AddInvoiceLine;
+use Ecommerce\Sales\Model\Invoice\Command\UpdateInvoice;
+use Ecommerce\Sales\Model\Order\Command\AddOrderItem;
+use Ecommerce\Sales\Model\Order\Command\UpdateOrder;
 use Ecommerce\Sales\Process\OrderInvoiceBatch\Command\Handler\OrderInvoiceBatchHandler;
 use Ecommerce\Sales\Process\OrderInvoiceBatch\Command\OrderInvoiceBatch;
 use JardisSupport\Contract\Kernel\EventScope;

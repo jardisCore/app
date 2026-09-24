@@ -8,7 +8,7 @@ use Ecommerce\EcommerceContext;
 use Ecommerce\Sales\Rule\Data\RuleResult;
 use Ecommerce\Sales\Rule\InvoiceNotYetPaid;
 use Throwable;
-use Ecommerce\Sales\Aggregate\Invoice\Command\Invoice as CommandInvoice;
+use Ecommerce\Sales\Model\Invoice\Command\Invoice as CommandInvoice;
 
 /**
  * Rules-Layer Guard-Closure for the Invoice command (docs/rules-layer/PLAN.md

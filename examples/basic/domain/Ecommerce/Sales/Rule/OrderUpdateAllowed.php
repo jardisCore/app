@@ -6,7 +6,7 @@ namespace Ecommerce\Sales\Rule;
 
 use Ecommerce\EcommerceContext;
 use Ecommerce\Sales\Rule\Data\RuleResult;
-use Ecommerce\Sales\Aggregate\Order\Command\UpdateOrder as CommandUpdateOrder;
+use Ecommerce\Sales\Model\Order\Command\UpdateOrder as CommandUpdateOrder;
 
 /**
  * Rule: OrderUpdateAllowed.

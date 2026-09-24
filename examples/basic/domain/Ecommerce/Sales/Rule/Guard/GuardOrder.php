@@ -9,7 +9,7 @@ use Ecommerce\Sales\Rule\Data\RuleResult;
 use Ecommerce\Sales\Rule\OrderIsCancellable;
 use Ecommerce\Sales\Rule\StockAvailable;
 use Throwable;
-use Ecommerce\Sales\Aggregate\Order\Command\Order as CommandOrder;
+use Ecommerce\Sales\Model\Order\Command\Order as CommandOrder;
 
 /**
  * Rules-Layer Guard-Closure for the Order command (docs/rules-layer/PLAN.md
