@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Ecommerce\Sales\Rule\v2;
+namespace Ecommerce\Sales\Closure\v2;
 
 use Ecommerce\EcommerceContext;
-use Ecommerce\Sales\Rule\Data\RuleResult;
+use Ecommerce\Sales\Closure\Data\RuleResult;
 use Ecommerce\Sales\Model\Order\Command\Order as CommandOrder;
 
 /**

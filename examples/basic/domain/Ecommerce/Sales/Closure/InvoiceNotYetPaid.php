@@ -2,19 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Ecommerce\Sales\Rule;
+namespace Ecommerce\Sales\Closure;
 
 use Ecommerce\EcommerceContext;
-use Ecommerce\Sales\Rule\Data\RuleResult;
+use Ecommerce\Sales\Closure\Data\RuleResult;
+use Ecommerce\Sales\Model\Invoice\Command\Invoice as CommandInvoice;
 
 /**
- * Dokumentiert die Stornierungs-Policy in Freitext, damit eine KI
- * den Stub-Rumpf ohne Rueckfrage implementieren kann.
- *
- * Haertungs-Nachweis: ein Kommentar-Terminator * / mitten im
- * Freitext darf den generierten Docblock nicht brechen.
- *
- * Rule: OrderCancellationPolicyDocumented.
+ * Rule: InvoiceNotYetPaid.
  *
  * M9: this Rule may read ONLY the Lese-Fassade of its OWN bounded
  * context (`$this->handle(SelfBc::class)->{agg}()`) — no Fremd-BC
@@ -25,9 +20,9 @@ use Ecommerce\Sales\Rule\Data\RuleResult;
  * `$this->handle(OtherRule::class)($command)` (ClassVersion-fähig) —
  * never `new OtherRule()`.
  */
-final class OrderCancellationPolicyDocumented extends EcommerceContext
+final class InvoiceNotYetPaid extends EcommerceContext
 {
-    public function __invoke(object $command): RuleResult
+    public function __invoke(CommandInvoice $command): RuleResult
     {
         // TODO: implement the rule predicate.
         return RuleResult::pass();

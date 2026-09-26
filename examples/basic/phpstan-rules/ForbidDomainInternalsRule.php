@@ -45,7 +45,7 @@ final class ForbidDomainInternalsRule implements Rule
 {
     /**
      * Denies reaching PAST the outer door into generated-domain internals:
-     * Command/Query Handlers, Repositories, Rule classes, and the
+     * Command/Query Handlers, Repositories, Closure classes, and the
      * aggregate WRITE facade itself (`Ecommerce\{Bc}\Model\{Agg}\{Agg}`
      * — the write facade class is always named identically to its
      * enclosing `Model\{Agg}\` segment, e.g.
@@ -57,7 +57,7 @@ final class ForbidDomainInternalsRule implements Rule
         '/^Ecommerce\\\\.*\\\\Command\\\\Handler\\\\/',
         '/^Ecommerce\\\\.*\\\\Query\\\\Handler\\\\/',
         '/^Ecommerce\\\\.*\\\\Repository\\\\/',
-        '/^Ecommerce\\\\.*\\\\Rule\\\\/',
+        '/^Ecommerce\\\\.*\\\\Closure\\\\/',
         '/^Ecommerce\\\\.*\\\\Entity\\\\/',
         '/^Ecommerce\\\\[^\\\\]+\\\\Model\\\\([^\\\\]+)\\\\\1$/',
     ];

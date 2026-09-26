@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Ecommerce\Sales\Rule\Guard;
+namespace Ecommerce\Sales\Closure\Guard;
 
 use Ecommerce\EcommerceContext;
-use Ecommerce\Sales\Rule\Data\RuleResult;
-use Ecommerce\Sales\Rule\OrderIsCancellable;
-use Ecommerce\Sales\Rule\StockAvailable;
+use Ecommerce\Sales\Closure\Data\RuleResult;
+use Ecommerce\Sales\Closure\OrderIsCancellable;
+use Ecommerce\Sales\Closure\StockAvailable;
 use Throwable;
 use Ecommerce\Sales\Model\Order\Command\Order as CommandOrder;
 

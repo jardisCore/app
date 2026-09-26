@@ -6,7 +6,7 @@ namespace Ecommerce\Sales\Process\RuleGuardedOrderIntake\Command\Handler\Action;
 
 use Ecommerce\EcommerceContext;
 use Ecommerce\Sales\Process\RuleGuardedOrderIntake\Command\RuleGuardedOrderIntake;
-use Ecommerce\Sales\Rule\OrderEligibleForProcessing;
+use Ecommerce\Sales\Closure\OrderEligibleForProcessing;
 use JardisSupport\Contract\Workflow\WorkflowContextInterface;
 use JardisSupport\Contract\Workflow\WorkflowResultInterface;
 use JardisSupport\Workflow\WorkflowResult;
