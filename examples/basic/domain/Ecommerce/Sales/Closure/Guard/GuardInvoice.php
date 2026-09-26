@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Ecommerce\Sales\Rule\Guard;
+namespace Ecommerce\Sales\Closure\Guard;
 
 use Ecommerce\EcommerceContext;
-use Ecommerce\Sales\Rule\Data\RuleResult;
-use Ecommerce\Sales\Rule\InvoiceNotYetPaid;
+use Ecommerce\Sales\Closure\Data\RuleResult;
+use Ecommerce\Sales\Closure\InvoiceNotYetPaid;
 use Throwable;
 use Ecommerce\Sales\Model\Invoice\Command\Invoice as CommandInvoice;
 

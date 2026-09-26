@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Ecommerce\Sales\Rule\Data;
+namespace Ecommerce\Sales\Closure\Data;
 
 /**
  * Outcome of a single Rule invocation (docs/rules-layer/PRD.md A4,
