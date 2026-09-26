@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Ecommerce\Sales\Rule\Guard;
+namespace Ecommerce\Sales\Closure\Guard;
 
 use Ecommerce\EcommerceContext;
-use Ecommerce\Sales\Rule\Data\RuleResult;
-use Ecommerce\Sales\Rule\OrderUpdateAllowed;
+use Ecommerce\Sales\Closure\Data\RuleResult;
+use Ecommerce\Sales\Closure\OrderUpdateAllowed;
 use Throwable;
 use Ecommerce\Sales\Model\Order\Command\UpdateOrder as CommandUpdateOrder;
 
