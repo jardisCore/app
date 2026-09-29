@@ -7,13 +7,10 @@ namespace JardisCore\App\Tests\Support\Helper;
 /**
  * Converts a Schema array (Builder DB-export format) to MySQL DDL.
  *
- * Ported 1:1 from `jardistools/builder`
- * (`tests/Builder/Integration/Helper/SchemaToMysqlDdl.php`) — the same
- * DDL-generation pattern the Builder's own Ecommerce fixture harness uses
- * (PLAN.md P7 "Fixture-Betrieb im Builder"). This is a test-support
- * utility copied for parity, not a change to the vendored domain fixture
- * itself (`examples/basic/domain/Ecommerce/` stays byte-identical to its
- * source).
+ * Test-support utility that follows the same DDL-generation pattern as the
+ * Builder's Ecommerce fixture harness. It does not change the vendored domain
+ * fixture itself (`examples/basic/domain/Ecommerce/` stays byte-identical to
+ * its source).
  *
  * Supports: column types (int/varchar/date/text/decimal), auto_increment,
  * NOT NULL, DEFAULT, PRIMARY KEY, UNIQUE INDEX, FOREIGN KEY.
