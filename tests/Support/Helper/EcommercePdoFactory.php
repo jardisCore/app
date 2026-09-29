@@ -7,9 +7,9 @@ namespace JardisCore\App\Tests\Support\Helper;
 use PDO;
 
 /**
- * Ported from `jardistools/builder` `tests/Builder/PdoFactory.php` — same
- * MYSQL_* ENV convention the shared `mysql` Docker service in
- * `support/docker-compose.yml` already exposes to the `phpcli` container.
+ * Creates a PDO connection using the MYSQL_* ENV convention the shared
+ * `mysql` Docker service in `support/docker-compose.yml` already exposes to
+ * the `phpcli` container.
  */
 final class EcommercePdoFactory
 {
