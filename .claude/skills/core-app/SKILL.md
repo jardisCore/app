@@ -4,7 +4,7 @@ description: jardiscore/app v1 - the HTTP-Delivery layer for Jardis domains, a F
 user-invocable: false
 zone: post-active
 persona: D
-prerequisites: [rules-architecture, rules-patterns, core-kernel]
+prerequisites: [foundation-architecture, foundation-patterns, core-kernel]
 next: []
 ---
 
