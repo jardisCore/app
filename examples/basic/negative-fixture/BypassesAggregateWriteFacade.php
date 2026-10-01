@@ -8,7 +8,7 @@ declare(strict_types=1);
  * reaching PAST the Sales BC's legitimate outer door (`order()`,
  * `process()`, `updateOrder()`) straight into the aggregate WRITE facade
  * (`Ecommerce\Sales\Model\Order\Order`, family-internal per
- * `platform-usage`/PRD F6).
+ * `generated-code-wire-transport`/PRD F6).
  *
  * Deliberately NOT mapped by any Composer `autoload-dev` PSR-4 prefix (no
  * rule targets `examples/basic/negative-fixture/`) — it never loads into
