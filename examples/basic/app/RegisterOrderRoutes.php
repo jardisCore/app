@@ -75,7 +75,7 @@ final class RegisterOrderRoutes
      * `POST /orders` — creates via the process facade's
      * `ruleGuardedOrderIntake` (the only legitimate outer door for
      * creating an Order; the aggregate write facade is family-internal
-     * only, PRD F6/platform-usage). See {@see StaticDomainResponse} for
+     * only, PRD F6/generated-code-wire-transport). See {@see StaticDomainResponse} for
      * why this handler re-confirms via the read facade afterwards
      * instead of trusting the process response's own status/data.
      */
