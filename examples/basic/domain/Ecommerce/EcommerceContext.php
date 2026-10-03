@@ -21,10 +21,8 @@ use Ecommerce\Response\ContextResponse;
  * Ecommerce Domain Context.
  *
  * All bounded context classes in this domain extend this class.
- * 1:1-structural port of the former jardiscore/kernel BoundedContext
- * (Kernel-Entkopplung P4) — handle()/context() are family-internal
- * only (protected); the generated facade's own accessor methods are
- * the sole outer door.
+ * handle()/context() are family-internal only (protected); the generated
+ * facade's own accessor methods are the sole outer door.
  */
 class EcommerceContext implements GeneratedContextInterface
 {
