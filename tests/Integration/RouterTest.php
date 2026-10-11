@@ -13,6 +13,7 @@ use JardisCore\App\Router;
 use JardisCore\App\Routes;
 use JardisCore\App\Tests\Support\FixedResponseHandler;
 use Nyholm\Psr7\Factory\Psr17Factory;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -80,6 +81,54 @@ final class RouterTest extends TestCase
         $response = $wrapped->handle($request);
 
         $this->assertSame('42', (string) $response->getBody());
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function encodedPlaceholderProvider(): array
+    {
+        return [
+            'at sign' => ['/leads/nobody%40x.test', 'nobody@x.test'],
+            'space' => ['/leads/a%20b', 'a b'],
+            'encoded slash stays inside the segment' => ['/leads/a%2Fb', 'a/b'],
+            'plus stays plus' => ['/leads/a+b', 'a+b'],
+            'encoded plus' => ['/leads/a%2Bb', 'a+b'],
+            'utf-8 umlaut' => ['/leads/m%C3%BCller', "m\u{00FC}ller"],
+            'already decoded value is unchanged' => ['/leads/nobody@x.test', 'nobody@x.test'],
+            'plain value is unchanged' => ['/leads/plain-42', 'plain-42'],
+            'decoded exactly once' => ['/leads/a%2540b', 'a%40b'],
+        ];
+    }
+
+    /**
+     * Invariant: every route placeholder value reaches RouteMatch::$parameters
+     * (and with it the request attribute) percent-decoded exactly once.
+     */
+    #[DataProvider('encodedPlaceholderProvider')]
+    public function testPlaceholderValuesAreDecodedExactlyOnce(string $path, string $expected): void
+    {
+        $routes = new Routes($this->factory);
+        $routes->get('/leads/{email}', static fn () => null);
+        $router = new Router($routes->routes());
+
+        $match = $router->dispatch($this->request('GET', $path));
+
+        $this->assertSame(RouteMatchStatus::Found, $match->status);
+        $this->assertSame(['email' => $expected], $match->parameters);
+    }
+
+    public function testEncodedSlashDoesNotChangeRouting(): void
+    {
+        $routes = new Routes($this->factory);
+        $routes->get('/leads/{email}', static fn () => null);
+        $routes->get('/leads/{a}/{b}', static fn () => null);
+        $router = new Router($routes->routes());
+
+        $match = $router->dispatch($this->request('GET', '/leads/a%2Fb'));
+
+        $this->assertSame(RouteMatchStatus::Found, $match->status);
+        $this->assertSame('/leads/{email}', $match->route?->path);
     }
 
     public function testUnknownPathReturnsNotFound(): void

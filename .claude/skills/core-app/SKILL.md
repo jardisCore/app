@@ -49,6 +49,12 @@ $routes->health('/health');                  // GET, always 200 {"status":200} �
 Each verb accepts `callable|RequestHandlerInterface`; a callable is converted to a `Closure` immediately on
 registration (E4) — every collected `Route` already satisfies `Closure|RequestHandlerInterface`.
 
+**Path placeholders arrive decoded.** Matching runs on the percent-encoded PSR-7 path; `DispatchRequest` then
+`rawurldecode`s every placeholder value exactly once before it lands in `RouteMatch::$parameters` and, via
+`ApplyRouteAttributes`, in `$request->getAttribute('email')` (`%40`→`@`, `%20`→space, `%C3%BC`→`ü`, `%2F`→`/` inside
+the value without changing the route match; `+` stays `+`). Handlers never decode again (a second decode would corrupt
+a literal `%`).
+
 ## PARSEJSONBODY — the E7 contract
 `ParseJsonBody::__invoke(ServerRequestInterface): array` throws `Exception\InvalidJsonBody` for exactly three
 cases: **empty raw body**, **JSON syntax error** (`JSON_THROW_ON_ERROR`), or a **decoded value that is not an
