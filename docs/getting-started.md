@@ -183,6 +183,13 @@ $routes->get('/v2/orders/{id}', static function (ServerRequestInterface $request
 });
 ```
 
+## Path Placeholder Values
+
+Route placeholders (`/leads/{email}`) are matched against the percent-encoded request path and
+handed to the handler percent-decoded exactly once: `GET /leads/nobody%40x.test` yields
+`$request->getAttribute('email') === 'nobody@x.test'`. `%2F` decodes to `/` inside the value
+without affecting which route matches; `+` stays `+`. Do not decode again in the handler.
+
 ## Validation Note
 
 Typed coercion of path/query/body parameters (string → int, …) is the route handler's

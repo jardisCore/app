@@ -10,7 +10,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Tests for ApplyRouteAttributes (F8a): the documented call site that
- * applies a matched route's raw path parameters as request attributes.
+ * applies a matched route's path parameters (already decoded by
+ * DispatchRequest) as request attributes, verbatim - no second decoding.
  */
 final class ApplyRouteAttributesTest extends TestCase
 {
@@ -24,6 +25,16 @@ final class ApplyRouteAttributesTest extends TestCase
 
         $this->assertSame('42', $result->getAttribute('id'));
         $this->assertSame('items-1', $result->getAttribute('sub'));
+    }
+
+    public function testDoesNotDecodeAgain(): void
+    {
+        $factory = new Psr17Factory();
+        $request = $factory->createServerRequest('GET', '/leads/x');
+
+        $result = (new ApplyRouteAttributes())($request, ['email' => '100%40x']);
+
+        $this->assertSame('100%40x', $result->getAttribute('email'));
     }
 
     public function testEmptyParametersReturnTheRequestUnchanged(): void

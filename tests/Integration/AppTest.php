@@ -111,6 +111,23 @@ final class AppTest extends TestCase
         $this->assertSame('order:42', (string) $response->getBody());
     }
 
+    public function testPercentEncodedPathParameterReachesTheHandlerDecodedOnce(): void
+    {
+        $routes = new Routes($this->factory);
+        $routes->get('/leads/{email}', static function (ServerRequestInterface $request) {
+            $factory = new Psr17Factory();
+            $response = $factory->createResponse(200);
+            $response->getBody()->write('lead:' . $request->getAttribute('email'));
+
+            return $response;
+        });
+        $app = new App($routes, $this->kernel(), new AppConfig());
+
+        $response = $app->handle($this->request('GET', '/leads/nobody%40x.test'));
+
+        $this->assertSame('lead:nobody@x.test', (string) $response->getBody());
+    }
+
     public function testHealthEndpointRespondsViaTheRealApp(): void
     {
         $routes = new Routes($this->factory);

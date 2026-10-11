@@ -7,7 +7,7 @@ namespace JardisCore\App\Handler\Routing;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**
- * Applies a matched route's raw path parameters (F1) as request attributes
+ * Applies a matched route's (already percent-decoded, see DispatchRequest) path parameters (F1) as request attributes
  * (F8a) - the documented call site for the responsibility RouteMatch and
  * DispatchRequest deliberately leave open (see their docblocks): the first
  * point in the call chain that holds both a RouteMatch and the original
