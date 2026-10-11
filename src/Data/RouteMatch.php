@@ -8,7 +8,8 @@ namespace JardisCore\App\Data;
  * Outcome of a router dispatch (F1/F9) - exactly one of three states,
  * built exclusively through its named constructors:
  *
- * - found(): the Route plus its path parameters.
+ * - found(): the Route plus its path parameters (percent-decoded exactly once
+ *   by DispatchRequest).
  * - notFound(): no route matched the requested path.
  * - methodNotAllowed(): the path matched, but not the HTTP method - carries
  *   the full list of methods registered for that path (405 + Allow header;
