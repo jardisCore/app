@@ -28,7 +28,8 @@ next: []
 | `Handler\Pipeline\RunMiddlewarePipeline` | `__invoke(array $globalMiddleware, array $routeMiddleware, RequestHandlerInterface $finalHandler, ServerRequestInterface): ResponseInterface` — builds+runs the PSR-15 chain, global outer / route inner (E9). |
 | `Handler\Request\CreateServerRequest` | `__invoke(?array $server=null, ?array $headers=null, ?array $cookies=null, ?array $query=null, ?array $post=null, ?array $files=null, mixed $body=null): ServerRequestInterface` — Raw-Body-Invariante: reads `php://input` exactly once. |
 | `Handler\Response\EmitResponse` | `__invoke(ServerRequestInterface, ResponseInterface): void` — status line, headers, `Content-Length`, body (suppressed for HEAD, RFC 7231 §4.3.2). Never throws; best-effort 500 fallback on internal failure. |
-| `Data\Route` / `Data\RouteMatch` / `Data\RouteMatchStatus` | `final readonly` VOs. `Route(string $method, string $path, Closure\|RequestHandlerInterface $handler, array $middleware = [])`. `RouteMatch` only via named constructors `found()/notFound()/methodNotAllowed()`. `RouteMatchStatus`: `Found`/`NotFound`/`MethodNotAllowed`. |
+| `Middleware\RequireSession` (`implements MiddlewareInterface`) | `__construct(AuthenticatorInterface $authenticator, Closure $credentialFor, ResponseFactoryInterface, StreamFactoryInterface, array $anonymousPaths = [], string $headerName = 'Authorization', string $scheme = 'Bearer')`. Session door — see SESSION below. Closures it composes: `Handler\Session\IsAnonymous`, `ReadBearerToken`, `AuthenticateToken`, `ApplySession`. |
+| `Data\Route` / `Data\RouteMatch` / `Data\RouteMatchStatus` | `final readonly` VOs. `Route(string $method, string $path, Closure\|RequestHandlerInterface $handler, array $middleware = [], bool $anonymous = false)` (`anonymous` is set only by `Routes::health()`). `RouteMatch` only via named constructors `found()/notFound()/methodNotAllowed()`. `RouteMatchStatus`: `Found`/`NotFound`/`MethodNotAllowed`. |
 | `Exception\AppException` (abstract), `Exception\InvalidJsonBody`, `Exception\UnresolvableHandlerResult` | `InvalidJsonBody` — empty/invalid/non-array JSON body (F8, mapped to 400). `UnresolvableHandlerResult` — handler returned neither `DomainResponseInterface` nor `ResponseInterface` (E6, propagates to generic 500). |
 
 ## ROUTES — registration API
@@ -74,6 +75,35 @@ no middleware and no handler runs: `data = {"@type":"validation","fields":[{"fie
 an app that never receives the header behaves as before. Wiring: `new AppConfig(knownVersions: ['v2', 'v3'])`; a handler
 reads `$request->getAttribute('jardisVersion')`. The set of known versions comes from outside (the Builder generates it
 from the domain manifest); this package scans no directories and knows no classes.
+
+## SESSION — `RequireSession` (PSR-15, global or per route)
+Binds a request to a verified session or rejects it. Depends only on the ports of `jardissupport/contracts` ^2.8
+(`AuthenticatorInterface`, `CredentialInterface`, `TenantAwareAuthResultInterface`, `RequestAttribute`) — NOT on `support/auth`.
+```php
+use JardisCore\App\Middleware\RequireSession;
+use JardisSupport\Auth\Data\Credential;      // support/auth (the app requires it, not core/app)
+use JardisSupport\Auth\TokenAuthenticator;    // + DbTokenStore as TokenStoreInterface
+
+$routes->middleware(new RequireSession(
+    new TokenAuthenticator($tokenStore),
+    Credential::token(...),                     // Closure(string): CredentialInterface
+    $psr17, $psr17,                             // response + stream factory (the 401 uses BuildErrorResponse)
+    ['/auth/login', '/auth/refresh', '/docs/*'], // anonymous: exact path, or prefix when ending in `*`
+));
+$routes->health('/health');                     // anonymous automatically, no need to list it
+```
+- **Token:** `Authorization: Bearer <token>` (exactly one header line, scheme case-insensitive, no whitespace in the token).
+  `headerName`/`scheme` configurable; `scheme: ''` = the whole header value is the token.
+- **401:** `{status:401, data:{}, errors:{message:"Authentication required."}, meta:{}}` + `WWW-Authenticate: Bearer`; missing, malformed,
+  unknown, expired, revoked token and a "successful" result without subject are answered identically (reason stays internal).
+  The handler is never called. A `Throwable` from the authenticator (token store down) is NOT a 401 but the generic 500.
+- **Session:** valid → request attribute `RequestAttribute::SUBJECT` (`jardisSubject`) and, if the result is `TenantAwareAuthResultInterface`
+  with a non-empty tenant, `RequestAttribute::TENANT` (`jardisTenant`); no tenant → the attribute is ABSENT (never null/''). Pre-existing
+  attributes of these names (e.g. a path placeholder `{jardisSubject}`) are always overwritten/removed, also on anonymous paths.
+- **Where it runs:** only on a matched route (inside the pipeline) → unknown path stays 404, wrong method 405. `Routes::health()` routes carry
+  `Route::$anonymous` → request attribute `DispatchAndRespond::ANONYMOUS_ATTRIBUTE` (`jardisAnonymousRoute`, strict bool, always written by
+  the dispatcher, compare with `=== true`). Anonymous patterns match all HTTP methods of that path.
+- **Per route:** `$routes->get('/x', $handler, $requireSession)` guards only that route (global = guard everything except anonymous).
 
 ## ENVELOPE CONTRACT — `{status, data, errors, meta}`
 Reference: `jardissupport/contracts` → `docs/response-envelope.md`. `ResponseStatus` (11 cases, `jardissupport/contracts`,
@@ -147,7 +177,7 @@ Reference: `jardissupport/contracts` → `docs/response-envelope.md`. `ResponseS
 ## DEPENDENCIES
 ```
 jardiscore/kernel            ^2.0
-jardissupport/contracts      ^2.0
+jardissupport/contracts      ^2.8
 nikic/fast-route             ^1.3
 nyholm/psr7                  ^1.8
 nyholm/psr7-server            ^1.1

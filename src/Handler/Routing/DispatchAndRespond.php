@@ -35,6 +35,13 @@ final class DispatchAndRespond
     public const string VERSION_ATTRIBUTE = 'jardisVersion';
 
     /**
+     * Request attribute (strict bool) telling the pipeline that the matched route needs no
+     * session. Always written by this class, so a path placeholder of the same name cannot
+     * forge it; consumers must compare with `=== true`.
+     */
+    public const string ANONYMOUS_ATTRIBUTE = 'jardisAnonymousRoute';
+
+    /**
      * @param Closure $applyRouteAttributes {@see ApplyRouteAttributes::__invoke()}
      * @param Closure $resolveRouteHandler {@see ResolveRouteHandler::__invoke()}
      * @param Closure $runMiddlewarePipeline {@see \JardisCore\App\Handler\Pipeline\RunMiddlewarePipeline::__invoke()}
@@ -85,7 +92,9 @@ final class DispatchAndRespond
         if ($version === null) {
             return $this->rejectVersion();
         }
-        $requestWithAttributes = $requestWithAttributes->withAttribute(self::VERSION_ATTRIBUTE, $version);
+        $requestWithAttributes = $requestWithAttributes
+            ->withAttribute(self::VERSION_ATTRIBUTE, $version)
+            ->withAttribute(self::ANONYMOUS_ATTRIBUTE, $route->anonymous);
 
         $finalHandler = ($this->resolveRouteHandler)($route->handler);
 
