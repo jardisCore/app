@@ -93,19 +93,23 @@ final class Routes
 
     /**
      * Registers an internal health-check GET route (E10, M10): responds 200
-     * with `{"status":200}` without touching any domain.
+     * with `{"status":200}` without touching any domain. The route is marked anonymous,
+     * so session middleware (RequireSession) lets it pass.
      */
     public function health(string $path): void
     {
         $responseFactory = $this->responseFactory;
 
-        $this->register('GET', $path, static function () use ($responseFactory): ResponseInterface {
+        $handler = static function () use ($responseFactory): ResponseInterface {
             $response = $responseFactory->createResponse(200)
                 ->withHeader('Content-Type', 'application/json');
             $response->getBody()->write('{"status":200}');
 
             return $response;
-        });
+        };
+
+        // Anonymous by definition: a health probe must answer without a session.
+        $this->routes[] = new Route('GET', $path, $handler(...), [], true);
     }
 
     private function register(
