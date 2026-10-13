@@ -61,6 +61,11 @@ closes that gap with a deliberately small core:
   "invalid", message, messageKey: "request.versionUnknown"}`) before any
   middleware or handler runs. Without configuration only the baseline is
   reachable, so an existing app behaves as before until a client sends the header.
+- **A verified session at the door.** `Middleware\RequireSession` binds every
+  request to a session or answers `401` in the canonical envelope (with
+  `WWW-Authenticate: Bearer`) before the handler runs; with a valid session the
+  request carries the attributes `jardisSubject` and `jardisTenant`
+  (`JardisSupport\Contract\Auth\RequestAttribute`). Details: [`docs/session.md`](docs/session.md).
 - **A Raw-Body invariant.** The request body is read from `php://input`
   exactly once, into a seekable stream; JSON parsing is lazy and never
   replaces it — `getBody()` stays byte-identical for the whole pipeline
@@ -118,7 +123,7 @@ stellschrauben (body-size limits, Trusted-Proxy, `display_errors`).
 | Package | Purpose |
 |---------|---------|
 | `jardiscore/kernel` | The DomainKernel (`DomainKernel`) + ENV-Packer this package's bootstrap bridge builds on |
-| `jardissupport/contracts` | `DomainResponseInterface`, `ResponseStatus`, the response-envelope contract doc |
+| `jardissupport/contracts` | `DomainResponseInterface`, `ResponseStatus`, the response-envelope contract doc, the Auth ports and `RequestAttribute` used by `RequireSession` (`^2.8`) |
 | `jardissupport/validation` | Object-graph validation — the growth path beyond the handler's own trivial type coercion (F8) |
 
 ---

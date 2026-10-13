@@ -23,12 +23,16 @@ final readonly class Route
      *        in registration order; consumed by
      *        `Handler/Pipeline/RunMiddlewarePipeline` alongside the global
      *        middleware list to build the PSR-15 chain (E9)
+     * @param bool $anonymous the app itself marks this route as needing no session
+     *        (set by `Routes::health()`); surfaced to the pipeline as request attribute
+     *        `DispatchAndRespond::ANONYMOUS_ATTRIBUTE`
      */
     public function __construct(
         public string $method,
         public string $path,
         public Closure|RequestHandlerInterface $handler,
         public array $middleware = [],
+        public bool $anonymous = false,
     ) {
     }
 }

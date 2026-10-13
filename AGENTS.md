@@ -4,7 +4,7 @@ HTTP-delivery layer for Jardis-generated domains: FastRoute behind an own `Contr
 
 ## Usage essentials
 
-- **Main classes (`JardisCore\App`):** `Routes` (registration: `get/post/put/patch/delete`, `middleware()`, `health()`), `Router` (dispatch, FastRoute never leaks past it), `App` (orchestrator: pure `handle(ServerRequestInterface)`, impure `run()`), `Config\AppConfig` (`debug` flag, injected by the bootstrap — never reads ENV itself).
+- **Main classes (`JardisCore\App`):** `Routes` (registration: `get/post/put/patch/delete`, `middleware()`, `health()`), `Router` (dispatch, FastRoute never leaks past it), `App` (orchestrator: pure `handle(ServerRequestInterface)`, impure `run()`), `Config\AppConfig` (`debug` flag, injected by the bootstrap — never reads ENV itself), `Middleware\RequireSession` (PSR-15 session door: 401 in the envelope or request attributes `jardisSubject`/`jardisTenant`; `health()` routes are anonymous; `docs/session.md`).
 - **Bootstrap recipe:** `BuildDomainKernelFromEnv` → `DomainKernel` → generated domain(s) `new {Domain}($kernel)` (not part of this package) → `Routes` + handlers → `App` → `run()`. Full runnable `public/index.php`: `docs/getting-started.md`.
 - **Handlers return `DomainResponseInterface` or a PSR-7 `ResponseInterface`** — anything else throws `UnresolvableHandlerResult` and ends in the generic 500.
 - **One envelope for every answer:** `MapDomainResponse` maps each `DomainResponseInterface` (`ResponseStatus` 1:1 to the HTTP code, e.g. `RuleViolation` = 422); 204 has no body; `BuildErrorResponse` is the only place assembling the envelope, also for 404 / 405 (with `Allow` header) / 500. `getEvents()` is never part of the client-facing envelope.
