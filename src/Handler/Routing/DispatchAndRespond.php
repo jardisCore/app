@@ -9,6 +9,7 @@ use JardisCore\App\Contract\RouterInterface;
 use JardisCore\App\Data\Route;
 use JardisCore\App\Data\RouteMatch;
 use JardisCore\App\Data\RouteMatchStatus;
+use JardisCore\App\Handler\Request\ResolveVersion;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -22,17 +23,23 @@ use Psr\Http\Server\MiddlewareInterface;
  * stays fully swappable), then either resolves a boundary error response
  * (F9: 404/405, the latter carrying the Allow header from
  * `RouteMatch::$allowedMethods`) or, on a Found match, applies the matched
- * path parameters as request attributes (F8a) before running the PSR-15
- * middleware pipeline (global outer, route inner, E9) around the route's
+ * path parameters as request attributes (F8a), resolves the requested class
+ * version (`X-Jardis-Version` -> attribute `jardisVersion`; an invalid header
+ * is answered 400 right here, before any middleware or handler) and only then
+ * runs the PSR-15 middleware pipeline (global outer, route inner, E9) around the route's
  * own handler (auto-mapped via `ResolveRouteHandler`, E6).
  */
 final class DispatchAndRespond
 {
+    /** Request attribute carrying the validated class version (`''` = baseline). */
+    public const string VERSION_ATTRIBUTE = 'jardisVersion';
+
     /**
      * @param Closure $applyRouteAttributes {@see ApplyRouteAttributes::__invoke()}
      * @param Closure $resolveRouteHandler {@see ResolveRouteHandler::__invoke()}
      * @param Closure $runMiddlewarePipeline {@see \JardisCore\App\Handler\Pipeline\RunMiddlewarePipeline::__invoke()}
      * @param Closure $buildErrorResponse {@see \JardisCore\App\Handler\Response\BuildErrorResponse::__invoke()}
+     * @param Closure $resolveVersion {@see \JardisCore\App\Handler\Request\ResolveVersion::__invoke()}
      * @param list<MiddlewareInterface> $globalMiddleware
      */
     public function __construct(
@@ -41,6 +48,7 @@ final class DispatchAndRespond
         private readonly Closure $resolveRouteHandler,
         private readonly Closure $runMiddlewarePipeline,
         private readonly Closure $buildErrorResponse,
+        private readonly Closure $resolveVersion,
         private readonly array $globalMiddleware,
     ) {
     }
@@ -72,6 +80,13 @@ final class DispatchAndRespond
         $route = $match->route;
 
         $requestWithAttributes = ($this->applyRouteAttributes)($request, $match->parameters);
+
+        $version = ($this->resolveVersion)($requestWithAttributes);
+        if ($version === null) {
+            return $this->rejectVersion();
+        }
+        $requestWithAttributes = $requestWithAttributes->withAttribute(self::VERSION_ATTRIBUTE, $version);
+
         $finalHandler = ($this->resolveRouteHandler)($route->handler);
 
         return ($this->runMiddlewarePipeline)(
@@ -80,5 +95,23 @@ final class DispatchAndRespond
             $finalHandler,
             $requestWithAttributes,
         );
+    }
+
+    /**
+     * The one 400 answer for an invalid `X-Jardis-Version` header: the validation
+     * form every generated door answers with (`data = {@type: validation, fields:
+     * [{field, reason, message, messageKey}]}`, `errors` empty).
+     */
+    private function rejectVersion(): ResponseInterface
+    {
+        return ($this->buildErrorResponse)(400, [
+            '@type' => 'validation',
+            'fields' => [[
+                'field' => ResolveVersion::HEADER,
+                'reason' => 'invalid',
+                'message' => 'The requested version is not known.',
+                'messageKey' => 'request.versionUnknown',
+            ]],
+        ]);
     }
 }

@@ -51,6 +51,16 @@ closes that gap with a deliberately small core:
   `Allow` header)/500 all answer in the same envelope as a domain error — a
   client never has to guess whether "404" came from the domain or from no
   route matching at all.
+- **One reader for the class version.** The request header `X-Jardis-Version`
+  is read and validated exactly once, centrally, against the known versions in
+  `AppConfig::$knownVersions` (e.g. `new AppConfig(knownVersions: ['v2', 'v3'])`)
+  and handed on as request attribute `jardisVersion`: no header → `''`
+  (baseline), a known value → that value. An unknown value (matching is
+  case-sensitive), an empty value or a repeated header is answered `400` in the
+  validation form (`data.fields[]` = `{field: "X-Jardis-Version", reason:
+  "invalid", message, messageKey: "request.versionUnknown"}`) before any
+  middleware or handler runs. Without configuration only the baseline is
+  reachable, so an existing app behaves as before until a client sends the header.
 - **A Raw-Body invariant.** The request body is read from `php://input`
   exactly once, into a seekable stream; JSON parsing is lazy and never
   replaces it — `getBody()` stays byte-identical for the whole pipeline
