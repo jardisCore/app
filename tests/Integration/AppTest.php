@@ -265,4 +265,102 @@ final class AppTest extends TestCase
 
         $this->assertSame('{"status":200}', $output);
     }
+
+    /**
+     * @param list<string> $knownVersions
+     */
+    private function versionApp(array $knownVersions, CallLog $log): App
+    {
+        $routes = new Routes($this->factory);
+        $routes->middleware(new OrderRecordingMiddleware($log, 'global'));
+        $routes->get('/version', static function (ServerRequestInterface $request) use ($log) {
+            $log->record('handler');
+            $response = (new Psr17Factory())->createResponse(200);
+            $response->getBody()->write(var_export($request->getAttribute('jardisVersion'), true));
+
+            return $response;
+        });
+
+        return new App($routes, $this->kernel(), new AppConfig(knownVersions: $knownVersions));
+    }
+
+    public function testHandlerSeesTheBaselineAttributeWhenNoVersionHeaderIsSent(): void
+    {
+        $app = $this->versionApp(['v2'], new CallLog());
+
+        $response = $app->handle($this->request('GET', '/version'));
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame("''", (string) $response->getBody());
+    }
+
+    public function testHandlerSeesTheKnownVersionAsRequestAttribute(): void
+    {
+        $app = $this->versionApp(['v2', 'v3'], new CallLog());
+
+        $response = $app->handle($this->request('GET', '/version')->withHeader('X-Jardis-Version', 'v2'));
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame("'v2'", (string) $response->getBody());
+    }
+
+    public function testAnInvalidVersionHeaderAnswersTheValidationFormBeforeAnyMiddlewareOrHandler(): void
+    {
+        $expected = [
+            'status' => 400,
+            'data' => [
+                '@type' => 'validation',
+                'fields' => [[
+                    'field' => 'X-Jardis-Version',
+                    'reason' => 'invalid',
+                    'message' => 'The requested version is not known.',
+                    'messageKey' => 'request.versionUnknown',
+                ]],
+            ],
+            'errors' => [],
+            'meta' => [],
+        ];
+        $invalid = [
+            'unknown' => $this->request('GET', '/version')->withHeader('X-Jardis-Version', 'v9'),
+            'case' => $this->request('GET', '/version')->withHeader('X-Jardis-Version', 'V2'),
+            'empty' => $this->request('GET', '/version')->withHeader('X-Jardis-Version', ''),
+            'repeated' => $this->request('GET', '/version')
+                ->withHeader('X-Jardis-Version', 'v2')
+                ->withAddedHeader('X-Jardis-Version', 'v3'),
+        ];
+
+        foreach ($invalid as $case => $request) {
+            $log = new CallLog();
+            $response = $this->versionApp(['v2', 'v3'], $log)->handle($request);
+
+            $this->assertSame(400, $response->getStatusCode(), $case);
+            $this->assertSame('application/json', $response->getHeaderLine('Content-Type'), $case);
+            $this->assertEquals($expected, json_decode((string) $response->getBody(), true), $case);
+            $this->assertSame([], $log->entries, $case);
+        }
+    }
+
+    public function testWithoutConfigurationAnySentVersionHeaderIsRejected(): void
+    {
+        $routes = new Routes($this->factory);
+        $routes->get('/version', static fn (ServerRequestInterface $request) => (new Psr17Factory())->createResponse(200));
+        $app = new App($routes, $this->kernel(), new AppConfig());
+
+        $this->assertSame(200, $app->handle($this->request('GET', '/version'))->getStatusCode());
+        $this->assertSame(
+            400,
+            $app->handle($this->request('GET', '/version')->withHeader('X-Jardis-Version', 'v1'))->getStatusCode()
+        );
+    }
+
+    public function testTheVersionHeaderDoesNotChangeBoundaryNotFoundAndMethodNotAllowed(): void
+    {
+        $app = $this->versionApp(['v2'], new CallLog());
+
+        $notFound = $app->handle($this->request('GET', '/nope')->withHeader('X-Jardis-Version', 'v9'));
+        $notAllowed = $app->handle($this->request('POST', '/version')->withHeader('X-Jardis-Version', 'v9'));
+
+        $this->assertSame(404, $notFound->getStatusCode());
+        $this->assertSame(405, $notAllowed->getStatusCode());
+    }
 }
