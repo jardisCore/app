@@ -9,6 +9,7 @@ use JardisCore\App\Config\AppConfig;
 use JardisCore\App\Handler\Error\HandleThrowable;
 use JardisCore\App\Handler\Pipeline\RunMiddlewarePipeline;
 use JardisCore\App\Handler\Request\CreateServerRequest;
+use JardisCore\App\Handler\Request\ResolveVersion;
 use JardisCore\App\Handler\Response\BuildErrorResponse;
 use JardisCore\App\Handler\Response\EmitResponse;
 use JardisCore\App\Handler\Response\ResolveResponse;
@@ -38,7 +39,8 @@ use Psr\Http\Message\UriFactoryInterface;
  * Closure or an immutable VO). The call chain is exactly the one PLAN P6
  * describes: `HandleThrowable` (outermost, E8/F9) wraps `DispatchAndRespond`
  * (dispatch -> 404/405 boundary responses, or Found -> path-attributes
- * (F8a) -> middleware pipeline (F3/E9) -> route handler, auto-mapped via
+ * (F8a) -> `X-Jardis-Version` (attribute `jardisVersion`, 400 if invalid) ->
+ * middleware pipeline (F3/E9) -> route handler, auto-mapped via
  * `ResolveRouteHandler`/`ResolveResponse`, E6).
  *
  * `run(): void` is the one impure entry point: build the request from the
@@ -82,6 +84,7 @@ final class App
             (new ResolveRouteHandler($resolveResponse))->__invoke(...),
             (new RunMiddlewarePipeline())->__invoke(...),
             (new BuildErrorResponse($responseFactory, $streamFactory))->__invoke(...),
+            (new ResolveVersion($config->knownVersions))->__invoke(...),
             $routes->globalMiddlewares(),
         ))->__invoke(...);
 

@@ -89,6 +89,11 @@ $kernel = (new BuildDomainKernelFromEnv())(__DIR__ . '/..');
 // --- 3. AppConfig: values are always injected from the kernel's ENV, never
 // read by the VO itself (E11). `app_debug` gates whether the generic 500
 // boundary response (F9) includes exception details.
+//
+// Optional `knownVersions`: the class versions a client may request through the
+// `X-Jardis-Version` header (e.g. `['v2', 'v3']`). The App reads the header once
+// and exposes it as request attribute `jardisVersion` (`''` = baseline); an unknown,
+// empty or repeated header is answered 400 before any middleware or handler.
 $config = new AppConfig(debug: (bool) $kernel->env('app_debug'));
 
 // --- 4. Routes: register the health endpoint (M10) plus your own routes.

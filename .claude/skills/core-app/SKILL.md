@@ -1,6 +1,6 @@
 ---
 name: core-app
-description: jardiscore/app v1 - the HTTP-Delivery layer for Jardis domains, a FastRoute router hidden behind an own RouterInterface, a PSR-15 middleware pipeline, the canonical DomainResponse-to-PSR-7 envelope mapper, and a DomainKernel bootstrap bridge. TRIGGER: App, Routes, Router, RouterInterface, ParseJsonBody, EmitResponse, HandleThrowable, MapDomainResponse, BuildErrorResponse, jardiscore/app, response envelope, {status,data,errors,meta}, health(), auto-HEAD.
+description: jardiscore/app v1 - the HTTP-Delivery layer for Jardis domains, a FastRoute router hidden behind an own RouterInterface, a PSR-15 middleware pipeline, the canonical DomainResponse-to-PSR-7 envelope mapper, and a DomainKernel bootstrap bridge. TRIGGER: App, Routes, Router, RouterInterface, ParseJsonBody, X-Jardis-Version, knownVersions, jardisVersion, EmitResponse, HandleThrowable, MapDomainResponse, BuildErrorResponse, jardiscore/app, response envelope, {status,data,errors,meta}, health(), auto-HEAD.
 user-invocable: false
 zone: post-active
 persona: D
@@ -18,8 +18,9 @@ next: []
 | `Router` (`implements Contract\RouterInterface`) | `__construct(array $routes)` (`list<Route>`). `dispatch(ServerRequestInterface): RouteMatch`. Wraps FastRoute; dispatcher built lazily on first call. |
 | `Contract\RouterInterface` | `dispatch(ServerRequestInterface $request): RouteMatch` — the only routing contract; FastRoute never leaks past `Router`. |
 | `App` | The orchestrator. `__construct(Routes $routes, DomainKernelInterface $kernel, AppConfig $config, ?ResponseFactoryInterface, ?StreamFactoryInterface, ?ServerRequestFactoryInterface, ?UriFactoryInterface, ?UploadedFileFactoryInterface)` — all PSR-17 factories default to `Nyholm\Psr7\Factory\Psr17Factory`. `handle(ServerRequestInterface): ResponseInterface` (pure). `run(): void` (impure — builds request from SAPI, `handle()`s, emits). |
-| `Config\AppConfig` | `final readonly class` — `__construct(bool $debug = false)`. Bootstrap-injected only; never reads ENV itself (E11). |
+| `Config\AppConfig` | `final readonly class` — `__construct(bool $debug = false, array $knownVersions = [])` (`list<string>`). Bootstrap-injected only; never reads ENV itself (E11). |
 | `Handler\Request\ParseJsonBody` | `__invoke(ServerRequestInterface): array<array-key, mixed>` — the one JSON body parser (E7). |
+| `Handler\Request\ResolveVersion` | `__construct(array $knownVersions = [])` (`list<string>`). `__invoke(ServerRequestInterface): ?string` — the one reader of `X-Jardis-Version`: absent → `''` (baseline), exactly one case-sensitive known value → that value, else `null` (unknown / empty / repeated header). `App` wires it from `AppConfig::$knownVersions`. |
 | `Handler\Response\MapDomainResponse` | `__construct(ResponseFactoryInterface, StreamFactoryInterface)`. `__invoke(DomainResponseInterface): ResponseInterface` — the canonical envelope mapper (reference impl of `contract/docs/response-envelope.md`). |
 | `Handler\Response\BuildErrorResponse` | `__construct(ResponseFactoryInterface, StreamFactoryInterface)`. `__invoke(int $status, array $data = [], array $errors = [], array $meta = [], array $allowedMethods = []): ResponseInterface` — the ONE place assembling `{status,data,errors,meta}`. |
 | `Handler\Error\HandleThrowable` | `__construct(ResponseFactoryInterface, StreamFactoryInterface, ?LoggerInterface, AppConfig)`. `__invoke(Closure $inner, ServerRequestInterface): ResponseInterface` — outermost try/catch boundary (F9). |
@@ -61,6 +62,18 @@ cases: **empty raw body**, **JSON syntax error** (`JSON_THROW_ON_ERROR`), or a *
 array** (scalar/`null` JSON). Raw-Body-Invariante: rewinds the body stream before and after reading, so the
 same request's raw body can be read again afterwards (webhook-HMAC use case) and calling the parser twice is
 idempotent.
+
+## X-JARDIS-VERSION — the class-version contract
+`App` reads the request header `X-Jardis-Version` ONCE (`Handler\Request\ResolveVersion`, called by `DispatchAndRespond`
+on a Found route, after the path attributes and BEFORE the middleware pipeline) and sets the request attribute
+`jardisVersion` (`DispatchAndRespond::VERSION_ATTRIBUTE`): header absent → `''` (baseline); one value, exactly (case-sensitive)
+in `AppConfig::$knownVersions` → that value. Unknown value, empty value or repeated header → **400** in the validation form,
+no middleware and no handler runs: `data = {"@type":"validation","fields":[{"field":"X-Jardis-Version","reason":"invalid",
+"message":"The requested version is not known.","messageKey":"request.versionUnknown"}]}`, `errors = {}`, `meta = {}`.
+404/405 stay as before (the check only runs on a Found route). Default `knownVersions = []` → only the baseline is reachable;
+an app that never receives the header behaves as before. Wiring: `new AppConfig(knownVersions: ['v2', 'v3'])`; a handler
+reads `$request->getAttribute('jardisVersion')`. The set of known versions comes from outside (the Builder generates it
+from the domain manifest); this package scans no directories and knows no classes.
 
 ## ENVELOPE CONTRACT — `{status, data, errors, meta}`
 Reference: `jardissupport/contracts` → `docs/response-envelope.md`. `ResponseStatus` (11 cases, `jardissupport/contracts`,
@@ -123,7 +136,7 @@ Reference: `jardissupport/contracts` → `docs/response-envelope.md`. `ResponseS
 ## RULES
 - A route handler must return `DomainResponseInterface` or a PSR-7 `ResponseInterface` — anything else throws
   `UnresolvableHandlerResult`, which propagates to the generic 500 boundary (E6/E8).
-- `AppConfig` never reads ENV itself — the bootstrap layer always injects `debug` explicitly (E11).
+- `AppConfig` never reads ENV itself — the bootstrap layer always injects `debug` and `knownVersions` explicitly (E11).
 - PSR-17 factories are received as interfaces only; `Nyholm\Psr7\Factory\Psr17Factory` is `App`'s own
   swappable-by-injection default, never hardwired inside handler/business code (E12-symmetric).
 - Request-body size limits, Trusted-Proxy/`X-Forwarded-*`, and `display_errors=Off` are deliberately **not**
