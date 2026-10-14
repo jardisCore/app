@@ -1,6 +1,6 @@
 ---
 name: core-app
-description: jardiscore/app v1 - the HTTP-Delivery layer for Jardis domains, a FastRoute router hidden behind an own RouterInterface, a PSR-15 middleware pipeline, the canonical DomainResponse-to-PSR-7 envelope mapper, and a DomainKernel bootstrap bridge. TRIGGER: App, Routes, Router, RouterInterface, ParseJsonBody, X-Jardis-Version, knownVersions, jardisVersion, EmitResponse, HandleThrowable, MapDomainResponse, BuildErrorResponse, jardiscore/app, response envelope, {status,data,errors,meta}, health(), auto-HEAD.
+description: jardiscore/app v1 - the HTTP-Delivery layer for Jardis domains, a FastRoute router hidden behind an own RouterInterface, a PSR-15 middleware pipeline, the canonical DomainResponse-to-PSR-7 envelope mapper, and a DomainKernel bootstrap bridge. TRIGGER: App, Routes, Router, RouterInterface, ParseJsonBody, X-Jardis-Version, knownVersions, jardisVersion, EmitResponse, HandleThrowable, MapDomainResponse, BuildErrorResponse, jardiscore/app, response envelope, {status,data,errors,meta}, health(), auto-HEAD, middleware: when and where, RequireSession, per-route middleware.
 user-invocable: false
 zone: post-active
 persona: D
@@ -75,6 +75,20 @@ no middleware and no handler runs: `data = {"@type":"validation","fields":[{"fie
 an app that never receives the header behaves as before. Wiring: `new AppConfig(knownVersions: ['v2', 'v3'])`; a handler
 reads `$request->getAttribute('jardisVersion')`. The set of known versions comes from outside (the Builder generates it
 from the domain manifest); this package scans no directories and knows no classes.
+
+## Middleware: when and where
+
+**Is it middleware? Three questions, all "yes":** (1) Does it apply equally to all or many routes, independent of any aggregate? (2) Does it need only the request/response, not the domain model? (3) Does it run before or after the route, never in the middle? Otherwise it is a process node / Rule / Closure. "May this user see this project" is domain logic (Rule); "is there a valid session" is middleware.
+
+**Fixed, not switchable** (`src/App.php`, `Handler/Routing/DispatchAndRespond.php`): `HandleThrowable` (outermost, any throwable incl. from middleware -> 500 envelope) -> router (404/405 answered before any middleware) -> path attributes -> `ResolveVersion` (`X-Jardis-Version`, 400 before any middleware) -> middleware pipeline -> route handler (`ResolveRouteHandler`/`ResolveResponse`, `MapDomainResponse` maps `DomainResponseInterface`) -> `EmitResponse` in `run()`. `ParseJsonBody` is a helper handlers call, not a chain stage.
+
+**Pluggable:** any PSR-15 `MiddlewareInterface`. `Routes::middleware($m)` = global; the verb methods (`get/post/put/patch/delete`) take trailing `MiddlewareInterface ...$middleware` = per route. There is no route-group API. Order (`Handler/Pipeline/RunMiddlewarePipeline.php`): `[...global, ...route]`, outer first, registration order within each group.
+
+**Delivered:** `Middleware\RequireSession` - reads `Authorization: Bearer <token>`, authenticates through an `AuthenticatorInterface`, else 401 envelope + `WWW-Authenticate: Bearer`. Sets `RequestAttribute::SUBJECT`, `TENANT` (absent without tenant), `SUBJECT_ID`, `SESSION` (last two only for a session-aware result); client-supplied values are overwritten/removed. Anonymous: `Routes::health()` routes and `anonymousPaths` (exact path or `prefix*`, all methods).
+
+**Where (app template):** `public/index.php`, at the marked seam after `$routes->health('/health')` and before the route mount loop; recipe in the template README "Sessions".
+
+**Boundary:** a project-specific middleware is dev code at the same hook. A generally useful one (CORS, request id/audit, rate limit, tenant context) is an issue in `jardisCore/app`, not project code imitating the package.
 
 ## SESSION — `RequireSession` (PSR-15, global or per route)
 Binds a request to a verified session or rejects it. Depends only on the ports of `jardissupport/contracts` ^2.9
