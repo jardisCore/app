@@ -8,6 +8,7 @@ use JardisSupport\Contract\Auth\AuthenticatorInterface;
 use JardisSupport\Contract\Auth\AuthResultInterface;
 use JardisSupport\Contract\Auth\CredentialInterface;
 use JardisSupport\Contract\Auth\CredentialType;
+use JardisSupport\Contract\Auth\SessionAwareAuthResultInterface;
 use JardisSupport\Contract\Auth\TenantAwareAuthResultInterface;
 use RuntimeException;
 
@@ -15,6 +16,9 @@ use RuntimeException;
  * Test fake for the AuthenticatorInterface port: a fixed token table
  * (token => [subject, tenant]); every other token fails with a reason.
  * Records the credentials it was asked about. A token of `boom` throws.
+ *
+ * A session entry may carry a third and fourth element (subjectId, session reference):
+ * then the result is session-aware, otherwise it is a plain tenant-aware result.
  */
 final class FakeAuthenticator implements AuthenticatorInterface
 {
@@ -22,7 +26,7 @@ final class FakeAuthenticator implements AuthenticatorInterface
     public array $seen = [];
 
     /**
-     * @param array<string, array{0: ?string, 1: ?string}> $sessions token => [subject, tenant]
+     * @param array<string, array{0: ?string, 1: ?string, 2?: ?string, 3?: ?string}> $sessions token => [subject, tenant, subjectId, session]
      */
     public function __construct(private readonly array $sessions)
     {
@@ -41,9 +45,13 @@ final class FakeAuthenticator implements AuthenticatorInterface
             return $this->result(false, null, null, 'revoked');
         }
 
-        [$subject, $tenant] = $this->sessions[$token];
+        $entry = $this->sessions[$token];
 
-        return $this->result(true, $subject, $tenant, null);
+        if (array_key_exists(2, $entry)) {
+            return $this->sessionResult($entry[0], $entry[1], $entry[2], $entry[3] ?? null);
+        }
+
+        return $this->result(true, $entry[0], $entry[1], null);
     }
 
     public static function credentialFor(string $token): CredentialInterface
@@ -99,6 +107,49 @@ final class FakeAuthenticator implements AuthenticatorInterface
             public function getTenant(): ?string
             {
                 return $this->tenant;
+            }
+        };
+    }
+
+    private function sessionResult(?string $subject, ?string $tenant, ?string $subjectId, ?string $session): SessionAwareAuthResultInterface
+    {
+        return new class ($subject, $tenant, $subjectId, $session) implements SessionAwareAuthResultInterface {
+            public function __construct(
+                private readonly ?string $subject,
+                private readonly ?string $tenant,
+                private readonly ?string $subjectId,
+                private readonly ?string $session,
+            ) {
+            }
+
+            public function isSuccess(): bool
+            {
+                return true;
+            }
+
+            public function getSubject(): ?string
+            {
+                return $this->subject;
+            }
+
+            public function getReason(): ?string
+            {
+                return null;
+            }
+
+            public function getTenant(): ?string
+            {
+                return $this->tenant;
+            }
+
+            public function getSubjectId(): ?string
+            {
+                return $this->subjectId;
+            }
+
+            public function getSessionReference(): ?string
+            {
+                return $this->session;
             }
         };
     }

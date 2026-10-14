@@ -6,12 +6,13 @@ namespace JardisCore\App\Handler\Session;
 
 use JardisSupport\Contract\Auth\AuthResultInterface;
 use JardisSupport\Contract\Auth\RequestAttribute;
+use JardisSupport\Contract\Auth\SessionAwareAuthResultInterface;
 use JardisSupport\Contract\Auth\TenantAwareAuthResultInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * Binds a verified session to the request - the only writer of the attributes
- * `RequestAttribute::SUBJECT` and `RequestAttribute::TENANT`.
+ * `RequestAttribute::SUBJECT`, `TENANT`, `SUBJECT_ID` and `SESSION`.
  *
  * Whatever the attributes held before (a path placeholder named like them, an
  * upstream middleware) is overwritten or removed, so a client can never inject a
@@ -19,6 +20,11 @@ use Psr\Http\Message\ServerRequestInterface;
  * is tenant-aware and carries a non-empty tenant, otherwise the TENANT attribute is
  * absent (never null, never ''). Without a result (anonymous request) both
  * attributes are removed.
+ *
+ * SUBJECT_ID (bare subject identifier) and SESSION (reference that revokes exactly this
+ * session) are set only when the result is a `SessionAwareAuthResultInterface` and the
+ * respective value is non-empty; otherwise the attribute is absent (never null, never '').
+ * Like SUBJECT/TENANT they are always removed first, so a client can never inject them.
  */
 final class ApplySession
 {
@@ -26,7 +32,9 @@ final class ApplySession
     {
         $request = $request
             ->withoutAttribute(RequestAttribute::SUBJECT)
-            ->withoutAttribute(RequestAttribute::TENANT);
+            ->withoutAttribute(RequestAttribute::TENANT)
+            ->withoutAttribute(RequestAttribute::SUBJECT_ID)
+            ->withoutAttribute(RequestAttribute::SESSION);
 
         if ($result === null) {
             return $request;
@@ -36,8 +44,24 @@ final class ApplySession
 
         $tenant = $result instanceof TenantAwareAuthResultInterface ? $result->getTenant() : null;
 
-        return ($tenant === null || $tenant === '')
-            ? $request
-            : $request->withAttribute(RequestAttribute::TENANT, $tenant);
+        if ($tenant !== null && $tenant !== '') {
+            $request = $request->withAttribute(RequestAttribute::TENANT, $tenant);
+        }
+
+        if (!$result instanceof SessionAwareAuthResultInterface) {
+            return $request;
+        }
+
+        $subjectId = $result->getSubjectId();
+        if ($subjectId !== null && $subjectId !== '') {
+            $request = $request->withAttribute(RequestAttribute::SUBJECT_ID, $subjectId);
+        }
+
+        $session = $result->getSessionReference();
+        if ($session !== null && $session !== '') {
+            $request = $request->withAttribute(RequestAttribute::SESSION, $session);
+        }
+
+        return $request;
     }
 }
