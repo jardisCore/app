@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace JardisCore\App\Middleware;
 
 use Closure;
+use JardisCore\App\Contract\SessionGuardInterface;
 use JardisCore\App\Handler\Response\BuildErrorResponse;
 use JardisCore\App\Handler\Session\ApplySession;
 use JardisCore\App\Handler\Session\AuthenticateToken;
@@ -15,7 +16,6 @@ use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamFactoryInterface;
-use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
 /**
@@ -35,7 +35,7 @@ use Psr\Http\Server\RequestHandlerInterface;
  * Register as global middleware (`Routes::middleware()`) or per route. As the pipeline only
  * runs on a matched route, unknown paths stay 404 and wrong methods 405.
  */
-final class RequireSession implements MiddlewareInterface
+final class RequireSession implements SessionGuardInterface
 {
     private readonly Closure $isAnonymous;
     private readonly Closure $readToken;

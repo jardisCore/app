@@ -68,6 +68,15 @@ closes that gap with a deliberately small core:
   authenticator's result is a `SessionAwareAuthResultInterface`, the bare subject id
   `jardisSubjectId` and the session reference `jardisSession` (revoke exactly this
   session) (`JardisSupport\Contract\Auth\RequestAttribute`). Details: [`docs/session.md`](docs/session.md).
+- **Anonymous routes, a middleware factory and a start-up check.**
+  `Routes::anonymous()` returns a registrar whose verbs register routes that need no
+  session. `Middleware\MiddlewareFactory` turns a name into a PSR-15 middleware: the standard
+  name `session` builds `RequireSession` (needs `jardissupport/auth`, and
+  `jardisadapter/dbconnection` for a kernel PDO), a fully qualified class name builds a project
+  middleware whose constructor is `__construct(DomainKernelInterface $kernel)` or absent.
+  With `new AppConfig(requireSessionGuard: true)` the `App` refuses to start when a
+  non-anonymous route has no `SessionGuardInterface` in its chain (`LogicException` listing
+  `METHOD path`); the default `false` keeps the old behaviour.
 - **A Raw-Body invariant.** The request body is read from `php://input`
   exactly once, into a seekable stream; JSON parsing is lazy and never
   replaces it — `getBody()` stays byte-identical for the whole pipeline

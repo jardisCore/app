@@ -6,14 +6,17 @@ namespace JardisCore\App\Tests\Integration;
 
 use JardisCore\App\App;
 use JardisCore\App\Config\AppConfig;
+use JardisCore\App\Middleware\MiddlewareFactory;
 use JardisCore\App\Routes;
 use JardisCore\App\Tests\Support\CallLog;
 use JardisCore\App\Tests\Support\DomainResponse;
 use JardisCore\App\Tests\Support\FixedResponseHandler;
+use JardisCore\App\Tests\Support\InMemoryTokenStore;
 use JardisCore\App\Tests\Support\LoggerSpy;
 use JardisCore\App\Tests\Support\OrderRecordingMiddleware;
 use JardisCore\Kernel\DomainKernel;
 use JardisSupport\Contract\Kernel\ResponseStatus;
+use LogicException;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
@@ -362,5 +365,35 @@ final class AppTest extends TestCase
 
         $this->assertSame(404, $notFound->getStatusCode());
         $this->assertSame(405, $notAllowed->getStatusCode());
+    }
+
+    public function testRequireSessionGuardRejectsUnguardedRouteAtConstruction(): void
+    {
+        $routes = new Routes($this->factory);
+        $routes->post('/orders', fn() => $this->factory->createResponse(200));
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('POST /orders');
+
+        new App($routes, $this->kernel(), new AppConfig(requireSessionGuard: true));
+    }
+
+    public function testRequireSessionGuardWithSessionMiddlewareServesAnonymousAndGuardsTheRest(): void
+    {
+        $kernel = $this->kernel();
+        $routes = new Routes($this->factory);
+        $routes->middleware(
+            (new MiddlewareFactory($kernel, tokenStore: new InMemoryTokenStore()))('session')
+        );
+        $handler = fn() => $this->factory->createResponse(200);
+        $routes->anonymous()->get('/open', $handler);
+        $routes->post('/orders', $handler);
+        $app = new App($routes, $kernel, new AppConfig(requireSessionGuard: true));
+
+        $open = $app->handle($this->request('GET', '/open'));
+        $denied = $app->handle($this->request('POST', '/orders'));
+
+        $this->assertSame(200, $open->getStatusCode());
+        $this->assertSame(401, $denied->getStatusCode());
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace JardisCore\App\Tests\Integration;
 
 use Closure;
+use JardisCore\App\AnonymousRegistrar;
 use JardisCore\App\Routes;
 use JardisCore\App\Tests\Support\FixedResponseHandler;
 use JardisCore\App\Tests\Support\InvokableEchoHandler;
@@ -158,5 +159,48 @@ final class RoutesTest extends TestCase
         $this->assertSame(200, $response->getStatusCode());
         $this->assertSame('application/json', $response->getHeaderLine('Content-Type'));
         $this->assertSame('{"status":200}', (string) $response->getBody());
+    }
+
+    /**
+     * @return array<string, array{0: string, 1: string}>
+     */
+    public static function verbs(): array
+    {
+        return [
+            'get' => ['get', 'GET'],
+            'post' => ['post', 'POST'],
+            'put' => ['put', 'PUT'],
+            'patch' => ['patch', 'PATCH'],
+            'delete' => ['delete', 'DELETE'],
+        ];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('verbs')]
+    public function testAnonymousVerbMarksExactlyThatRouteAnonymous(string $verb, string $method): void
+    {
+        $routes = $this->createRoutes();
+        $middleware = new NoopMiddleware();
+
+        $routes->anonymous()->{$verb}('/open', static fn () => null, $middleware);
+        $routes->{$verb}('/closed', static fn () => null);
+
+        $registered = $routes->routes();
+
+        $this->assertCount(2, $registered);
+        $this->assertSame($method, $registered[0]->method);
+        $this->assertTrue($registered[0]->anonymous);
+        $this->assertSame([$middleware], $registered[0]->middleware);
+        $this->assertFalse($registered[1]->anonymous);
+    }
+
+    public function testOrphanedAnonymousCallRegistersNothingAndLeaksNothing(): void
+    {
+        $routes = $this->createRoutes();
+
+        $this->assertInstanceOf(AnonymousRegistrar::class, $routes->anonymous());
+        $routes->get('/closed', static fn () => null);
+
+        $this->assertCount(1, $routes->routes());
+        $this->assertFalse($routes->routes()[0]->anonymous);
     }
 }

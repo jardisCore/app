@@ -25,4 +25,14 @@ final class AppConfigTest extends TestCase
 
         $this->assertTrue($config->debug);
     }
+
+    public function testRequireSessionGuardDefaultsToFalse(): void
+    {
+        $this->assertFalse((new AppConfig())->requireSessionGuard);
+    }
+
+    public function testCarriesInjectedRequireSessionGuard(): void
+    {
+        $this->assertTrue((new AppConfig(requireSessionGuard: true))->requireSessionGuard);
+    }
 }

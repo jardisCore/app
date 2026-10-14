@@ -74,6 +74,7 @@ final class RequireSessionTest extends TestCase
             $routes->get('/login', $handler);
             $routes->get('/public/info', $handler);
             $routes->health('/health');
+            $routes->anonymous()->get('/open-by-app', $handler);
         } else {
             $routes->get('/guarded', $handler, $session);
             $routes->get('/open', $handler);
@@ -307,5 +308,13 @@ final class RequireSessionTest extends TestCase
         $unauthorized = $this->get($app, '/orders');
         $this->assertSame(401, $unauthorized->getStatusCode());
         $this->assertFalse($unauthorized->hasHeader('WWW-Authenticate'));
+    }
+
+    public function testAppMarkedAnonymousRouteAnswersWithoutTokenWhileNormalRouteIsRejected(): void
+    {
+        $app = $this->app();
+
+        $this->assertSame(200, $this->get($app, '/open-by-app')->getStatusCode());
+        $this->assertSame(401, $this->get($app, '/orders')->getStatusCode());
     }
 }
