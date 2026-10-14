@@ -37,6 +37,8 @@ final class RequireSessionTest extends TestCase
             'no-tenant' => ['bob', null],
             'empty-tenant' => ['carol', ''],
             'no-subject' => [null, 'acme'],
+            'full' => ['user:42', 'acme', '42', 'ref-abc'],
+            'full-empty-id' => ['user:43', null, '', null],
         ]);
     }
 
@@ -68,6 +70,7 @@ final class RequireSessionTest extends TestCase
             $routes->middleware($session);
             $routes->get('/orders', $handler);
             $routes->get('/echo/{jardisSubject}/{jardisTenant}/{jardisAnonymousRoute}', $handler);
+            $routes->get('/forge/{jardisSubjectId}/{jardisSession}', $handler);
             $routes->get('/login', $handler);
             $routes->get('/public/info', $handler);
             $routes->health('/health');
@@ -103,6 +106,47 @@ final class RequireSessionTest extends TestCase
         $this->assertSame('alice', $this->handled[0]->getAttribute(RequestAttribute::SUBJECT));
         $this->assertSame('acme', $this->handled[0]->getAttribute(RequestAttribute::TENANT));
         $this->assertSame('good', $this->authenticator->seen[0]->getValue());
+    }
+
+    public function testSessionAwareResultAlsoSetsSubjectIdAndSessionReference(): void
+    {
+        $this->get($this->app(), '/orders', 'Bearer full');
+
+        $this->assertCount(1, $this->handled);
+        $this->assertSame('user:42', $this->handled[0]->getAttribute(RequestAttribute::SUBJECT));
+        $this->assertSame('acme', $this->handled[0]->getAttribute(RequestAttribute::TENANT));
+        $this->assertSame('42', $this->handled[0]->getAttribute(RequestAttribute::SUBJECT_ID));
+        $this->assertSame('ref-abc', $this->handled[0]->getAttribute(RequestAttribute::SESSION));
+    }
+
+    public function testPlainTenantAwareResultLeavesSubjectIdAndSessionAbsent(): void
+    {
+        $this->get($this->app(), '/orders', 'Bearer good');
+
+        $this->assertCount(1, $this->handled);
+        $this->assertArrayNotHasKey(RequestAttribute::SUBJECT_ID, $this->handled[0]->getAttributes());
+        $this->assertArrayNotHasKey(RequestAttribute::SESSION, $this->handled[0]->getAttributes());
+    }
+
+    public function testEmptySubjectIdAndMissingReferenceStayAbsentNeverEmpty(): void
+    {
+        $this->get($this->app(), '/orders', 'Bearer full-empty-id');
+
+        $this->assertCount(1, $this->handled);
+        $this->assertArrayNotHasKey(RequestAttribute::SUBJECT_ID, $this->handled[0]->getAttributes());
+        $this->assertArrayNotHasKey(RequestAttribute::SESSION, $this->handled[0]->getAttributes());
+    }
+
+    public function testClientCannotForgeSubjectIdOrSessionViaPathPlaceholders(): void
+    {
+        $this->get($this->app(), '/forge/mallory/stolen', 'Bearer full');
+        $this->assertSame('42', $this->handled[0]->getAttribute(RequestAttribute::SUBJECT_ID));
+        $this->assertSame('ref-abc', $this->handled[0]->getAttribute(RequestAttribute::SESSION));
+
+        $this->resetHandled();
+        $this->get($this->app(), '/forge/mallory/stolen', 'Bearer good');
+        $this->assertArrayNotHasKey(RequestAttribute::SUBJECT_ID, $this->handled[0]->getAttributes());
+        $this->assertArrayNotHasKey(RequestAttribute::SESSION, $this->handled[0]->getAttributes());
     }
 
     public function testSessionWithoutTenantLeavesTheTenantAttributeAbsent(): void
@@ -222,18 +266,20 @@ final class RequireSessionTest extends TestCase
             $this->factory,
             ['/open/*'],
         ));
-        $routes->get('/open/{jardisSubject}', function (ServerRequestInterface $request): ResponseInterface {
+        $routes->get('/open/{jardisSubject}/{jardisSubjectId}/{jardisSession}', function (ServerRequestInterface $request): ResponseInterface {
             $this->handled[] = $request;
 
             return $this->factory->createResponse(200);
         });
         $app = new App($routes, new DomainKernel(projectRoot: '/tmp/jardiscore-app-test'), new AppConfig());
 
-        $this->get($app, '/open/mallory');
+        $this->get($app, '/open/mallory/7/ref');
 
         $this->assertCount(1, $this->handled);
         $this->assertArrayNotHasKey(RequestAttribute::SUBJECT, $this->handled[0]->getAttributes());
         $this->assertArrayNotHasKey(RequestAttribute::TENANT, $this->handled[0]->getAttributes());
+        $this->assertArrayNotHasKey(RequestAttribute::SUBJECT_ID, $this->handled[0]->getAttributes());
+        $this->assertArrayNotHasKey(RequestAttribute::SESSION, $this->handled[0]->getAttributes());
     }
 
     public function testAuthenticatorFailureIsATechnicalErrorNot401(): void
