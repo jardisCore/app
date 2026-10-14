@@ -77,7 +77,7 @@ reads `$request->getAttribute('jardisVersion')`. The set of known versions comes
 from the domain manifest); this package scans no directories and knows no classes.
 
 ## SESSION — `RequireSession` (PSR-15, global or per route)
-Binds a request to a verified session or rejects it. Depends only on the ports of `jardissupport/contracts` ^2.8
+Binds a request to a verified session or rejects it. Depends only on the ports of `jardissupport/contracts` ^2.9
 (`AuthenticatorInterface`, `CredentialInterface`, `TenantAwareAuthResultInterface`, `RequestAttribute`) — NOT on `support/auth`.
 ```php
 use JardisCore\App\Middleware\RequireSession;
@@ -100,6 +100,10 @@ $routes->health('/health');                     // anonymous automatically, no n
 - **Session:** valid → request attribute `RequestAttribute::SUBJECT` (`jardisSubject`) and, if the result is `TenantAwareAuthResultInterface`
   with a non-empty tenant, `RequestAttribute::TENANT` (`jardisTenant`); no tenant → the attribute is ABSENT (never null/''). Pre-existing
   attributes of these names (e.g. a path placeholder `{jardisSubject}`) are always overwritten/removed, also on anonymous paths.
+  If the result is a `SessionAwareAuthResultInterface` (contracts ^2.9, auth ^1.3) it additionally sets `RequestAttribute::SUBJECT_ID`
+  (`jardisSubjectId`, bare id without `user:` prefix) and `RequestAttribute::SESSION` (`jardisSession`, reference that revokes exactly this
+  session); empty/null or a plain tenant-aware result → both ABSENT. Same forgery strip as SUBJECT/TENANT.
+  Recipe "revoke own session": `$sessionManager->invalidateByReference($request->getAttribute(RequestAttribute::SESSION))`.
 - **Where it runs:** only on a matched route (inside the pipeline) → unknown path stays 404, wrong method 405. `Routes::health()` routes carry
   `Route::$anonymous` → request attribute `DispatchAndRespond::ANONYMOUS_ATTRIBUTE` (`jardisAnonymousRoute`, strict bool, always written by
   the dispatcher, compare with `=== true`). Anonymous patterns match all HTTP methods of that path.
@@ -177,7 +181,7 @@ Reference: `jardissupport/contracts` → `docs/response-envelope.md`. `ResponseS
 ## DEPENDENCIES
 ```
 jardiscore/kernel            ^2.0
-jardissupport/contracts      ^2.8
+jardissupport/contracts      ^2.9
 nikic/fast-route             ^1.3
 nyholm/psr7                  ^1.8
 nyholm/psr7-server            ^1.1
