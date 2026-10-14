@@ -28,7 +28,9 @@ composer.lock text eol=lf merge=union
 /.github export-ignore
 /tests export-ignore
 /support export-ignore
-/.claude export-ignore
+/.claude/CLAUDE.md export-ignore
+/.claude/cache export-ignore
+/.claude/settings.local.json export-ignore
 /vendor export-ignore
 .idea export-ignore
 .editorconfig export-ignore
