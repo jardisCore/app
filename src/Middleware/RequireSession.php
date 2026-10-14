@@ -7,9 +7,9 @@ namespace JardisCore\App\Middleware;
 use Closure;
 use JardisCore\App\Contract\SessionGuardInterface;
 use JardisCore\App\Handler\Response\BuildErrorResponse;
+use JardisCore\App\Handler\Routing\DispatchAndRespond;
 use JardisCore\App\Handler\Session\ApplySession;
 use JardisCore\App\Handler\Session\AuthenticateToken;
-use JardisCore\App\Handler\Session\IsAnonymous;
 use JardisCore\App\Handler\Session\ReadBearerToken;
 use JardisSupport\Contract\Auth\AuthenticatorInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
@@ -23,9 +23,10 @@ use Psr\Http\Server\RequestHandlerInterface;
  *
  * Orchestrator over four closures - read the token, authenticate it, bind the session
  * to the request, build the 401 - without logic of its own beyond the routing between
- * them. Anonymous requests (see {@see IsAnonymous}) pass without a session; every other
- * request that reaches the pipeline needs a token the authenticator accepts, otherwise
- * the handler is never called and the canonical envelope answers 401
+ * them. Requests on a route registered as anonymous (`Routes::anonymous()`, `Routes::health()`;
+ * signalled by the request attribute {@see DispatchAndRespond::ANONYMOUS_ATTRIBUTE}) pass without
+ * a session; every other request that reaches the pipeline needs a token the authenticator
+ * accepts, otherwise the handler is never called and the canonical envelope answers 401
  * (`{status:401,data:{},errors:{message},meta:{}}`, `WWW-Authenticate: Bearer`). A missing,
  * malformed, unknown, expired or revoked token is answered identically.
  *
@@ -37,7 +38,6 @@ use Psr\Http\Server\RequestHandlerInterface;
  */
 final class RequireSession implements SessionGuardInterface
 {
-    private readonly Closure $isAnonymous;
     private readonly Closure $readToken;
     private readonly Closure $authenticate;
     private readonly Closure $applySession;
@@ -46,7 +46,6 @@ final class RequireSession implements SessionGuardInterface
     /**
      * @param Closure(string): \JardisSupport\Contract\Auth\CredentialInterface $credentialFor
      *        token string to credential, e.g. `\JardisSupport\Auth\Data\Credential::token(...)`
-     * @param list<string> $anonymousPaths exact paths or `prefix*` patterns that need no session
      * @param string $headerName header carrying the token
      * @param string $scheme auth scheme in front of the token ('' = the whole header value is the token)
      */
@@ -55,11 +54,9 @@ final class RequireSession implements SessionGuardInterface
         Closure $credentialFor,
         ResponseFactoryInterface $responseFactory,
         StreamFactoryInterface $streamFactory,
-        array $anonymousPaths = [],
         string $headerName = 'Authorization',
         string $scheme = 'Bearer',
     ) {
-        $this->isAnonymous = (new IsAnonymous($anonymousPaths))->__invoke(...);
         $this->readToken = (new ReadBearerToken($headerName, $scheme))->__invoke(...);
         $this->authenticate = (new AuthenticateToken($authenticator, $credentialFor))->__invoke(...);
         $this->applySession = (new ApplySession())->__invoke(...);
@@ -75,7 +72,7 @@ final class RequireSession implements SessionGuardInterface
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        if (($this->isAnonymous)($request)) {
+        if ($request->getAttribute(DispatchAndRespond::ANONYMOUS_ATTRIBUTE) === true) {
             return $handler->handle(($this->applySession)($request, null));
         }
 

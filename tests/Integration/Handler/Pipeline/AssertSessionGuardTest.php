@@ -5,11 +5,10 @@ declare(strict_types=1);
 namespace JardisCore\App\Tests\Integration\Handler\Pipeline;
 
 use JardisCore\App\Handler\Pipeline\AssertSessionGuard;
-use JardisCore\App\Middleware\MiddlewareFactory;
+use JardisCore\App\Middleware\RequireSession;
 use JardisCore\App\Routes;
-use JardisCore\App\Tests\Support\InMemoryTokenStore;
+use JardisCore\App\Tests\Support\FakeAuthenticator;
 use JardisCore\App\Tests\Support\PlainMiddleware;
-use JardisCore\App\Tests\Support\SettableKernel;
 use LogicException;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use PHPUnit\Framework\TestCase;
@@ -32,7 +31,7 @@ final class AssertSessionGuardTest extends TestCase
 
     private function guard(): MiddlewareInterface
     {
-        return (new MiddlewareFactory(SettableKernel::with(), tokenStore: new InMemoryTokenStore()))('session');
+        return new RequireSession(new FakeAuthenticator([]), FakeAuthenticator::credentialFor(...), $this->psr17, $this->psr17);
     }
 
     private function handler(): callable

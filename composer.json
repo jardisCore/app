@@ -35,8 +35,7 @@
         "jardissupport/workflow": "^1.0",
         "middlewares/client-ip": "^2.1",
         "ext-pdo": "*",
-        "jardissupport/auth": "^1.4",
-        "jardisadapter/dbconnection": "^1.0"
+        "jardissupport/auth": "^1.5"
     },
     "autoload": {
         "psr-4": {
@@ -65,9 +64,5 @@
         "psr-15",
         "psr-7",
         "router"
-    ],
-    "suggest": {
-        "jardissupport/auth": "Required by MiddlewareFactory for the standard name \"session\" (TokenAuthenticator, DbTokenStore)",
-        "jardisadapter/dbconnection": "Required by MiddlewareFactory to bridge a plain PDO from the kernel into the token store"
-    }
+    ]
 }
