@@ -51,7 +51,7 @@ final class Routes
         callable|RequestHandlerInterface $handler,
         MiddlewareInterface ...$middleware,
     ): void {
-        $this->register('GET', $path, $handler, ...$middleware);
+        $this->register('GET', $path, $handler, $middleware);
     }
 
     public function post(
@@ -59,7 +59,7 @@ final class Routes
         callable|RequestHandlerInterface $handler,
         MiddlewareInterface ...$middleware,
     ): void {
-        $this->register('POST', $path, $handler, ...$middleware);
+        $this->register('POST', $path, $handler, $middleware);
     }
 
     public function put(
@@ -67,7 +67,7 @@ final class Routes
         callable|RequestHandlerInterface $handler,
         MiddlewareInterface ...$middleware,
     ): void {
-        $this->register('PUT', $path, $handler, ...$middleware);
+        $this->register('PUT', $path, $handler, $middleware);
     }
 
     public function patch(
@@ -75,7 +75,7 @@ final class Routes
         callable|RequestHandlerInterface $handler,
         MiddlewareInterface ...$middleware,
     ): void {
-        $this->register('PATCH', $path, $handler, ...$middleware);
+        $this->register('PATCH', $path, $handler, $middleware);
     }
 
     public function delete(
@@ -83,7 +83,7 @@ final class Routes
         callable|RequestHandlerInterface $handler,
         MiddlewareInterface ...$middleware,
     ): void {
-        $this->register('DELETE', $path, $handler, ...$middleware);
+        $this->register('DELETE', $path, $handler, $middleware);
     }
 
     public function middleware(MiddlewareInterface $middleware): void
@@ -112,15 +112,31 @@ final class Routes
         $this->routes[] = new Route('GET', $path, $handler(...), [], true);
     }
 
-    private function register(
+    /**
+     * Returns a registrar whose verbs register a route marked as anonymous (needs no
+     * session). The flag lives in the returned object, not in Routes: Routes stays
+     * stateless, so an unused `anonymous()` call can never leak onto a later route.
+     */
+    public function anonymous(): AnonymousRegistrar
+    {
+        return new AnonymousRegistrar($this);
+    }
+
+    /**
+     * @internal only for AnonymousRegistrar and the verbs of this class; not part of the public API.
+     *
+     * @param array<MiddlewareInterface> $middleware
+     */
+    public function register(
         string $method,
         string $path,
         callable|RequestHandlerInterface $handler,
-        MiddlewareInterface ...$middleware,
+        array $middleware = [],
+        bool $anonymous = false,
     ): void {
         $resolvedHandler = $handler instanceof RequestHandlerInterface ? $handler : $handler(...);
 
-        $this->routes[] = new Route($method, $path, $resolvedHandler, array_values($middleware));
+        $this->routes[] = new Route($method, $path, $resolvedHandler, array_values($middleware), $anonymous);
     }
 
     /**
