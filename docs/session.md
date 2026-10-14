@@ -61,3 +61,23 @@ $sessionManager->invalidateByReference($request->getAttribute(RequestAttribute::
 | `health()` | Routes registered by `Routes::health()` are anonymous automatically (`Route::$anonymous`, request attribute `jardisAnonymousRoute`, a strict bool the dispatcher always writes). |
 | 404 / 405 | Middleware only runs on a matched route: an unknown path stays `404`, a wrong method `405` - never `401`. |
 | Scope | Register globally with `Routes::middleware()` (guards everything except anonymous paths) or per route: `$routes->get('/orders', $handler, $requireSession)`. |
+
+## Anonymous routes, `MiddlewareFactory`, start-up check
+
+- **`Routes::anonymous()`** returns a registrar with the same verbs (`get/post/put/patch/delete`); routes registered
+  through it carry `Route::$anonymous`, exactly like `health()`: the session door lets them pass.
+- **`Middleware\MiddlewareFactory`** (`__construct(DomainKernelInterface $kernel, ?ResponseFactoryInterface, ?StreamFactoryInterface, ?TokenStoreInterface)`)
+  is invoked with a name: `session` builds a `RequireSession` (token store: the passed one, else `DbTokenStore` over the
+  kernel connection; resolved only on that call, so a missing `jardissupport/auth` or database fails there), a fully
+  qualified class name builds a project middleware via `__construct(DomainKernelInterface $kernel)` or no constructor.
+  Anything else throws `InvalidArgumentException`. `RequireSession` implements `Contract\SessionGuardInterface`, a marker.
+- **`AppConfig::$requireSessionGuard`** (default `false`): when `true`, `new App(...)` throws a `LogicException` naming every
+  non-anonymous route (`METHOD path`) whose chain `[...global, ...route]` holds no `SessionGuardInterface`. The check
+  knows no order and no decorators: a middleware wrapping `RequireSession` does not count unless it implements the marker.
+  Fix: add the `session` entry to the `middleware` list in `bootstrap.php`, or open the route with `Routes::anonymous()`.
+
+```php
+$routes->middleware((new MiddlewareFactory($kernel))('session'));
+$routes->anonymous()->post('/auth/login', $login);
+$app = new App($routes, $kernel, new AppConfig(requireSessionGuard: true));
+```
