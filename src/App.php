@@ -7,6 +7,7 @@ namespace JardisCore\App;
 use Closure;
 use JardisCore\App\Config\AppConfig;
 use JardisCore\App\Handler\Error\HandleThrowable;
+use JardisCore\App\Handler\Pipeline\AssertSessionGuard;
 use JardisCore\App\Handler\Pipeline\RunMiddlewarePipeline;
 use JardisCore\App\Handler\Request\CreateServerRequest;
 use JardisCore\App\Handler\Request\ResolveVersion;
@@ -74,6 +75,11 @@ final class App
         $serverRequestFactory ??= $psr17;
         $uriFactory ??= $psr17;
         $uploadedFileFactory ??= $psr17;
+
+        (new AssertSessionGuard($config->requireSessionGuard))->__invoke(
+            $routes->routes(),
+            $routes->globalMiddlewares(),
+        );
 
         $router = new Router($routes->routes());
         $resolveResponse = (new ResolveResponse($responseFactory, $streamFactory))->__invoke(...);

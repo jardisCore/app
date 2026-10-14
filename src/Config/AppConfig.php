@@ -20,6 +20,7 @@ final readonly class AppConfig
     public function __construct(
         public bool $debug = false,
         public array $knownVersions = [],
+        public bool $requireSessionGuard = false,
     ) {
     }
 }
