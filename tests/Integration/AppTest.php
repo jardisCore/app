@@ -6,12 +6,12 @@ namespace JardisCore\App\Tests\Integration;
 
 use JardisCore\App\App;
 use JardisCore\App\Config\AppConfig;
-use JardisCore\App\Middleware\MiddlewareFactory;
+use JardisCore\App\Middleware\RequireSession;
 use JardisCore\App\Routes;
 use JardisCore\App\Tests\Support\CallLog;
 use JardisCore\App\Tests\Support\DomainResponse;
 use JardisCore\App\Tests\Support\FixedResponseHandler;
-use JardisCore\App\Tests\Support\InMemoryTokenStore;
+use JardisCore\App\Tests\Support\FakeAuthenticator;
 use JardisCore\App\Tests\Support\LoggerSpy;
 use JardisCore\App\Tests\Support\OrderRecordingMiddleware;
 use JardisCore\Kernel\DomainKernel;
@@ -382,9 +382,12 @@ final class AppTest extends TestCase
     {
         $kernel = $this->kernel();
         $routes = new Routes($this->factory);
-        $routes->middleware(
-            (new MiddlewareFactory($kernel, tokenStore: new InMemoryTokenStore()))('session')
-        );
+        $routes->middleware(new RequireSession(
+            new FakeAuthenticator([]),
+            FakeAuthenticator::credentialFor(...),
+            $this->factory,
+            $this->factory,
+        ));
         $handler = fn() => $this->factory->createResponse(200);
         $routes->anonymous()->get('/open', $handler);
         $routes->post('/orders', $handler);
