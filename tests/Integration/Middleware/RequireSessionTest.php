@@ -42,17 +42,13 @@ final class RequireSessionTest extends TestCase
         ]);
     }
 
-    /**
-     * @param list<string> $anonymous
-     */
-    private function app(array $anonymous = ['/login', '/public/*'], bool $global = true, string $scheme = 'Bearer', string $header = 'Authorization'): App
+    private function app(bool $global = true, string $scheme = 'Bearer', string $header = 'Authorization'): App
     {
         $session = new RequireSession(
             $this->authenticator,
             FakeAuthenticator::credentialFor(...),
             $this->factory,
             $this->factory,
-            $anonymous,
             $header,
             $scheme,
         );
@@ -71,8 +67,9 @@ final class RequireSessionTest extends TestCase
             $routes->get('/orders', $handler);
             $routes->get('/echo/{jardisSubject}/{jardisTenant}/{jardisAnonymousRoute}', $handler);
             $routes->get('/forge/{jardisSubjectId}/{jardisSession}', $handler);
-            $routes->get('/login', $handler);
-            $routes->get('/public/info', $handler);
+            $routes->anonymous()->get('/login', $handler);
+            $routes->get('/login-other', $handler);
+            $routes->anonymous()->get('/public/info', $handler);
             $routes->health('/health');
             $routes->anonymous()->get('/open-by-app', $handler);
         } else {
@@ -205,7 +202,7 @@ final class RequireSessionTest extends TestCase
         $this->assertSame(200, $this->get($this->app(), '/orders', 'bearer good')->getStatusCode());
     }
 
-    public function testAnonymousPathsPassWithoutSessionExactAndByPrefix(): void
+    public function testAnonymousRoutesPassWithoutSession(): void
     {
         $app = $this->app();
 
@@ -215,17 +212,17 @@ final class RequireSessionTest extends TestCase
         $this->assertSame([], $this->authenticator->seen);
     }
 
-    public function testExactAnonymousPathDoesNotOpenSimilarPaths(): void
+    public function testAnonymousRouteDoesNotOpenSimilarRoutes(): void
     {
-        $app = $this->app(['/orders']);
+        $app = $this->app();
 
-        $this->assertSame(200, $this->get($app, '/orders')->getStatusCode());
-        $this->assertSame(401, $this->get($app, '/login')->getStatusCode());
+        $this->assertSame(200, $this->get($app, '/login')->getStatusCode());
+        $this->assertSame(401, $this->get($app, '/login-other')->getStatusCode());
     }
 
     public function testHealthAnswers200WithoutSessionEvenWhenNotListedAsAnonymous(): void
     {
-        $response = $this->get($this->app([]), '/health');
+        $response = $this->get($this->app(), '/health');
 
         $this->assertSame(200, $response->getStatusCode());
         $this->assertSame('{"status":200}', (string) $response->getBody());
@@ -265,9 +262,8 @@ final class RequireSessionTest extends TestCase
             FakeAuthenticator::credentialFor(...),
             $this->factory,
             $this->factory,
-            ['/open/*'],
         ));
-        $routes->get('/open/{jardisSubject}/{jardisSubjectId}/{jardisSession}', function (ServerRequestInterface $request): ResponseInterface {
+        $routes->anonymous()->get('/open/{jardisSubject}/{jardisSubjectId}/{jardisSession}', function (ServerRequestInterface $request): ResponseInterface {
             $this->handled[] = $request;
 
             return $this->factory->createResponse(200);
