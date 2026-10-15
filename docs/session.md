@@ -79,3 +79,30 @@ $routes->middleware(new RequireSession($authenticator, Credential::token(...), $
 $routes->anonymous()->post('/auth/login', $login);
 $app = new App($routes, $kernel, new AppConfig(requireSessionGuard: true));
 ```
+
+## Required attributes - `RequireRequestAttribute`
+
+`JardisCore\App\Middleware\RequireRequestAttribute` is a second PSR-15 middleware for a door that depends on a request
+attribute, e.g. a route that needs a tenant. It checks presence only; it authorizes nothing (no role or ownership check) and
+changes neither `RequireSession` nor `ApplySession`.
+
+```php
+use JardisCore\App\Middleware\RequireRequestAttribute;
+use JardisSupport\Contract\Auth\RequestAttribute;
+
+$routes->middleware($requireSession);   // global: sets jardisSubject, jardisTenant (if any), ...
+$routes->get('/projects', $handler, new RequireRequestAttribute($psr17, $psr17, RequestAttribute::TENANT));
+```
+
+Signature: `__construct(ResponseFactoryInterface, StreamFactoryInterface, string ...$names)`. An empty name list or an empty name throws
+`InvalidArgumentException`.
+
+| Aspect | Behaviour |
+|---|---|
+| Check | For each name, in the given order, the attribute must be a non-empty string. The first one that is not (absent, not a string, `''`) ends the request. |
+| Answer | `403`, handler never called: `{status:403, data:{}, errors:{message, messageKey:"request.attributeMissing", context:{attribute:"<name>"}}, meta:{}}` (the same form as the 401: no `@type`). The key is the constant `RequireRequestAttribute::MESSAGE_KEY`. |
+| Otherwise | The request passes on unchanged. |
+| Order | Per route, behind the middleware that sets the attribute. Without a session the session door answers `401` first, never `403`. |
+| Forgery | A path placeholder named like the attribute (`/x/{jardisTenant}`) does not satisfy the check: `ApplySession` removes it first. |
+| 404 / 405 | Like every middleware it only runs on a matched route. |
+| Guard | It does NOT implement `SessionGuardInterface`, so it never satisfies `AppConfig::$requireSessionGuard`. |
