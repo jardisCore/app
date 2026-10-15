@@ -2,6 +2,26 @@
 
 All notable changes to `jardiscore/app` are listed here. Versions only move forward (SemVer).
 
+## v1.7.0
+
+`ApplySession` binds the role of the session to the request.
+
+### Added
+
+- Request attribute `RequestAttribute::ROLE` (`jardisRole`, contracts ^2.11): set by `ApplySession` when the authenticator's
+  result is a `RoleAwareAuthResultInterface` (auth ^1.6, claim `role`) and `getRole()` is non-empty; otherwise the attribute is
+  absent (never `null`, never `''`). It is removed first like the other session attributes, so a client can never inject it
+  (e.g. via a path placeholder `{jardisRole}`). The role is an attribute, not a guard - `jardiscore/app` authorizes nothing.
+
+### Changed
+
+- `composer.json`: `jardissupport/contracts` `^2.11`; dev: `jardissupport/auth` `^1.6`.
+
+### Tests
+
+- `SessionSignedTokenTest`: token with claim `role: owner` -> `jardisRole = 'owner'`; without claim -> attribute absent;
+  a client-supplied `jardisRole` is removed (no claim) or overwritten (claim).
+
 ## v1.6.0
 
 Wiring out, contracts only. `jardiscore/app` no longer knows `jardissupport/auth` or `jardisadapter/dbconnection`;

@@ -59,6 +59,38 @@ final class SessionSignedTokenTest extends TestCase
         $this->assertNotEmpty($this->seen->getAttribute(RequestAttribute::SESSION));
     }
 
+    public function testHandlerSeesTheRoleClaimOfTheToken(): void
+    {
+        $this->app()->handle($this->request('/orders', $this->issue(['tenant' => 'acme', 'role' => 'owner'])));
+
+        $this->assertNotNull($this->seen);
+        $this->assertSame('owner', $this->seen->getAttribute(RequestAttribute::ROLE));
+    }
+
+    public function testRoleAttributeIsAbsentWithoutRoleClaim(): void
+    {
+        $this->app()->handle($this->request('/orders', $this->issue(['tenant' => 'acme'])));
+
+        $this->assertNotNull($this->seen);
+        $this->assertArrayNotHasKey(RequestAttribute::ROLE, $this->seen->getAttributes());
+    }
+
+    public function testClientSuppliedRoleIsRemovedWhenTheTokenCarriesNone(): void
+    {
+        $this->app()->handle($this->request('/forge/admin', $this->issue()));
+
+        $this->assertNotNull($this->seen);
+        $this->assertArrayNotHasKey(RequestAttribute::ROLE, $this->seen->getAttributes());
+    }
+
+    public function testClientSuppliedRoleIsOverwrittenByTheTokenRole(): void
+    {
+        $this->app()->handle($this->request('/forge/admin', $this->issue(['role' => 'viewer'])));
+
+        $this->assertNotNull($this->seen);
+        $this->assertSame('viewer', $this->seen->getAttribute(RequestAttribute::ROLE));
+    }
+
     public function testRequestWithoutTokenIsRejectedWith401(): void
     {
         $response = $this->app()->handle($this->request('/orders'));
@@ -123,6 +155,7 @@ final class SessionSignedTokenTest extends TestCase
         };
         $routes->anonymous()->get('/open', $handler);
         $routes->get('/orders', $handler);
+        $routes->get('/forge/{jardisRole}', $handler);
 
         return new App(
             $routes,
