@@ -69,6 +69,11 @@ closes that gap with a deliberately small core:
   authenticator's result is a `SessionAwareAuthResultInterface`, the bare subject id
   `jardisSubjectId` and the session reference `jardisSession` (revoke exactly this
   session) (`JardisSupport\Contract\Auth\RequestAttribute`). Details: [`docs/session.md`](docs/session.md).
+- **A required attribute at the door.** `Middleware\RequireRequestAttribute` answers `403` in the
+  canonical envelope (`errors.messageKey = request.attributeMissing`, `errors.context.attribute` = the
+  name) when a request attribute a route depends on, e.g. `RequestAttribute::TENANT`, is missing or empty;
+  register it per route behind the session door. It only checks presence and authorizes nothing.
+  Details: [`docs/session.md`](docs/session.md).
 - **Anonymous routes and a start-up check.**
   `Routes::anonymous()` returns a registrar whose verbs register routes that need no
   session. The middleware itself is wired by the application (the Jardis builder generates

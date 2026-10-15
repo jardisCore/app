@@ -2,6 +2,24 @@
 
 All notable changes to `jardiscore/app` are listed here. Versions only move forward (SemVer).
 
+## v1.8.0
+
+`RequireRequestAttribute` answers 403 when a required request attribute is missing.
+
+### Added
+
+- `Middleware\RequireRequestAttribute` (final, PSR-15, `__construct(ResponseFactoryInterface, StreamFactoryInterface, string ...$names)`):
+  for each name, in order, the request attribute must be a non-empty string; the first one that is not ends the request with
+  `403` in the canonical envelope (`data {}`, `errors {message, messageKey: 'request.attributeMissing', context: {attribute}}`) and the
+  handler is never called. Otherwise the request passes unchanged. An empty name list or an empty name throws `InvalidArgumentException`.
+  It checks presence only (authorizes nothing) and is not a `SessionGuardInterface`, so it never satisfies `AppConfig::$requireSessionGuard`.
+
+### Tests
+
+- `RequireRequestAttributeTest`: real `App`/`Routes` with a global `RequireSession` and the check per route - 403 form, 200 with
+  the attribute, 401 (not 403) without a token, first missing name wins, path-placeholder forgery stays 403, 404/405 unchanged,
+  constructor guards, not a session guard.
+
 ## v1.7.0
 
 `ApplySession` binds the role of the session to the request.
