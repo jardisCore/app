@@ -2,9 +2,9 @@
 
 `JardisCore\App\Middleware\RequireSession` is a PSR-15 middleware that binds every request to a
 verified session or answers `401` before the route handler runs. It depends only on the ports in
-`jardissupport/contracts` (`^2.9`): `AuthenticatorInterface`, `CredentialInterface`,
+`jardissupport/contracts` (`^2.11`): `AuthenticatorInterface`, `CredentialInterface`,
 `TenantAwareAuthResultInterface` and the attribute names `RequestAttribute::SUBJECT` /
-`TENANT` / `SUBJECT_ID` / `SESSION`. `jardiscore/app` does **not** require `jardissupport/auth`; the application does.
+`TENANT` / `ROLE` / `SUBJECT_ID` / `SESSION`. `jardiscore/app` does **not** require `jardissupport/auth`; the application does.
 
 ## Wiring with `jardissupport/auth`
 
@@ -55,8 +55,9 @@ $sessionManager->invalidateByReference($request->getAttribute(RequestAttribute::
 | Which tokens | Missing, malformed, unknown, expired and revoked tokens, and a "successful" result without subject, are answered identically; the failure reason stays inside the app. |
 | Authenticator throws | A technical error (e.g. token store unreachable) is not a 401: it ends in the generic 500. |
 | Session attributes | `jardisSubject` always, `jardisTenant` only if the result is `TenantAwareAuthResultInterface` with a non-empty tenant; otherwise the attribute is absent (not `null`, not `''`). |
+| Role | `jardisRole` only if the result is a `RoleAwareAuthResultInterface` (`getRole()`, contracts ^2.11, auth ^1.6) and the role is non-empty; otherwise absent (not `null`, not `''`). A plain attribute, not a guard - authorization is the application's job. |
 | Subject id / session reference | `jardisSubjectId` and `jardisSession` only if the result is a `SessionAwareAuthResultInterface` (`getSubjectId()` / `getSessionReference()`, contracts ^2.9) and the value is non-empty; otherwise absent (not `null`, not `''`). A plain tenant-aware result leaves both absent. |
-| Forgery | Existing attributes of these names (an upstream middleware, a path placeholder such as `/x/{jardisSubject}`, `/x/{jardisSession}`) are overwritten on a valid session and removed on an anonymous request. Headers never become attributes. |
+| Forgery | Existing attributes of these names (an upstream middleware, a path placeholder such as `/x/{jardisSubject}`, `/x/{jardisSession}`, `/x/{jardisRole}`) are overwritten on a valid session and removed on an anonymous request. Headers never become attributes. |
 | Anonymous routes | Only routes registered by `Routes::anonymous()` or `Routes::health()` pass without a session; there is no path-pattern list. |
 | `health()` | Routes registered by `Routes::health()` are anonymous automatically (`Route::$anonymous`, request attribute `jardisAnonymousRoute`, a strict bool the dispatcher always writes). |
 | 404 / 405 | Middleware only runs on a matched route: an unknown path stays `404`, a wrong method `405` - never `401`. |

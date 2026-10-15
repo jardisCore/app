@@ -64,7 +64,8 @@ closes that gap with a deliberately small core:
 - **A verified session at the door.** `Middleware\RequireSession` binds every
   request to a session or answers `401` in the canonical envelope (with
   `WWW-Authenticate: Bearer`) before the handler runs; with a valid session the
-  request carries the attributes `jardisSubject` and `jardisTenant` and, when the
+  request carries the attributes `jardisSubject` and `jardisTenant`, when the result
+  is a `RoleAwareAuthResultInterface` with a role the role `jardisRole`, and, when the
   authenticator's result is a `SessionAwareAuthResultInterface`, the bare subject id
   `jardisSubjectId` and the session reference `jardisSession` (revoke exactly this
   session) (`JardisSupport\Contract\Auth\RequestAttribute`). Details: [`docs/session.md`](docs/session.md).
@@ -132,7 +133,7 @@ stellschrauben (body-size limits, Trusted-Proxy, `display_errors`).
 | Package | Purpose |
 |---------|---------|
 | `jardiscore/kernel` | The DomainKernel (`DomainKernel`) + ENV-Packer this package's bootstrap bridge builds on |
-| `jardissupport/contracts` | `DomainResponseInterface`, `ResponseStatus`, the response-envelope contract doc, the Auth ports and `RequestAttribute` used by `RequireSession` (`^2.9`) |
+| `jardissupport/contracts` | `DomainResponseInterface`, `ResponseStatus`, the response-envelope contract doc, the Auth ports and `RequestAttribute` used by `RequireSession` (`^2.11`) |
 | `jardissupport/validation` | Object-graph validation — the growth path beyond the handler's own trivial type coercion (F8) |
 
 ---
