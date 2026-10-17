@@ -32,7 +32,7 @@
         "jardissupport/dbquery": "^1.0",
         "jardissupport/repository": "^1.0",
         "jardissupport/validation": "^1.0",
-        "jardissupport/workflow": "^1.0",
+        "jardissupport/workflow": "^2.1",
         "middlewares/client-ip": "^2.1",
         "ext-pdo": "*",
         "jardissupport/auth": "^1.6"
