@@ -15,13 +15,13 @@ readonly class OrderUpdated
 {
     /**
      * @param string $orderNumber
-     * @param float $totalAmount
+     * @param string $totalAmount
      * @param string $status
      * @param DateTimeImmutable $occurredAt
      */
     public function __construct(
         public string $orderNumber,
-        public float $totalAmount,
+        public string $totalAmount,
         public string $status,
         public DateTimeImmutable $occurredAt
     ) {

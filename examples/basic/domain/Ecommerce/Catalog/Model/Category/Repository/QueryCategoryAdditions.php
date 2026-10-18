@@ -9,7 +9,6 @@ use JardisSupport\Contract\DbConnection\ConnectionPoolInterface;
 use JardisSupport\Contract\DbQuery\DbQueryBuilderInterface;
 use JardisSupport\DbQuery\DbQuery;
 use JardisSupport\Repository\Repository;
-use RuntimeException;
 use Throwable;
 use Ecommerce\Catalog\Entity\CategoryTranslation as CategoryTranslationEntity;
 
@@ -29,7 +28,7 @@ class QueryCategoryAdditions extends EcommerceContext
      *
      * @param array $rootContainer Container with root entity data
      * @return array<string, array<int, object>>
-     * @throws RuntimeException
+     * @throws \RuntimeException
      * @throws Throwable
      */
     public function __invoke(array $rootContainer = []): array
@@ -49,7 +48,8 @@ class QueryCategoryAdditions extends EcommerceContext
     protected function categoryTranslation(): DbQueryBuilderInterface
     {
         return $this->query(CategoryTranslationEntity::class)
-            ->where('category_id')->in($this->values('category', 'id'));
+            ->where('category_id')->in($this->values('category', 'id'))
+            ->orderBy('id', 'ASC');
     }
 
     /**
@@ -73,7 +73,7 @@ class QueryCategoryAdditions extends EcommerceContext
      *
      * @param DbQueryBuilderInterface|null $query Query to execute
      * @return array The query results
-     * @throws RuntimeException
+     * @throws \RuntimeException
      * @throws Throwable
      */
     protected function load(?DbQueryBuilderInterface $query): array

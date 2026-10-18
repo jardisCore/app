@@ -9,10 +9,9 @@ use JardisSupport\Contract\DbConnection\ConnectionPoolInterface;
 use JardisSupport\Contract\DbQuery\DbQueryBuilderInterface;
 use JardisSupport\DbQuery\DbQuery;
 use JardisSupport\Repository\Repository;
-use RuntimeException;
 use Throwable;
-use Ecommerce\Sales\Model\Invoice\Query\InvoiceById as InvoiceByIdQuery;
 use Ecommerce\Sales\Entity\Invoice as InvoiceEntity;
+use Ecommerce\Sales\Model\Invoice\Query\InvoiceById as InvoiceByIdQuery;
 
 /**
  * Root query class for Invoice (ById variant).
@@ -29,7 +28,7 @@ class QueryInvoiceById extends EcommerceContext
      *
      * @param InvoiceByIdQuery $query Query parameters
      * @return array<string, array<int, object>>
-     * @throws RuntimeException
+     * @throws \RuntimeException
      * @throws Throwable
      */
     public function __invoke(InvoiceByIdQuery $query): array
@@ -72,7 +71,7 @@ class QueryInvoiceById extends EcommerceContext
      *
      * @param DbQueryBuilderInterface|null $query Query to execute
      * @return array The query results
-     * @throws RuntimeException
+     * @throws \RuntimeException
      * @throws Throwable
      */
     protected function load(?DbQueryBuilderInterface $query): array

@@ -27,6 +27,7 @@ class CategoryTranslation
      *
      * @var array<string, mixed>
      */
+    // phpcs:ignore PSR2.Classes.PropertyDeclaration.Underscore -- Reflection-Slot jardissupport/data
     protected array $__snapshot = [
         'id' => null,
         'category_id' => null,
@@ -48,7 +49,7 @@ class CategoryTranslation
      * @var ?int
      */
     #[Column(name: 'category_id', type: 'int')]
-    #[ForeignKey(referencedTable: 'categories', referencedColumn: 'id', onUpdate: 'NO ACTION', onDelete: 'NO ACTION')]
+    #[ForeignKey(referencedTable: 'categories', referencedColumn: 'id')]
     protected ?int $categoryId = null;
 
     /**

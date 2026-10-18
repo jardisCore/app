@@ -35,7 +35,10 @@ class BuildSetCustomerData extends EcommerceContext
                 ARRAY_FILTER_USE_KEY
             ),
             'address' => $setCustomer->address !== null
-                ? $this->handle(FieldMapper::class)->toColumns(get_object_vars($setCustomer->address), $fieldMap->addressesColumns()) : null,
+                ? $this->handle(FieldMapper::class)->toColumns(
+                    get_object_vars($setCustomer->address),
+                    $fieldMap->addressesColumns()
+                ) : null,
         ], $fieldMap->customersColumns());
     }
 }

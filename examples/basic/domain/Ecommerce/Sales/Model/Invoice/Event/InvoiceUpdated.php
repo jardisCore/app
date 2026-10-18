@@ -20,9 +20,9 @@ readonly class InvoiceUpdated
      * @param string $customerIdentifier
      * @param string $status
      * @param ?string $paymentMethod
-     * @param float $totalNet
-     * @param float $taxRate
-     * @param float $totalGross
+     * @param string $totalNet
+     * @param string $taxRate
+     * @param string $totalGross
      * @param string $currency
      * @param ?string $note
      * @param ?DateTimeImmutable $issuedAt
@@ -37,9 +37,9 @@ readonly class InvoiceUpdated
         public string $customerIdentifier,
         public string $status,
         public ?string $paymentMethod,
-        public float $totalNet,
-        public float $taxRate,
-        public float $totalGross,
+        public string $totalNet,
+        public string $taxRate,
+        public string $totalGross,
         public string $currency,
         public ?string $note,
         public ?DateTimeImmutable $issuedAt,

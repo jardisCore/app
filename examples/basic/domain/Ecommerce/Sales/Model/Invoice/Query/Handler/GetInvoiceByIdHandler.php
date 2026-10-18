@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Ecommerce\Sales\Model\Invoice\Query\Handler;
 
 use Ecommerce\EcommerceContext;
-use Ecommerce\Response\DomainResponseTransformer;
 use Ecommerce\Sales\Model\Invoice\Query\Response\InvoiceResponse;
 use Ecommerce\Sales\Model\Invoice\Repository\InvoiceRepository;
 use Exception;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
 use JardisSupport\Data\FieldMapper;
+use JardisSupport\Data\Handler\ProjectWire;
 use JardisSupport\Data\Hydration;
 use ReflectionException;
 use Throwable;
@@ -40,7 +40,6 @@ class GetInvoiceByIdHandler extends EcommerceContext
         /** @var array<string, array<string, string>> $readMaps */
         $readMaps = [
             'invoice' => [
-                'id' => 'id',
                 'identifier' => 'identifier',
                 'invoiceNumber' => 'invoice_number',
                 'orderNumber' => 'order_number',
@@ -72,19 +71,41 @@ class GetInvoiceByIdHandler extends EcommerceContext
         ];
         $mapEntity = static fn(string $entity): array => $readMaps[$entity] ?? [];
 
+        $wireTypes = [
+            'issuedAt' => 'date-time',
+            'dueAt' => 'date-time',
+            'paidAt' => 'date-time',
+            'createdAt' => 'date-time',
+            'invoiceLine' => [
+                'createdAt' => 'date-time',
+            ],
+        ];
+
+        $projectWire = $this->handle(ProjectWire::class);
+        $fieldMapper = $this->handle(FieldMapper::class);
+        $hydration = $this->handle(Hydration::class);
+
         /** @var array<int, InvoiceResponse> $projected */
         $projected = array_map(
-            function (array $row) use ($mapEntity): InvoiceResponse {
-                $mapped = $this->handle(FieldMapper::class)->fromAggregate($row, $mapEntity, 'invoice');
+            function (array $row) use (
+                $mapEntity,
+                $fieldMapper,
+                $hydration,
+                $projectWire,
+                $wireTypes
+            ): InvoiceResponse {
+                $mapped = $fieldMapper->fromAggregate($row, $mapEntity, 'invoice');
+                $mapped = $projectWire($mapped, $wireTypes);
                 $invoiceResponse = new InvoiceResponse();
-                $this->handle(Hydration::class)->hydrateAggregate($invoiceResponse, $mapped);
+                $hydration->hydrateAggregate($invoiceResponse, $mapped);
                 return $invoiceResponse;
             },
             $result,
         );
 
-        $this->result()->setData(['invoice' => $projected[0] ?? null]);
+        $found = $projected[0] ?? null;
+        $this->result()->setData($found === null ? [] : ['@type' => 'invoice'] + get_object_vars($found));
 
-        return $this->handle(DomainResponseTransformer::class)->transform($this->result());
+        return ($this->transformer())($this->result());
     }
 }

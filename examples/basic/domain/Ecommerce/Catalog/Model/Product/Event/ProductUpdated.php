@@ -20,9 +20,9 @@ readonly class ProductUpdated
      * @param string $slug
      * @param ?string $description
      * @param ?string $shortDescription
-     * @param float $price
-     * @param ?float $compareAtPrice
-     * @param ?float $costPrice
+     * @param string $price
+     * @param ?string $compareAtPrice
+     * @param ?string $costPrice
      * @param string $currency
      * @param ?int $weightGrams
      * @param int $isActive
@@ -37,9 +37,9 @@ readonly class ProductUpdated
         public string $slug,
         public ?string $description,
         public ?string $shortDescription,
-        public float $price,
-        public ?float $compareAtPrice,
-        public ?float $costPrice,
+        public string $price,
+        public ?string $compareAtPrice,
+        public ?string $costPrice,
         public string $currency,
         public ?int $weightGrams,
         public int $isActive,

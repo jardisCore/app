@@ -9,10 +9,9 @@ use JardisSupport\Contract\DbConnection\ConnectionPoolInterface;
 use JardisSupport\Contract\DbQuery\DbQueryBuilderInterface;
 use JardisSupport\DbQuery\DbQuery;
 use JardisSupport\Repository\Repository;
-use RuntimeException;
 use Throwable;
-use Ecommerce\Catalog\Model\Product\Query\ProductById as ProductByIdQuery;
 use Ecommerce\Catalog\Entity\Product as ProductEntity;
+use Ecommerce\Catalog\Model\Product\Query\ProductById as ProductByIdQuery;
 
 /**
  * Root query class for Product (ById variant).
@@ -29,7 +28,7 @@ class QueryProductById extends EcommerceContext
      *
      * @param ProductByIdQuery $query Query parameters
      * @return array<string, array<int, object>>
-     * @throws RuntimeException
+     * @throws \RuntimeException
      * @throws Throwable
      */
     public function __invoke(ProductByIdQuery $query): array
@@ -72,7 +71,7 @@ class QueryProductById extends EcommerceContext
      *
      * @param DbQueryBuilderInterface|null $query Query to execute
      * @return array The query results
-     * @throws RuntimeException
+     * @throws \RuntimeException
      * @throws Throwable
      */
     protected function load(?DbQueryBuilderInterface $query): array

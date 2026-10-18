@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Ecommerce\Catalog\Model\Product\Query\Response;
 
-use DateTime;
-
 /**
  * Read projection for ProductVariantPriceResponse.
  *
@@ -16,8 +14,10 @@ class ProductVariantPriceResponse
 {
     public int $id = 0;
     public string $region = '';
-    public float $price = 0.0;
+
+    /** @var numeric-string */
+    public string $price = '0';
     public string $currency = '';
-    public ?DateTime $validFrom = null;
-    public ?DateTime $validUntil = null;
+    public ?string $validFrom = null;
+    public ?string $validUntil = null;
 }

@@ -29,6 +29,7 @@ class Order
      *
      * @var array<string, mixed>
      */
+    // phpcs:ignore PSR2.Classes.PropertyDeclaration.Underscore -- Reflection-Slot jardissupport/data
     protected array $__snapshot = [
         'id' => null,
         'order_number' => null,
@@ -55,14 +56,14 @@ class Order
      * @var ?int
      */
     #[Column(name: 'customer_id', type: 'int')]
-    #[ForeignKey(referencedTable: 'customers', referencedColumn: 'id', onUpdate: 'NO ACTION', onDelete: 'NO ACTION')]
+    #[ForeignKey(referencedTable: 'customers', referencedColumn: 'id')]
     protected ?int $customerId = null;
 
     /**
-     * @var ?float
+     * @var ?numeric-string
      */
     #[Column(name: 'total_amount', type: 'decimal', precision: 10, scale: 2)]
-    protected ?float $totalAmount = null;
+    protected ?string $totalAmount = null;
 
     /**
      * @var ?OrderStatus
@@ -101,7 +102,10 @@ class Order
         return $this->customerId;
     }
 
-    public function getTotalAmount(): ?float
+    /**
+     * @return ?numeric-string
+     */
+    public function getTotalAmount(): ?string
     {
         return $this->totalAmount;
     }
@@ -128,7 +132,10 @@ class Order
         return $this;
     }
 
-    public function setTotalAmount(?float $totalAmount): self
+    /**
+     * @param ?numeric-string $totalAmount
+     */
+    public function setTotalAmount(?string $totalAmount): self
     {
         $this->totalAmount = $totalAmount;
         return $this;
@@ -142,7 +149,7 @@ class Order
 
     public function setCreatedAt(?DateTime $createdAt = null): self
     {
-        $this->createdAt = $createdAt ?? new DateTime();
+        $this->createdAt = $createdAt;
         return $this;
     }
 }

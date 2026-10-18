@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Ecommerce\Catalog\Entity;
 
+use DateTime;
 use JardisSupport\Data\Attribute\Column;
 use JardisSupport\Data\Attribute\ForeignKey;
 use JardisSupport\Data\Attribute\PrimaryKey;
@@ -27,6 +28,7 @@ class ProductImage
      *
      * @var array<string, mixed>
      */
+    // phpcs:ignore PSR2.Classes.PropertyDeclaration.Underscore -- Reflection-Slot jardissupport/data
     protected array $__snapshot = [
         'id' => null,
         'product_id' => null,
@@ -37,7 +39,8 @@ class ProductImage
         'width' => null,
         'height' => null,
         'sort_order' => null,
-        'is_primary' => null
+        'is_primary' => null,
+        'updated_at' => null
     ];
 
     /**
@@ -51,7 +54,7 @@ class ProductImage
      * @var ?int
      */
     #[Column(name: 'product_id', type: 'int')]
-    #[ForeignKey(referencedTable: 'products', referencedColumn: 'id', onUpdate: 'NO ACTION', onDelete: 'NO ACTION')]
+    #[ForeignKey(referencedTable: 'products', referencedColumn: 'id')]
     protected ?int $productId = null;
 
     /**
@@ -101,6 +104,12 @@ class ProductImage
      */
     #[Column(name: 'is_primary', type: 'tinyint')]
     protected ?int $isPrimary = null;
+
+    /**
+     * @var ?DateTime
+     */
+    #[Column(name: 'updated_at', type: 'datetime', nullable: true)]
+    protected ?DateTime $updatedAt = null;
 
     /**
      * Returns the snapshot of original values.
@@ -162,6 +171,11 @@ class ProductImage
         return $this->isPrimary;
     }
 
+    public function getUpdatedAt(): ?DateTime
+    {
+        return $this->updatedAt;
+    }
+
     public function setProductId(?int $productId): self
     {
         $this->productId = $productId;
@@ -213,6 +227,12 @@ class ProductImage
     public function setIsPrimary(?int $isPrimary): self
     {
         $this->isPrimary = $isPrimary;
+        return $this;
+    }
+
+    public function setUpdatedAt(?DateTime $updatedAt): self
+    {
+        $this->updatedAt = $updatedAt;
         return $this;
     }
 }

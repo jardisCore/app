@@ -7,7 +7,7 @@ namespace Ecommerce\Sales;
 /**
  * Central naming map: DTO property names <-> DB column names, per table.
  *
- * Pure naming container (Schema + FieldMap.yaml overrides + default
+ * Pure naming container (Schema + FieldMap.json overrides + default
  * ToPropertyName). One method per BC table:
  *   {table}Columns() — full DTO→column map for FieldMapper::toColumns (write path)
  *
@@ -27,6 +27,17 @@ class FieldMap
             'city' => 'city',
             'postalCode' => 'postal_code',
             'country' => 'country',
+        ];
+    }
+
+    /** @return array<string, string> field -> column mapping */
+    public function channelHooksColumns(): array
+    {
+        return [
+            'id' => 'id',
+            'channelId' => 'channel_id',
+            'targetUrl' => 'target_url',
+            'signingKey' => 'signing_key',
         ];
     }
 
@@ -120,6 +131,47 @@ class FieldMap
             'customerId' => 'customer_id',
             'totalAmount' => 'total_amount',
             'status' => 'status',
+            'createdAt' => 'created_at',
+        ];
+    }
+
+    /** @return array<string, string> field -> column mapping */
+    public function priceTiersColumns(): array
+    {
+        return [
+            'id' => 'id',
+            'identifier' => 'identifier',
+            'tierCode' => 'tier_code',
+            'minQuantity' => 'min_quantity',
+            'unitPrice' => 'unit_price',
+            'createdAt' => 'created_at',
+        ];
+    }
+
+    /** @return array<string, string> field -> column mapping */
+    public function voucherChannelsColumns(): array
+    {
+        return [
+            'id' => 'id',
+            'voucherId' => 'voucher_id',
+            'identifier' => 'identifier',
+            'label' => 'label',
+            'accessKey' => 'access_key',
+        ];
+    }
+
+    /** @return array<string, string> field -> column mapping */
+    public function vouchersColumns(): array
+    {
+        return [
+            'id' => 'id',
+            'scopeKey' => 'scope_key',
+            'voucherCode' => 'voucher_code',
+            'amount' => 'amount',
+            'note' => 'note',
+            'secretDigest' => 'secret_digest',
+            'issuedBy' => 'issued_by',
+            'issuerId' => 'issuer_id',
             'createdAt' => 'created_at',
         ];
     }

@@ -6,6 +6,7 @@ namespace Ecommerce\Catalog\Model\Product\Aggregate\Action;
 
 use Ecommerce\EcommerceContext;
 use RuntimeException;
+use JardisSupport\Contract\Kernel\ResponseStatus;
 use Ecommerce\Catalog\Model\Product\Aggregate\Entity\Product as ProductAggregate;
 
 /**
@@ -18,10 +19,11 @@ class RemoveProductVariantPrice extends EcommerceContext
      *
      * @param ProductAggregate $aggregate
      * @param int $id
-     * @return array<array{string, object|null}> Entities to track for deletion
+     * @return array<array{string, object|null}>|ResponseStatus Entities to track for deletion, or NotFound when a path
+     *     level is absent
      * @throws RuntimeException
      */
-    public function __invoke(ProductAggregate $aggregate, int $id): array
+    public function __invoke(ProductAggregate $aggregate, int $id): array|ResponseStatus
     {
         $removals = [];
         foreach ($aggregate->getProductVariant() as $parent) {
@@ -32,7 +34,9 @@ class RemoveProductVariantPrice extends EcommerceContext
                 $itemId = $item->$itemGetter();
                 if ($itemId !== null && $itemId === $id) {
                     if (count($collection) <= 1) {
-                        throw new RuntimeException('Cannot remove the last ProductVariantPrice: at least one is required.');
+                        throw new RuntimeException(
+                            'Cannot remove the last ProductVariantPrice: at least one is required.'
+                        );
                     }
                     $removals[] = ['productVariantPrice', $item];
                     $parent->removeProductVariantPrice($item);
@@ -40,6 +44,6 @@ class RemoveProductVariantPrice extends EcommerceContext
                 }
             }
         }
-        throw new RuntimeException('ProductVariantPrice not found: ' . $id);
+        return ResponseStatus::NotFound;
     }
 }

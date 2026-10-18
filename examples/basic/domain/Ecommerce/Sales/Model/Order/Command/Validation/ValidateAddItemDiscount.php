@@ -9,7 +9,6 @@ use Ecommerce\Sales\Model\Order\Command\AddItemDiscount;
 use Ecommerce\Sales\Model\Order\Command\Validation\ItemDiscountValidator;
 use JardisSupport\Validation\ObjectValidator;
 use JardisSupport\Validation\ValidatorRegistry;
-use JsonException;
 use Throwable;
 use Ecommerce\Sales\Model\Order\Command\AddItemDiscount as CommandAddItemDiscount;
 
@@ -26,7 +25,6 @@ class ValidateAddItemDiscount extends EcommerceContext
      *
      * @param CommandAddItemDiscount $dto Command DTO
      * @throws ValidationException If validation fails
-     * @throws JsonException
      * @throws Throwable
      */
     public function __invoke(CommandAddItemDiscount $dto): void
@@ -34,12 +32,13 @@ class ValidateAddItemDiscount extends EcommerceContext
         $registry = new ValidatorRegistry();
         $registry->register(AddItemDiscount::class, ($this->handle(ItemDiscountValidator::class))());
 
-        $validator = new ObjectValidator($registry);
+        $validator = new ObjectValidator($registry, indexedLists: true);
         $result = $validator->validate($dto);
         $errors = $this->filterEmptyErrors($result->getErrors());
+        $kinds = $this->filterEmptyErrors($result->getKinds());
 
         if (!empty($errors)) {
-            throw new ValidationException(json_encode($errors, JSON_THROW_ON_ERROR));
+            throw new ValidationException($errors, $kinds);
         }
     }
 

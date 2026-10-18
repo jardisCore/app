@@ -4,19 +4,17 @@ declare(strict_types=1);
 
 namespace Ecommerce\Service;
 
-use Ecommerce\Catalog\Model\Product\Command\UpdateProduct;
-use Ecommerce\Catalog\Model\Product\Query\ProductByIdentifier as QueryProductByIdentifier;
-use Ecommerce\Catalog\Model\Product\Query\Response\ProductResponse;
 use Ecommerce\Catalog\Catalog;
+use Ecommerce\Catalog\Model\Product\Command\UpdateProduct;
 use Ecommerce\Catalog\Process\UpdateProductInCatalog\Command\UpdateProductInCatalog;
 use Ecommerce\EcommerceContext;
 use Ecommerce\Sales\Process\CrossBcServiceDemo\Command\CrossBcServiceDemo;
-use Ecommerce\Sales\Sales;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
-use JardisSupport\Contract\Workflow\WorkflowContextInterface;
-use JardisSupport\Workflow\WorkflowResult;
-use RuntimeException;
+use JardisSupport\Workflow\Data\NodeResult;
+use JardisSupport\Workflow\Data\ProcessContext;
+use JardisSupport\Workflow\Data\Route;
 use Throwable;
+use Ecommerce\Catalog\Model\Product\Query\ProductByIdentifier as QueryProductByIdentifier;
 
 /**
  * Same-Domain-Variante (D3): schreibt in die fremde BC Catalog im eigenen
@@ -29,6 +27,13 @@ use Throwable;
  *
  * ACL-Hinweis: Antwort in eigenes Vokabular uebersetzen, fremdes DTO
  * nicht unveraendert durchreichen.
+ *
+ * Antwort: ein NodeResult (jardissupport/workflow). NodeResult::ok() bei Erfolg,
+ * NodeResult::route(Route::OnFalse|OnTimeout|OnSkip, ...) fuer einen Zweig,
+ * NodeResult::reject(<4xx-Status>, <messageKey>, <context>) fuer eine Ablehnung.
+ * Die Fehlerform baut das Paket aus dem Kontext: 400 'fields', 409 'reason' /
+ * 'aggregate' / 'violated', 422 'rule'; weitere Schluessel bleiben Kontext der Form.
+ * Ein 5xx-Fall ist eine Exception, kein reject().
  */
 final class CheckStockInCatalog extends EcommerceContext
 {
@@ -38,13 +43,12 @@ final class CheckStockInCatalog extends EcommerceContext
      * Schreiben ueber den Prozess ($bc->process()->updateProductInCatalog()).
      * Kein Aggregat-Direktzugriff, keine Kernel-Naht auf das fremde BC (G7).
      *
-     * @return array{status: string, data: array<string, mixed>}
      * @throws Throwable
      */
-    public function __invoke(WorkflowContextInterface $context): array
+    public function __invoke(ProcessContext $context): NodeResult
     {
         /** @var CrossBcServiceDemo $cmd */
-        $cmd = $this->payload();
+        $cmd = $context->input();
 
         /** @var Catalog $catalog */
         $catalog = $this->handle(Catalog::class);
@@ -56,22 +60,17 @@ final class CheckStockInCatalog extends EcommerceContext
             new QueryProductByIdentifier(identifier: $cmd->productIdentifier)
         );
         if (!$read->isSuccess()) {
-            return [
-                'status' => WorkflowResult::ON_FAIL,
-                'data'   => ['productIdentifier' => $cmd->productIdentifier],
-            ];
+            return NodeResult::route(Route::OnFalse, ['productIdentifier' => $cmd->productIdentifier]);
         }
 
+        // Flat payload: the product's fields sit directly in data (typed by
+        // `@type`); a product that is not found leaves the payload empty.
         $data = $read->getData();
-        /** @var array<string, ProductResponse> $handlerData */
-        $handlerData = $data['GetProductByIdentifierHandler'] ?? [];
-        $current = $handlerData['product'] ?? null;
-        if (!$current instanceof ProductResponse) {
-            return [
-                'status' => WorkflowResult::ON_FAIL,
-                'data'   => ['productIdentifier' => $cmd->productIdentifier],
-            ];
+        if ($data === []) {
+            return NodeResult::route(Route::OnFalse, ['productIdentifier' => $cmd->productIdentifier]);
         }
+
+        $current = (object) $data;
 
         // ACL, Schritt 2 — die eigene Eingabe in das fremde Prozess-Input-DTO
         // uebersetzen (nur der Preis aendert sich, der Rest bleibt der
@@ -84,7 +83,7 @@ final class CheckStockInCatalog extends EcommerceContext
                 slug: $current->slug,
                 description: $current->description,
                 shortDescription: $current->shortDescription,
-                price: $cmd->newPrice,
+                price: number_format($cmd->newPrice, 2, '.', ''),
                 compareAtPrice: $current->compareAtPrice,
                 costPrice: $current->costPrice,
                 currency: $current->currency,
@@ -102,12 +101,11 @@ final class CheckStockInCatalog extends EcommerceContext
 
         // ACL, Schritt 4 — die Antwort ins eigene Vokabular mappen; das fremde
         // DTO wird nicht unveraendert durchgereicht.
-        return [
-            'status' => $response->isSuccess() ? WorkflowResult::ON_SUCCESS : WorkflowResult::ON_FAIL,
-            'data'   => [
-                'productIdentifier' => $current->identifier,
-                'newPrice'          => $cmd->newPrice,
-            ],
+        $answer = [
+            'productIdentifier' => $current->identifier,
+            'newPrice'          => $cmd->newPrice,
         ];
+
+        return $response->isSuccess() ? NodeResult::ok($answer) : NodeResult::route(Route::OnFalse, $answer);
     }
 }

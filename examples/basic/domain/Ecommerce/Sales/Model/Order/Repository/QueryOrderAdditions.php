@@ -9,7 +9,6 @@ use JardisSupport\Contract\DbConnection\ConnectionPoolInterface;
 use JardisSupport\Contract\DbQuery\DbQueryBuilderInterface;
 use JardisSupport\DbQuery\DbQuery;
 use JardisSupport\Repository\Repository;
-use RuntimeException;
 use Throwable;
 use Ecommerce\Sales\Entity\Address as AddressEntity;
 use Ecommerce\Sales\Entity\Customer as CustomerEntity;
@@ -32,7 +31,7 @@ class QueryOrderAdditions extends EcommerceContext
      *
      * @param array $rootContainer Container with root entity data
      * @return array<string, array<int, object>>
-     * @throws RuntimeException
+     * @throws \RuntimeException
      * @throws Throwable
      */
     public function __invoke(array $rootContainer = []): array
@@ -93,7 +92,8 @@ class QueryOrderAdditions extends EcommerceContext
     protected function itemDiscount(): DbQueryBuilderInterface
     {
         return $this->query(ItemDiscountEntity::class)
-            ->where('item_id')->in($this->values('orderItem', 'id'));
+            ->where('item_id')->in($this->values('orderItem', 'id'))
+            ->orderBy('id', 'ASC');
     }
 
     /**
@@ -117,7 +117,7 @@ class QueryOrderAdditions extends EcommerceContext
      *
      * @param DbQueryBuilderInterface|null $query Query to execute
      * @return array The query results
-     * @throws RuntimeException
+     * @throws \RuntimeException
      * @throws Throwable
      */
     protected function load(?DbQueryBuilderInterface $query): array

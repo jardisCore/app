@@ -13,7 +13,7 @@ readonly class Order
 {
     public function __construct(
         public string $orderNumber,
-        public float $totalAmount,
+        public string $totalAmount,
         public string $status,
         public Customer $customer,
         /** @var array<OrderItem> */

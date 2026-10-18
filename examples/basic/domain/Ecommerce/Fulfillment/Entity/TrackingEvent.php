@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Ecommerce\Fulfillment\Entity;
 
 use DateTime;
+use Ecommerce\Fulfillment\Data\TrackingEventStatus;
 use JardisSupport\Data\Attribute\Column;
 use JardisSupport\Data\Attribute\ForeignKey;
 use JardisSupport\Data\Attribute\PrimaryKey;
@@ -28,6 +29,7 @@ class TrackingEvent
      *
      * @var array<string, mixed>
      */
+    // phpcs:ignore PSR2.Classes.PropertyDeclaration.Underscore -- Reflection-Slot jardissupport/data
     protected array $__snapshot = [
         'id' => null,
         'shipment_id' => null,
@@ -51,7 +53,7 @@ class TrackingEvent
      * @var ?int
      */
     #[Column(name: 'shipment_id', type: 'int')]
-    #[ForeignKey(referencedTable: 'shipments', referencedColumn: 'id', onUpdate: 'NO ACTION', onDelete: 'NO ACTION')]
+    #[ForeignKey(referencedTable: 'shipments', referencedColumn: 'id')]
     protected ?int $shipmentId = null;
 
     /**
@@ -61,10 +63,10 @@ class TrackingEvent
     protected ?string $eventCode = null;
 
     /**
-     * @var ?string
+     * @var ?TrackingEventStatus
      */
-    #[Column(name: 'status', type: 'varchar', length: 100)]
-    protected ?string $status = null;
+    #[Column(name: 'status', type: 'enum')]
+    protected ?TrackingEventStatus $status = null;
 
     /**
      * @var ?string
@@ -121,7 +123,7 @@ class TrackingEvent
         return $this->eventCode;
     }
 
-    public function getStatus(): ?string
+    public function getStatus(): ?TrackingEventStatus
     {
         return $this->status;
     }
@@ -163,7 +165,7 @@ class TrackingEvent
         return $this;
     }
 
-    public function setStatus(?string $status): self
+    public function setStatus(?TrackingEventStatus $status): self
     {
         $this->status = $status;
         return $this;

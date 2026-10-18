@@ -43,13 +43,6 @@ use Psr\Http\Message\ServerRequestInterface;
  */
 final class RegisterOrderRoutes
 {
-    /**
-     * The generated `ContextResponse::getData()` wraps every response's
-     * data under its own context (class-name) key — see the comment on
-     * {@see self::createOrder()} for why this handler reads it back.
-     */
-    private const GET_ORDER_BY_ORDER_NUMBER_CONTEXT = 'GetOrderByOrderNumberHandler';
-
     public function __invoke(Routes $routes, Sales $sales): void
     {
         $routes->get('/orders/{id}', $this->getOrder($sales));
@@ -75,9 +68,13 @@ final class RegisterOrderRoutes
      * `POST /orders` — creates via the process facade's
      * `ruleGuardedOrderIntake` (the only legitimate outer door for
      * creating an Order; the aggregate write facade is family-internal
-     * only, PRD F6/generated-code-wire-transport). See {@see StaticDomainResponse} for
-     * why this handler re-confirms via the read facade afterwards
-     * instead of trusting the process response's own status/data.
+     * only, PRD F6/generated-code-wire-transport). The process answers
+     * every failure in the package's envelope (400 fields, 409, 422,
+     * 5xx) - those pass through unchanged. On success the order is
+     * reloaded through the read facade (a write answers with references,
+     * the caller reads the object) and answered as 201 Created; the
+     * data of both answers is flat, the business object itself with its
+     * `@type`.
      */
     private function createOrder(Sales $sales): Closure
     {
@@ -88,33 +85,13 @@ final class RegisterOrderRoutes
             $response = $sales->process()->ruleGuardedOrderIntake(new RuleGuardedOrderIntake($command));
 
             if (!$response->isSuccess()) {
-                // A technical fault (>= 500) is the only way this process
-                // ever reports non-success (verified empirically) — pass
-                // it through unchanged via the canonical mapper.
                 return $response;
             }
 
-            // The process' own "success" is NOT a reliable signal that the
-            // order actually exists now: its onFail action nodes
-            // (OrderIneligibleStub/OrderRejectedStub) are unfilled
-            // "KI-/Dev-Hoheit" stubs that report unconditional success even
-            // when the underlying createOrder() call rejected the command
-            // (validation error OR rule violation) — verified empirically
-            // with an intentionally-invalid phone number during the P7
-            // manual smoke test, not assumed. The read facade — a second,
-            // equally legitimate outer-door call (F6) — is the only
-            // trustworthy confirmation.
             $confirmed = $sales->order()->getOrderByOrderNumber(new OrderByOrderNumber($command->orderNumber));
-            $order = $confirmed->getData()[self::GET_ORDER_BY_ORDER_NUMBER_CONTEXT]['order'] ?? null;
 
-            if ($order === null) {
-                return new StaticDomainResponse(
-                    status: ResponseStatus::ValidationError->value,
-                    errors: ['order' => [
-                        'Order could not be created (validation or rule rejection);'
-                            . ' see the DomainKernel logger for the underlying failure.',
-                    ]],
-                );
+            if (!$confirmed->isSuccess()) {
+                return $confirmed;
             }
 
             return new StaticDomainResponse(
@@ -139,7 +116,7 @@ final class RegisterOrderRoutes
 
             $update = new CommandUpdateOrder(
                 orderNumber: $orderNumber,
-                totalAmount: (float) ($body['totalAmount'] ?? 0.0),
+                totalAmount: (string) ($body['totalAmount'] ?? '0'),
                 status: (string) ($body['status'] ?? ''),
             );
 
@@ -164,7 +141,7 @@ final class RegisterOrderRoutes
 
         return new CommandOrder(
             orderNumber: (string) ($body['orderNumber'] ?? ''),
-            totalAmount: (float) ($body['totalAmount'] ?? 0.0),
+            totalAmount: (string) ($body['totalAmount'] ?? '0'),
             status: (string) ($body['status'] ?? 'pending'),
             customer: new CommandCustomer(
                 email: (string) ($customer['email'] ?? ''),
@@ -192,8 +169,8 @@ final class RegisterOrderRoutes
         return new CommandOrderItem(
             productIdentifier: (string) ($item['productIdentifier'] ?? ''),
             quantity: (int) ($item['quantity'] ?? 0),
-            unitPrice: (float) ($item['unitPrice'] ?? 0.0),
-            subtotal: (float) ($item['subtotal'] ?? 0.0),
+            unitPrice: (string) ($item['unitPrice'] ?? '0'),
+            subtotal: (string) ($item['subtotal'] ?? '0'),
             itemDiscount: array_map(self::buildItemDiscount(...), $discounts),
         );
     }
@@ -205,7 +182,7 @@ final class RegisterOrderRoutes
     {
         return new CommandItemDiscount(
             discountCode: (string) ($discount['discountCode'] ?? ''),
-            amount: (float) ($discount['amount'] ?? 0.0),
+            amount: (string) ($discount['amount'] ?? '0'),
         );
     }
 }

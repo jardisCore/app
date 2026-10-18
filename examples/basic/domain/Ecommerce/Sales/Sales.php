@@ -9,9 +9,14 @@ use Ecommerce\EcommerceContext;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
 use Ecommerce\Sales\Model\Invoice\InvoiceRead;
 use Ecommerce\Sales\Model\Order\OrderRead;
+use Ecommerce\Sales\Model\Voucher\VoucherRead;
 use Ecommerce\Sales\Process\SalesProcess;
 use Ecommerce\Sales\Model\Order\Command\UpdateOrder as CommandUpdateOrder;
 use Ecommerce\Sales\Model\Order\Command\Handler\UpdateOrder;
+use Ecommerce\Sales\Model\Order\Command\UpdateOrderItem as CommandUpdateOrderItem;
+use Ecommerce\Sales\Model\Order\Command\Handler\UpdateOrderItem;
+use Ecommerce\Sales\Model\Voucher\Command\UpdateVoucher as CommandUpdateVoucher;
+use Ecommerce\Sales\Model\Voucher\Command\Handler\UpdateVoucher;
 
 /**
  * Sales Bounded Context.
@@ -23,8 +28,11 @@ use Ecommerce\Sales\Model\Order\Command\Handler\UpdateOrder;
  * Usage:
  *   $bc->invoice()->{useCase}(...)
  *   $bc->order()->{useCase}(...)
+ *   $bc->voucher()->{useCase}(...)
  *   $bc->process()->{process}(...)
  *   $bc->updateOrder($updateOrder)
+ *   $bc->updateOrderItem($updateOrderItem)
+ *   $bc->updateVoucher($updateVoucher)
  */
 class Sales extends EcommerceContext
 {
@@ -51,6 +59,17 @@ class Sales extends EcommerceContext
     }
 
     /**
+     * Returns the Voucher aggregate read facade.
+     *
+     * @return VoucherRead
+     * @throws Throwable
+     */
+    public function voucher(): VoucherRead
+    {
+        return $this->handle(VoucherRead::class);
+    }
+
+    /**
      * Returns the process facade bundling this bounded context's processes.
      *
      * @return SalesProcess
@@ -65,11 +84,42 @@ class Sales extends EcommerceContext
      * Executes the rule-guarded UpdateOrder command (G10 Außentür — the Rule chain runs structurally in the dispatch).
      *
      * @param CommandUpdateOrder $updateOrder
+     * @param string $version Optional ClassVersion override (default: caller version)
      * @return DomainResponseInterface
      * @throws Throwable
      */
-    public function updateOrder(CommandUpdateOrder $updateOrder): DomainResponseInterface
+    public function updateOrder(CommandUpdateOrder $updateOrder, string $version = ''): DomainResponseInterface
     {
-        return $this->context(UpdateOrder::class, $updateOrder)();
+        return $this->context(UpdateOrder::class, $updateOrder, $version)();
+    }
+
+    /**
+     * Executes the rule-guarded UpdateOrderItem command (G10 Außentür — the Rule chain runs structurally in the
+     * dispatch).
+     *
+     * @param CommandUpdateOrderItem $updateOrderItem
+     * @param string $version Optional ClassVersion override (default: caller version)
+     * @return DomainResponseInterface
+     * @throws Throwable
+     */
+    public function updateOrderItem(
+        CommandUpdateOrderItem $updateOrderItem,
+        string $version = ''
+    ): DomainResponseInterface {
+        return $this->context(UpdateOrderItem::class, $updateOrderItem, $version)();
+    }
+
+    /**
+     * Executes the rule-guarded UpdateVoucher command (G10 Außentür — the Rule chain runs structurally in the
+     * dispatch).
+     *
+     * @param CommandUpdateVoucher $updateVoucher
+     * @param string $version Optional ClassVersion override (default: caller version)
+     * @return DomainResponseInterface
+     * @throws Throwable
+     */
+    public function updateVoucher(CommandUpdateVoucher $updateVoucher, string $version = ''): DomainResponseInterface
+    {
+        return $this->context(UpdateVoucher::class, $updateVoucher, $version)();
     }
 }

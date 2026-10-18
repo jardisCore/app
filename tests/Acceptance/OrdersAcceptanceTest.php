@@ -53,31 +53,34 @@ final class OrdersAcceptanceTest extends EcommerceAcceptanceTestCase
         $this->assertSame(201, $response->getStatusCode());
         $body = $this->decode($response);
         $this->assertSame(201, $body['status']);
-        // The generated ContextResponse wraps every response's data under
-        // its own context (class-name) key (verified empirically against
-        // the real fixture, `Ecommerce\Response\ContextResponse::getData()`)
-        // — MapDomainResponse passes it through unchanged (F4 pass-through
-        // by design), so the confirmed order surfaces one level under
-        // `GetOrderByOrderNumberHandler` rather than directly under `data`.
-        $this->assertSame(
-            'ORD-ACC-001',
-            $body['data']['GetOrderByOrderNumberHandler']['order']['orderNumber'] ?? null,
-        );
+        // The data is flat (`jardissupport/workflow` wire contract): the
+        // reloaded order itself, its type in `@type`.
+        $this->assertSame('order', $body['data']['@type'] ?? null);
+        $this->assertSame('ORD-ACC-001', $body['data']['orderNumber'] ?? null);
     }
 
-    public function testPostOrdersWithAValidationRejectedOrderDoesNotFalselyReportCreated(): void
+    public function testPostOrdersWithAnInvalidFieldAnswersTheFlatValidationEnvelope(): void
     {
         $app = $this->buildApp();
         $payload = self::VALID_ORDER_PAYLOAD;
-        $payload['customer']['phone'] = '1'; // fails ValidateCreateOrder's phone check
+        $payload['customer']['phone'] = '1'; // fails the phone check of the process start
 
         $response = $app->handle($this->jsonRequest('POST', '/orders', $payload));
 
-        // The process itself would report success here (verified
-        // empirically — see the comment on RegisterOrderRoutes::createOrder)
-        // ; the read-facade confirmation is what catches it.
+        // The process answers the start failure itself (400, `fields` with
+        // the path of the input field) - no order was written.
         $this->assertSame(400, $response->getStatusCode());
-        $this->assertSame(400, $this->decode($response)['status']);
+        $body = $this->decode($response);
+        $this->assertSame(400, $body['status']);
+        $this->assertSame('validation', $body['data']['@type'] ?? null);
+        $this->assertSame('order.customer.phone', $body['data']['fields'][0]['field'] ?? null);
+        $this->assertSame('validation.invalid', $body['data']['fields'][0]['messageKey'] ?? null);
+
+        $pdo = self::$pdo;
+        assert($pdo !== null);
+        $count = $pdo->query('SELECT COUNT(*) FROM orders');
+        $this->assertNotFalse($count);
+        $this->assertSame('0', (string) $count->fetchColumn());
     }
 
     public function testGetOrderByIdReturnsTheJustCreatedOrder(): void
@@ -90,8 +93,10 @@ final class OrdersAcceptanceTest extends EcommerceAcceptanceTestCase
         $this->assertSame(200, $response->getStatusCode());
         $body = $this->decode($response);
         $this->assertSame(200, $body['status']);
-        $this->assertSame('ORD-ACC-001', $body['data']['GetOrderByIdHandler']['order']['orderNumber'] ?? null);
-        $this->assertSame(49.98, $body['data']['GetOrderByIdHandler']['order']['totalAmount'] ?? null);
+        $this->assertSame('order', $body['data']['@type'] ?? null);
+        $this->assertSame('ORD-ACC-001', $body['data']['orderNumber'] ?? null);
+        // Decimals travel as strings on the wire (no float rounding).
+        $this->assertSame('49.98', $body['data']['totalAmount'] ?? null);
     }
 
     public function testPatchOrdersWithNonPositiveTotalAmountReturnsTheRealRuleViolationPayload(): void
@@ -107,20 +112,14 @@ final class OrdersAcceptanceTest extends EcommerceAcceptanceTestCase
         $this->assertSame(422, $response->getStatusCode());
         $body = $this->decode($response);
         $this->assertSame(422, $body['status']);
-        // {rule, messageKey, context} unter `data.UpdateOrder` (siehe
-        // Kommentar in testPostOrders... oben) — Struktur, Schluessel und
-        // Werte sind der reale generierte Vertrag (E2 RuleViolation
-        // pass-through), unveraendert.
-        $this->assertSame('OrderUpdateAllowed', $body['data']['UpdateOrder']['rule'] ?? null);
-        $this->assertSame(
-            'rule.order_update_allowed.non_positive_total',
-            $body['data']['UpdateOrder']['messageKey'] ?? null,
-        );
-        // json_encode(0.0) drops the fractional part ("0", not "0.0")
-        // without JSON_PRESERVE_ZERO_FRACTION, so json_decode round-trips
-        // it back as int(0) here — real PHP JSON behaviour, not a bug;
-        // the assertion matches what actually comes back over the wire.
-        $this->assertSame(0, $body['data']['UpdateOrder']['context']['totalAmount'] ?? null);
+        // Flat 422 form of the process package (`@type`, `rule`, `messageKey`,
+        // `context`; wire contract case 422) - the real generated contract.
+        $this->assertSame('ruleViolation', $body['data']['@type'] ?? null);
+        $this->assertSame('OrderUpdateAllowed', $body['data']['rule'] ?? null);
+        $this->assertSame('rule.order_update_allowed.non_positive_total', $body['data']['messageKey'] ?? null);
+        // The command carries the decimal as a string, so the context
+        // carries the string the route handed over.
+        $this->assertSame('0', $body['data']['context']['totalAmount'] ?? null);
     }
 
     public function testPatchOrdersWithAPositiveTotalAmountSucceeds(): void
@@ -135,7 +134,8 @@ final class OrdersAcceptanceTest extends EcommerceAcceptanceTestCase
 
         $this->assertSame(200, $response->getStatusCode());
         $body = $this->decode($response);
-        $this->assertSame('ORD-ACC-001', $body['data']['UpdateOrder']['orderNumber'] ?? null);
+        $this->assertSame('order', $body['data']['@type'] ?? null);
+        $this->assertSame('ORD-ACC-001', $body['data']['orderNumber'] ?? null);
     }
 
     public function testUnknownRouteRespondsWithTheCanonicalFourOhFourEnvelope(): void
@@ -175,8 +175,15 @@ final class OrdersAcceptanceTest extends EcommerceAcceptanceTestCase
         $app = $this->buildApp();
         $payload = self::VALID_ORDER_PAYLOAD;
         $payload['orderNumber'] = 'ORDER-TRIGGER-FAULT';
+        $created = $app->handle($this->jsonRequest('POST', '/orders', $payload));
+        $this->assertSame(201, $created->getStatusCode());
 
-        $response = $app->handle($this->jsonRequest('POST', '/orders', $payload));
+        // OrderIsCancellable (the guard of the update) throws on this order
+        // number - a technical fault, never a 4xx.
+        $response = $app->handle($this->jsonRequest('PATCH', '/orders/ORDER-TRIGGER-FAULT', [
+            'totalAmount' => 75.0,
+            'status' => 'pending',
+        ]));
 
         $this->assertSame(500, $response->getStatusCode());
     }

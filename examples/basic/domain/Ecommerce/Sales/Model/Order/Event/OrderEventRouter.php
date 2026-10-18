@@ -21,8 +21,10 @@ use JardisSupport\Contract\EventListener\EventListenerRegistryInterface;
  *   ecommerce.sales.order.address.removed
  *   ecommerce.sales.order.order-item.added
  *   ecommerce.sales.order.order-item.removed
+ *   ecommerce.sales.order.order-item.updated
  *   ecommerce.sales.order.item-discount.added
  *   ecommerce.sales.order.item-discount.removed
+ *   ecommerce.sales.order.item-discount.updated
  */
 class OrderEventRouter
 {
@@ -36,8 +38,10 @@ class OrderEventRouter
         $this->onOrderAddressRemoved($registry);
         $this->onOrderOrderItemAdded($registry);
         $this->onOrderOrderItemRemoved($registry);
+        $this->onOrderOrderItemUpdated($registry);
         $this->onOrderItemDiscountAdded($registry);
         $this->onOrderItemDiscountRemoved($registry);
+        $this->onOrderItemDiscountUpdated($registry);
     }
 
     // ecommerce.sales.order.created
@@ -104,6 +108,14 @@ class OrderEventRouter
         });
     }
 
+    // ecommerce.sales.order.order-item.updated
+    protected function onOrderOrderItemUpdated(EventListenerRegistryInterface $registry): void
+    {
+        $registry->listen(OrderOrderItemUpdated::class, function (OrderOrderItemUpdated $event) {
+            // configure transport
+        });
+    }
+
     // ecommerce.sales.order.item-discount.added
     protected function onOrderItemDiscountAdded(EventListenerRegistryInterface $registry): void
     {
@@ -116,6 +128,14 @@ class OrderEventRouter
     protected function onOrderItemDiscountRemoved(EventListenerRegistryInterface $registry): void
     {
         $registry->listen(OrderItemDiscountRemoved::class, function (OrderItemDiscountRemoved $event) {
+            // configure transport
+        });
+    }
+
+    // ecommerce.sales.order.item-discount.updated
+    protected function onOrderItemDiscountUpdated(EventListenerRegistryInterface $registry): void
+    {
+        $registry->listen(OrderItemDiscountUpdated::class, function (OrderItemDiscountUpdated $event) {
             // configure transport
         });
     }

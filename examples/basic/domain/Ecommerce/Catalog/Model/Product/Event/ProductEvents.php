@@ -17,10 +17,13 @@ class ProductEvents
     public const PRODUCT_UPDATED = ProductUpdated::class;
     public const PRODUCT_PRODUCT_IMAGE_ADDED = ProductProductImageAdded::class;
     public const PRODUCT_PRODUCT_IMAGE_REMOVED = ProductProductImageRemoved::class;
+    public const PRODUCT_PRODUCT_IMAGE_UPDATED = ProductProductImageUpdated::class;
     public const PRODUCT_PRODUCT_VARIANT_ADDED = ProductProductVariantAdded::class;
     public const PRODUCT_PRODUCT_VARIANT_REMOVED = ProductProductVariantRemoved::class;
+    public const PRODUCT_PRODUCT_VARIANT_UPDATED = ProductProductVariantUpdated::class;
     public const PRODUCT_PRODUCT_VARIANT_PRICE_ADDED = ProductProductVariantPriceAdded::class;
     public const PRODUCT_PRODUCT_VARIANT_PRICE_REMOVED = ProductProductVariantPriceRemoved::class;
+    public const PRODUCT_PRODUCT_VARIANT_PRICE_UPDATED = ProductProductVariantPriceUpdated::class;
 
     public static function getAll(): array
     {
@@ -30,10 +33,13 @@ class ProductEvents
             'ProductUpdated' => self::PRODUCT_UPDATED,
             'ProductProductImageAdded' => self::PRODUCT_PRODUCT_IMAGE_ADDED,
             'ProductProductImageRemoved' => self::PRODUCT_PRODUCT_IMAGE_REMOVED,
+            'ProductProductImageUpdated' => self::PRODUCT_PRODUCT_IMAGE_UPDATED,
             'ProductProductVariantAdded' => self::PRODUCT_PRODUCT_VARIANT_ADDED,
             'ProductProductVariantRemoved' => self::PRODUCT_PRODUCT_VARIANT_REMOVED,
+            'ProductProductVariantUpdated' => self::PRODUCT_PRODUCT_VARIANT_UPDATED,
             'ProductProductVariantPriceAdded' => self::PRODUCT_PRODUCT_VARIANT_PRICE_ADDED,
             'ProductProductVariantPriceRemoved' => self::PRODUCT_PRODUCT_VARIANT_PRICE_REMOVED,
+            'ProductProductVariantPriceUpdated' => self::PRODUCT_PRODUCT_VARIANT_PRICE_UPDATED,
         ];
     }
 }

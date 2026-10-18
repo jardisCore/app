@@ -17,7 +17,7 @@ readonly class AddProductVariantPrice
         public string $productIdentifier,
         public string $productVariantIdentifier,
         public string $region,
-        public float $price,
+        public string $price,
         public string $currency,
         public ?DateTimeImmutable $validFrom,
         public ?DateTimeImmutable $validUntil

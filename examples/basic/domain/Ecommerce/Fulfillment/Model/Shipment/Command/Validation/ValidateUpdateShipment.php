@@ -9,7 +9,6 @@ use Ecommerce\Fulfillment\Model\Shipment\Command\UpdateShipment;
 use Ecommerce\Fulfillment\Model\Shipment\Command\Validation\ShipmentValidator;
 use JardisSupport\Validation\ObjectValidator;
 use JardisSupport\Validation\ValidatorRegistry;
-use JsonException;
 use Throwable;
 use Ecommerce\Fulfillment\Model\Shipment\Command\UpdateShipment as CommandUpdateShipment;
 
@@ -26,7 +25,6 @@ class ValidateUpdateShipment extends EcommerceContext
      *
      * @param CommandUpdateShipment $dto Command DTO
      * @throws ValidationException If validation fails
-     * @throws JsonException
      * @throws Throwable
      */
     public function __invoke(CommandUpdateShipment $dto): void
@@ -34,12 +32,13 @@ class ValidateUpdateShipment extends EcommerceContext
         $registry = new ValidatorRegistry();
         $registry->register(UpdateShipment::class, ($this->handle(ShipmentValidator::class))());
 
-        $validator = new ObjectValidator($registry);
+        $validator = new ObjectValidator($registry, indexedLists: true);
         $result = $validator->validate($dto);
         $errors = $this->filterEmptyErrors($result->getErrors());
+        $kinds = $this->filterEmptyErrors($result->getKinds());
 
         if (!empty($errors)) {
-            throw new ValidationException(json_encode($errors, JSON_THROW_ON_ERROR));
+            throw new ValidationException($errors, $kinds);
         }
     }
 

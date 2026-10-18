@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Ecommerce\Catalog\Model\Product\Command\Handler\Action;
 
-use Ecommerce\Catalog\Model\Product\Aggregate\Product;
 use Ecommerce\Catalog\FieldMap;
+use Ecommerce\Catalog\Model\Product\Aggregate\Product;
 use Ecommerce\EcommerceContext;
 use JardisSupport\Data\FieldMapper;
 use Throwable;
@@ -57,7 +57,12 @@ class HydrateCreateProductEntities extends EcommerceContext
 
         // ProductImage collection
         foreach ($product->productImage as $productImageDto) {
-            $handler->addProductImage($this->handle(FieldMapper::class)->toColumns(get_object_vars($productImageDto), $fieldMap->productImagesColumns()));
+            $handler->addProductImage(
+                $this->handle(FieldMapper::class)->toColumns(
+                    get_object_vars($productImageDto),
+                    $fieldMap->productImagesColumns()
+                )
+            );
         }
     }
 
@@ -73,7 +78,10 @@ class HydrateCreateProductEntities extends EcommerceContext
         foreach ($product->productVariant as $productVariantDto) {
             $productVariantPriceDataList = [];
             foreach ($productVariantDto->productVariantPrice as $productVariantPriceDto) {
-                $productVariantPriceDataList[] = $this->handle(FieldMapper::class)->toColumns(get_object_vars($productVariantPriceDto), $fieldMap->productVariantPricesColumns());
+                $productVariantPriceDataList[] = $this->handle(FieldMapper::class)->toColumns(
+                    get_object_vars($productVariantPriceDto),
+                    $fieldMap->productVariantPricesColumns()
+                );
             }
             $entityData = $this->handle(FieldMapper::class)->toColumns([
                 ...array_filter(

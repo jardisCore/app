@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Ecommerce\Sales\Model\Order\Query\Handler;
 
 use Ecommerce\EcommerceContext;
-use Ecommerce\Response\DomainResponseTransformer;
 use Ecommerce\Sales\Model\Order\Query\Response\OrderResponse;
 use Ecommerce\Sales\Model\Order\Repository\OrderRepository;
 use Exception;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
 use JardisSupport\Data\FieldMapper;
+use JardisSupport\Data\Handler\ProjectWire;
 use JardisSupport\Data\Hydration;
 use ReflectionException;
 use Throwable;
@@ -58,7 +58,6 @@ class GetOrderByOrderNumberHandler extends EcommerceContext
                 'amount' => 'amount',
             ],
             'order' => [
-                'id' => 'id',
                 'orderNumber' => 'order_number',
                 'totalAmount' => 'total_amount',
                 'status' => 'status',
@@ -74,19 +73,32 @@ class GetOrderByOrderNumberHandler extends EcommerceContext
         ];
         $mapEntity = static fn(string $entity): array => $readMaps[$entity] ?? [];
 
+        $wireTypes = [
+            'createdAt' => 'date-time',
+            'customer' => [
+                'createdAt' => 'date-time',
+            ],
+        ];
+
+        $projectWire = $this->handle(ProjectWire::class);
+        $fieldMapper = $this->handle(FieldMapper::class);
+        $hydration = $this->handle(Hydration::class);
+
         /** @var array<int, OrderResponse> $projected */
         $projected = array_map(
-            function (array $row) use ($mapEntity): OrderResponse {
-                $mapped = $this->handle(FieldMapper::class)->fromAggregate($row, $mapEntity, 'order');
+            function (array $row) use ($mapEntity, $fieldMapper, $hydration, $projectWire, $wireTypes): OrderResponse {
+                $mapped = $fieldMapper->fromAggregate($row, $mapEntity, 'order');
+                $mapped = $projectWire($mapped, $wireTypes);
                 $orderResponse = new OrderResponse();
-                $this->handle(Hydration::class)->hydrateAggregate($orderResponse, $mapped);
+                $hydration->hydrateAggregate($orderResponse, $mapped);
                 return $orderResponse;
             },
             $result,
         );
 
-        $this->result()->setData(['order' => $projected[0] ?? null]);
+        $found = $projected[0] ?? null;
+        $this->result()->setData($found === null ? [] : ['@type' => 'order'] + get_object_vars($found));
 
-        return $this->handle(DomainResponseTransformer::class)->transform($this->result());
+        return ($this->transformer())($this->result());
     }
 }

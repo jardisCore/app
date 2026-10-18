@@ -14,7 +14,9 @@ use Ecommerce\Sales\Model\Order\Command\Handler\RemoveOrder;
 use Ecommerce\Sales\Model\Order\Command\Handler\RemoveOrderItem;
 use Ecommerce\Sales\Model\Order\Command\Handler\SetAddress;
 use Ecommerce\Sales\Model\Order\Command\Handler\SetCustomer;
+use Ecommerce\Sales\Model\Order\Command\Handler\UpdateItemDiscount;
 use Ecommerce\Sales\Model\Order\Command\Handler\UpdateOrder;
+use Ecommerce\Sales\Model\Order\Command\Handler\UpdateOrderItem;
 use Ecommerce\Sales\Model\Order\Event\OrderEvents;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
 use Throwable;
@@ -27,7 +29,9 @@ use Ecommerce\Sales\Model\Order\Command\RemoveOrder as CommandRemoveOrder;
 use Ecommerce\Sales\Model\Order\Command\RemoveOrderItem as CommandRemoveOrderItem;
 use Ecommerce\Sales\Model\Order\Command\SetAddress as CommandSetAddress;
 use Ecommerce\Sales\Model\Order\Command\SetCustomer as CommandSetCustomer;
+use Ecommerce\Sales\Model\Order\Command\UpdateItemDiscount as CommandUpdateItemDiscount;
 use Ecommerce\Sales\Model\Order\Command\UpdateOrder as CommandUpdateOrder;
+use Ecommerce\Sales\Model\Order\Command\UpdateOrderItem as CommandUpdateOrderItem;
 
 /**
  * Order Aggregate Facade.
@@ -56,12 +60,16 @@ class Order extends EcommerceContext
      *
      * @param CommandUpdateOrder $updateOrder
      * @param string $version Optional ClassVersion override (default: caller version)
+     * @param array<string, mixed> $expected Optional read basis (CAS): outer field name => value the caller read
      * @return DomainResponseInterface
      * @throws Throwable
      */
-    public function updateOrder(CommandUpdateOrder $updateOrder, string $version = ''): DomainResponseInterface
-    {
-        return $this->context(UpdateOrder::class, $updateOrder, $version)();
+    public function updateOrder(
+        CommandUpdateOrder $updateOrder,
+        string $version = '',
+        array $expected = []
+    ): DomainResponseInterface {
+        return $this->context(UpdateOrder::class, $updateOrder, $version)($expected);
     }
 
     /**
@@ -132,6 +140,21 @@ class Order extends EcommerceContext
     }
 
     /**
+     * Update OrderItem operation.
+     *
+     * @param CommandUpdateOrderItem $updateOrderItem
+     * @param string $version Optional ClassVersion override (default: caller version)
+     * @return DomainResponseInterface
+     * @throws Throwable
+     */
+    public function updateOrderItem(
+        CommandUpdateOrderItem $updateOrderItem,
+        string $version = ''
+    ): DomainResponseInterface {
+        return $this->context(UpdateOrderItem::class, $updateOrderItem, $version)();
+    }
+
+    /**
      * Add ItemDiscount operation.
      *
      * @param CommandAddItemDiscount $addItemDiscount
@@ -159,6 +182,21 @@ class Order extends EcommerceContext
         string $version = ''
     ): DomainResponseInterface {
         return $this->context(RemoveItemDiscount::class, $removeItemDiscount, $version)();
+    }
+
+    /**
+     * Update ItemDiscount operation.
+     *
+     * @param CommandUpdateItemDiscount $updateItemDiscount
+     * @param string $version Optional ClassVersion override (default: caller version)
+     * @return DomainResponseInterface
+     * @throws Throwable
+     */
+    public function updateItemDiscount(
+        CommandUpdateItemDiscount $updateItemDiscount,
+        string $version = ''
+    ): DomainResponseInterface {
+        return $this->context(UpdateItemDiscount::class, $updateItemDiscount, $version)();
     }
 
     /**

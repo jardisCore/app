@@ -5,17 +5,18 @@ declare(strict_types=1);
 namespace Ecommerce\Catalog\Model\Category;
 
 use Ecommerce\Catalog\Model\Category\Query\CategoryListFilter;
-use Ecommerce\Catalog\Model\Category\Query\CategoryTranslationListFilter;
 use Ecommerce\Catalog\Model\Category\Query\Handler\GetCategoryByIdHandler;
 use Ecommerce\Catalog\Model\Category\Query\Handler\GetCategoryByIdentifierHandler;
+use Ecommerce\Catalog\Model\Category\Query\Handler\GetCategoryByIdentifiersHandler;
 use Ecommerce\Catalog\Model\Category\Query\Handler\GetCategoryByIdsHandler;
 use Ecommerce\Catalog\Model\Category\Query\Handler\GetCategoryListHandler;
-use Ecommerce\Catalog\Model\Category\Query\Handler\GetCategoryTranslationListHandler;
 use Ecommerce\EcommerceContext;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
+use JardisSupport\Workflow\Data\ReadResult;
 use Throwable;
 use Ecommerce\Catalog\Model\Category\Query\CategoryById as QueryCategoryById;
 use Ecommerce\Catalog\Model\Category\Query\CategoryByIdentifier as QueryCategoryByIdentifier;
+use Ecommerce\Catalog\Model\Category\Query\CategoryByIdentifiers as QueryCategoryByIdentifiers;
 use Ecommerce\Catalog\Model\Category\Query\CategoryByIds as QueryCategoryByIds;
 
 /**
@@ -56,6 +57,21 @@ class CategoryRead extends EcommerceContext
     }
 
     /**
+     * Gets CategoryByIdentifiers aggregate.
+     *
+     * @param QueryCategoryByIdentifiers $categoryByIdentifiers Query parameters
+     * @param string $version Optional ClassVersion override (default: caller version)
+     * @return DomainResponseInterface
+     * @throws Throwable
+     */
+    public function getCategoryByIdentifiers(
+        QueryCategoryByIdentifiers $categoryByIdentifiers,
+        string $version = ''
+    ): DomainResponseInterface {
+        return $this->context(GetCategoryByIdentifiersHandler::class, $categoryByIdentifiers, $version)();
+    }
+
+    /**
      * Gets CategoryByIds aggregate.
      *
      * @param QueryCategoryByIds $categoryByIds Query parameters
@@ -69,22 +85,15 @@ class CategoryRead extends EcommerceContext
     }
 
     /**
+     * Declared query `categoryList` (Queries.json, visibility public).
+     *
+     * @param CategoryListFilter $filter Declared query parameters
      * @param string $version Optional ClassVersion override (default: caller version)
-     * @return array{items: array<int, array<string, mixed>>, total: int, limit: int, offset: int}
+     * @return ReadResult<array<string, mixed>>
      * @throws Throwable
      */
-    public function categoryList(CategoryListFilter $filter, string $version = ''): array
+    public function categoryList(CategoryListFilter $filter, string $version = ''): ReadResult
     {
         return $this->context(GetCategoryListHandler::class, $filter, $version)();
-    }
-
-    /**
-     * @param string $version Optional ClassVersion override (default: caller version)
-     * @return array{items: array<int, array<string, mixed>>, total: int, limit: int, offset: int}
-     * @throws Throwable
-     */
-    public function categoryTranslationList(CategoryTranslationListFilter $filter, string $version = ''): array
-    {
-        return $this->context(GetCategoryTranslationListHandler::class, $filter, $version)();
     }
 }

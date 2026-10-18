@@ -21,4 +21,5 @@ class ProductImageResponse
     public ?int $height = null;
     public int $sortOrder = 0;
     public int $isPrimary = 0;
+    public ?string $updatedAt = null;
 }

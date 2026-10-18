@@ -7,13 +7,14 @@ namespace Ecommerce\Fulfillment\Entity\Validation;
 use JardisSupport\Validation\CompositeFieldValidator;
 use JardisSupport\Validation\Validator\Length;
 use JardisSupport\Validation\Validator\NotBlank;
+use JardisSupport\Validation\Validator\NotEmpty;
 use JardisSupport\Validation\Validator\Positive;
 
 /**
  * Validator for ShipmentItem entity.
  *
  * Auto-generated validation rules from schema metadata:
- * - NOT NULL → NotBlank
+ * - NOT NULL string (no value list, no FK) → NotEmpty (a blank string is empty), other NOT NULL → NotBlank
  * - VARCHAR(n) → Length::max()
  * - Numeric constraints → Range::between() or Positive
  * - ENUM → Contain::oneOf()
@@ -40,14 +41,14 @@ class ShipmentItemValidator
         $this->validator = new CompositeFieldValidator();
 
         $this->validator->field('productSku')
-            ->validates(NotBlank::class)
+            ->validates(NotEmpty::class, NotEmpty::trimmed())
             ->validates(Length::class, Length::max(100));
         $this->validator->field('productName')
-            ->validates(NotBlank::class)
+            ->validates(NotEmpty::class, NotEmpty::trimmed())
             ->validates(Length::class, Length::max(255));
         $this->validator->field('quantity')
             ->validates(NotBlank::class)
-            ->validates(Positive::class);
+            ->validates(Positive::class, Positive::allowZero());
         $this->validator->field('isFragile')
             ->validates(NotBlank::class);
         $this->validator->field('serialNumber')

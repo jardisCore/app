@@ -18,10 +18,13 @@ use JardisSupport\Contract\EventListener\EventListenerRegistryInterface;
  *   ecommerce.catalog.product.updated
  *   ecommerce.catalog.product.product-image.added
  *   ecommerce.catalog.product.product-image.removed
+ *   ecommerce.catalog.product.product-image.updated
  *   ecommerce.catalog.product.product-variant.added
  *   ecommerce.catalog.product.product-variant.removed
+ *   ecommerce.catalog.product.product-variant.updated
  *   ecommerce.catalog.product.product-variant-price.added
  *   ecommerce.catalog.product.product-variant-price.removed
+ *   ecommerce.catalog.product.product-variant-price.updated
  */
 class ProductEventRouter
 {
@@ -32,10 +35,13 @@ class ProductEventRouter
         $this->onProductUpdated($registry);
         $this->onProductProductImageAdded($registry);
         $this->onProductProductImageRemoved($registry);
+        $this->onProductProductImageUpdated($registry);
         $this->onProductProductVariantAdded($registry);
         $this->onProductProductVariantRemoved($registry);
+        $this->onProductProductVariantUpdated($registry);
         $this->onProductProductVariantPriceAdded($registry);
         $this->onProductProductVariantPriceRemoved($registry);
+        $this->onProductProductVariantPriceUpdated($registry);
     }
 
     // ecommerce.catalog.product.created
@@ -78,6 +84,14 @@ class ProductEventRouter
         });
     }
 
+    // ecommerce.catalog.product.product-image.updated
+    protected function onProductProductImageUpdated(EventListenerRegistryInterface $registry): void
+    {
+        $registry->listen(ProductProductImageUpdated::class, function (ProductProductImageUpdated $event) {
+            // configure transport
+        });
+    }
+
     // ecommerce.catalog.product.product-variant.added
     protected function onProductProductVariantAdded(EventListenerRegistryInterface $registry): void
     {
@@ -94,6 +108,14 @@ class ProductEventRouter
         });
     }
 
+    // ecommerce.catalog.product.product-variant.updated
+    protected function onProductProductVariantUpdated(EventListenerRegistryInterface $registry): void
+    {
+        $registry->listen(ProductProductVariantUpdated::class, function (ProductProductVariantUpdated $event) {
+            // configure transport
+        });
+    }
+
     // ecommerce.catalog.product.product-variant-price.added
     protected function onProductProductVariantPriceAdded(EventListenerRegistryInterface $registry): void
     {
@@ -105,8 +127,22 @@ class ProductEventRouter
     // ecommerce.catalog.product.product-variant-price.removed
     protected function onProductProductVariantPriceRemoved(EventListenerRegistryInterface $registry): void
     {
-        $registry->listen(ProductProductVariantPriceRemoved::class, function (ProductProductVariantPriceRemoved $event) {
-            // configure transport
-        });
+        $registry->listen(
+            ProductProductVariantPriceRemoved::class,
+            function (ProductProductVariantPriceRemoved $event) {
+                // configure transport
+            }
+        );
+    }
+
+    // ecommerce.catalog.product.product-variant-price.updated
+    protected function onProductProductVariantPriceUpdated(EventListenerRegistryInterface $registry): void
+    {
+        $registry->listen(
+            ProductProductVariantPriceUpdated::class,
+            function (ProductProductVariantPriceUpdated $event) {
+                // configure transport
+            }
+        );
     }
 }

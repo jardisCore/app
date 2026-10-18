@@ -17,7 +17,7 @@ readonly class AddProductVariant
         public string $variantName,
         public string $optionName,
         public string $optionValue,
-        public float $priceModifier,
+        public string $priceModifier,
         public int $stockQuantity,
         public ?int $lowStockThreshold,
         public ?int $weightGrams,

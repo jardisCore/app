@@ -8,9 +8,8 @@ use Ecommerce\Catalog\Model\Category\Aggregate\Category as CategoryHandler;
 use Ecommerce\Catalog\Model\Category\Aggregate\Entity\Category as CategoryAggregate;
 use Ecommerce\Catalog\Model\Category\Query\CategoryById as CategoryByIdQuery;
 use Ecommerce\Catalog\Model\Category\Query\CategoryByIdentifier as CategoryByIdentifierQuery;
+use Ecommerce\Catalog\Model\Category\Query\CategoryByIdentifiers as CategoryByIdentifiersQuery;
 use Ecommerce\Catalog\Model\Category\Query\CategoryByIds as CategoryByIdsQuery;
-use Ecommerce\Catalog\Model\Category\Query\CategoryListFilter;
-use Ecommerce\Catalog\Model\Category\Query\CategoryTranslationListFilter;
 use Ecommerce\EcommerceContext;
 use JardisSupport\Contract\Kernel\ContextResponseInterface;
 use JardisSupport\Data\Hydration;
@@ -50,9 +49,29 @@ class CategoryRepository extends EcommerceContext
      * @throws ReflectionException
      * @throws Throwable
      */
-    public function getCategoryByIdentifier(CategoryByIdentifierQuery $query, bool $asHandler = true): CategoryHandler|array|null
-    {
+    public function getCategoryByIdentifier(
+        CategoryByIdentifierQuery $query,
+        bool $asHandler = true
+    ): CategoryHandler|array|null {
         $rootContainer = $this->handle(QueryCategoryByIdentifier::class)($query);
+
+        return $this->buildAggregate($rootContainer, $asHandler);
+    }
+
+    /**
+     * Get Category aggregate.
+     *
+     * @param CategoryByIdentifiersQuery $query Query parameters
+     * @param bool $asHandler If true, return handler with hydrated aggregate; if false, return array
+     * @return CategoryHandler|array|null Handler with aggregate, nested array, or null if not found
+     * @throws ReflectionException
+     * @throws Throwable
+     */
+    public function getCategoryByIdentifiers(
+        CategoryByIdentifiersQuery $query,
+        bool $asHandler = true
+    ): CategoryHandler|array|null {
+        $rootContainer = $this->handle(QueryCategoryByIdentifiers::class)($query);
 
         return $this->buildAggregate($rootContainer, $asHandler);
     }
@@ -132,39 +151,5 @@ class CategoryRepository extends EcommerceContext
         $this->handle(ValidateCategory::class)($handler);
 
         return $this->handle(PersistCategory::class)($handler);
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $rows
-     * @return array{items: array<int, array<string, mixed>>, total: int, limit: int, offset: int}
-     */
-    protected function listResponse(array $rows, int $limit, int $offset): array
-    {
-        $total = (int) ($rows[0]['total_count'] ?? 0);
-
-        return [
-            'items' => array_map(fn(array $row) => array_diff_key($row, ['total_count' => true]), $rows),
-            'total' => $total,
-            'limit' => $limit,
-            'offset' => $offset,
-        ];
-    }
-
-    /**
-     * @return array{items: array<int, array<string, mixed>>, total: int, limit: int, offset: int}
-     * @throws Throwable
-     */
-    public function categoryList(CategoryListFilter $filter): array
-    {
-        return $this->listResponse($this->handle(QueryCategoryList::class)($filter), $filter->limit, $filter->offset);
-    }
-
-    /**
-     * @return array{items: array<int, array<string, mixed>>, total: int, limit: int, offset: int}
-     * @throws Throwable
-     */
-    public function categoryTranslationList(CategoryTranslationListFilter $filter): array
-    {
-        return $this->listResponse($this->handle(QueryCategoryTranslationList::class)($filter), $filter->limit, $filter->offset);
     }
 }

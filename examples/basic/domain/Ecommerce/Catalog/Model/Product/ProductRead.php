@@ -6,16 +6,17 @@ namespace Ecommerce\Catalog\Model\Product;
 
 use Ecommerce\Catalog\Model\Product\Query\Handler\GetProductByIdHandler;
 use Ecommerce\Catalog\Model\Product\Query\Handler\GetProductByIdentifierHandler;
+use Ecommerce\Catalog\Model\Product\Query\Handler\GetProductByIdentifiersHandler;
 use Ecommerce\Catalog\Model\Product\Query\Handler\GetProductByIdsHandler;
 use Ecommerce\Catalog\Model\Product\Query\Handler\GetProductListHandler;
-use Ecommerce\Catalog\Model\Product\Query\Handler\GetProductVariantListHandler;
 use Ecommerce\Catalog\Model\Product\Query\ProductListFilter;
-use Ecommerce\Catalog\Model\Product\Query\ProductVariantListFilter;
 use Ecommerce\EcommerceContext;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
+use JardisSupport\Workflow\Data\ReadResult;
 use Throwable;
 use Ecommerce\Catalog\Model\Product\Query\ProductById as QueryProductById;
 use Ecommerce\Catalog\Model\Product\Query\ProductByIdentifier as QueryProductByIdentifier;
+use Ecommerce\Catalog\Model\Product\Query\ProductByIdentifiers as QueryProductByIdentifiers;
 use Ecommerce\Catalog\Model\Product\Query\ProductByIds as QueryProductByIds;
 
 /**
@@ -56,6 +57,21 @@ class ProductRead extends EcommerceContext
     }
 
     /**
+     * Gets ProductByIdentifiers aggregate.
+     *
+     * @param QueryProductByIdentifiers $productByIdentifiers Query parameters
+     * @param string $version Optional ClassVersion override (default: caller version)
+     * @return DomainResponseInterface
+     * @throws Throwable
+     */
+    public function getProductByIdentifiers(
+        QueryProductByIdentifiers $productByIdentifiers,
+        string $version = ''
+    ): DomainResponseInterface {
+        return $this->context(GetProductByIdentifiersHandler::class, $productByIdentifiers, $version)();
+    }
+
+    /**
      * Gets ProductByIds aggregate.
      *
      * @param QueryProductByIds $productByIds Query parameters
@@ -69,22 +85,15 @@ class ProductRead extends EcommerceContext
     }
 
     /**
+     * Declared query `productList` (Queries.json, visibility public).
+     *
+     * @param ProductListFilter $filter Declared query parameters
      * @param string $version Optional ClassVersion override (default: caller version)
-     * @return array{items: array<int, array<string, mixed>>, total: int, limit: int, offset: int}
+     * @return ReadResult<array<string, mixed>>
      * @throws Throwable
      */
-    public function productList(ProductListFilter $filter, string $version = ''): array
+    public function productList(ProductListFilter $filter, string $version = ''): ReadResult
     {
         return $this->context(GetProductListHandler::class, $filter, $version)();
-    }
-
-    /**
-     * @param string $version Optional ClassVersion override (default: caller version)
-     * @return array{items: array<int, array<string, mixed>>, total: int, limit: int, offset: int}
-     * @throws Throwable
-     */
-    public function productVariantList(ProductVariantListFilter $filter, string $version = ''): array
-    {
-        return $this->context(GetProductVariantListHandler::class, $filter, $version)();
     }
 }

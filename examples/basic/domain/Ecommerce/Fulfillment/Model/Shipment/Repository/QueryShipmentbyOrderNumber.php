@@ -5,82 +5,46 @@ declare(strict_types=1);
 namespace Ecommerce\Fulfillment\Model\Shipment\Repository;
 
 use Ecommerce\EcommerceContext;
+use Ecommerce\Fulfillment\Model\Shipment\Query\ShipmentByOrderNumberFilter;
 use JardisSupport\Contract\DbConnection\ConnectionPoolInterface;
-use JardisSupport\Contract\DbQuery\DbQueryBuilderInterface;
 use JardisSupport\DbQuery\DbQuery;
 use JardisSupport\Repository\Repository;
-use RuntimeException;
 use Throwable;
-use Ecommerce\Fulfillment\Model\Shipment\Query\ShipmentbyOrderNumber as ShipmentbyOrderNumberQuery;
 use Ecommerce\Fulfillment\Entity\Shipment as ShipmentEntity;
 
 /**
- * Root query class for Shipment (byOrderNumber variant).
+ * List query for ShipmentByOrderNumber.
  *
- * Loads the root entity. Follow-up queries are in QueryShipmentAdditions.
+ * Flattened read-only projection with SQL JOINs.
  * Generated code - do not modify directly.
  */
-class QueryShipmentbyOrderNumber extends EcommerceContext
+class QueryShipmentByOrderNumber extends EcommerceContext
 {
-    protected array $container = [];
-
     /**
-     * Load root entity for aggregate.
-     *
-     * @param ShipmentbyOrderNumberQuery $query Query parameters
-     * @return array<string, array<int, object>>
-     * @throws RuntimeException
+     * @return array<int, array<string, mixed>>
+     * @throws \RuntimeException
      * @throws Throwable
      */
-    public function __invoke(ShipmentbyOrderNumberQuery $query): array
+    public function __invoke(ShipmentByOrderNumberFilter $filter): array
     {
-        $this->container['shipment'] = $this->load(
-            $this->shipment($query->orderNumber)
-        );
+        $query = $this->handle(DbQuery::class)
+            ->from(ShipmentEntity::SOURCE, 'shipment')
+            ->select(
+                'shipment.identifier AS identifier, shipment.order_number AS orderNumber, '
+                . 'shipment.customer_identifier AS customerIdentifier, shipment.carrier AS carrier, '
+                . 'shipment.service_level AS serviceLevel, shipment.tracking_number AS trackingNumber, '
+                . 'shipment.status AS status, shipment.weight_grams AS weightGrams, '
+                . 'shipment.package_count AS packageCount, shipment.insurance_value AS insuranceValue, '
+                . 'shipment.estimated_delivery AS estimatedDelivery, shipment.shipped_at AS shippedAt, '
+                . 'shipment.delivered_at AS deliveredAt, shipment.note AS note, shipment.created_at AS createdAt, '
+                . 'COUNT(*) OVER() AS total_count'
+            );
 
-        return $this->container;
-    }
+        $query = $query->and('shipment.order_number')->equals($filter->orderNumber);
 
-    /**
-     * Query for shipment.
-     * @throws Throwable
-     */
-    protected function shipment(string $orderNumber): DbQueryBuilderInterface
-    {
-        return $this->query(ShipmentEntity::class)
-            ->Select('id, identifier, order_number, customer_identifier, delivery_address_id, carrier, service_level, tracking_number, status, weight_grams, package_count, insurance_value, estimated_delivery, shipped_at, delivered_at, note, created_at')
-            ->where('order_number')->equals($orderNumber);
-    }
-
-    /**
-     * Build a new query for an entity class.
-     *
-     * @param string $entityClass Entity class name
-     * @param string|null $alias Optional table alias
-     * @return DbQueryBuilderInterface
-     * @throws Throwable
-     */
-    protected function query(
-        string $entityClass,
-        ?string $alias = null
-    ): DbQueryBuilderInterface {
-        return $this->handle(DbQuery::class)
-            ->from($entityClass::SOURCE, $alias);
-    }
-
-    /**
-     * Execute query and return results.
-     *
-     * @param DbQueryBuilderInterface|null $query Query to execute
-     * @return array The query results
-     * @throws RuntimeException
-     * @throws Throwable
-     */
-    protected function load(?DbQueryBuilderInterface $query): array
-    {
-        if (!$query instanceof DbQueryBuilderInterface) {
-            return [];
-        }
+        $query = $query
+            ->orderBy('shipment.id', 'ASC')
+            ->limit(min($filter->limit, 50), $filter->offset);
 
         return $this->handle(Repository::class, $this->resolveConnection())->findByQuery($query);
     }

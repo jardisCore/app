@@ -17,7 +17,7 @@ readonly class ProductProductVariantPriceAdded
      * @param string $productIdentifier
      * @param int $productVariantPriceId
      * @param string $region
-     * @param float $price
+     * @param string $price
      * @param string $currency
      * @param ?DateTimeImmutable $validFrom
      * @param ?DateTimeImmutable $validUntil
@@ -27,7 +27,7 @@ readonly class ProductProductVariantPriceAdded
         public string $productIdentifier,
         public int $productVariantPriceId,
         public string $region,
-        public float $price,
+        public string $price,
         public string $currency,
         public ?DateTimeImmutable $validFrom,
         public ?DateTimeImmutable $validUntil,

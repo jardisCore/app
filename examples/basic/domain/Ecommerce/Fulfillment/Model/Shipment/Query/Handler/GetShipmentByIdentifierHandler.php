@@ -7,10 +7,10 @@ namespace Ecommerce\Fulfillment\Model\Shipment\Query\Handler;
 use Ecommerce\EcommerceContext;
 use Ecommerce\Fulfillment\Model\Shipment\Query\Response\ShipmentResponse;
 use Ecommerce\Fulfillment\Model\Shipment\Repository\ShipmentRepository;
-use Ecommerce\Response\DomainResponseTransformer;
 use Exception;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
 use JardisSupport\Data\FieldMapper;
+use JardisSupport\Data\Handler\ProjectWire;
 use JardisSupport\Data\Hydration;
 use ReflectionException;
 use Throwable;
@@ -40,7 +40,6 @@ class GetShipmentByIdentifierHandler extends EcommerceContext
         /** @var array<string, array<string, string>> $readMaps */
         $readMaps = [
             'shipment' => [
-                'id' => 'id',
                 'identifier' => 'identifier',
                 'orderNumber' => 'order_number',
                 'customerIdentifier' => 'customer_identifier',
@@ -91,19 +90,42 @@ class GetShipmentByIdentifierHandler extends EcommerceContext
         ];
         $mapEntity = static fn(string $entity): array => $readMaps[$entity] ?? [];
 
+        $wireTypes = [
+            'estimatedDelivery' => 'date',
+            'shippedAt' => 'date-time',
+            'deliveredAt' => 'date-time',
+            'createdAt' => 'date-time',
+            'trackingEvent' => [
+                'occurredAt' => 'date-time',
+                'reportedAt' => 'date-time',
+            ],
+        ];
+
+        $projectWire = $this->handle(ProjectWire::class);
+        $fieldMapper = $this->handle(FieldMapper::class);
+        $hydration = $this->handle(Hydration::class);
+
         /** @var array<int, ShipmentResponse> $projected */
         $projected = array_map(
-            function (array $row) use ($mapEntity): ShipmentResponse {
-                $mapped = $this->handle(FieldMapper::class)->fromAggregate($row, $mapEntity, 'shipment');
+            function (array $row) use (
+                $mapEntity,
+                $fieldMapper,
+                $hydration,
+                $projectWire,
+                $wireTypes
+            ): ShipmentResponse {
+                $mapped = $fieldMapper->fromAggregate($row, $mapEntity, 'shipment');
+                $mapped = $projectWire($mapped, $wireTypes);
                 $shipmentResponse = new ShipmentResponse();
-                $this->handle(Hydration::class)->hydrateAggregate($shipmentResponse, $mapped);
+                $hydration->hydrateAggregate($shipmentResponse, $mapped);
                 return $shipmentResponse;
             },
             $result,
         );
 
-        $this->result()->setData(['shipment' => $projected[0] ?? null]);
+        $found = $projected[0] ?? null;
+        $this->result()->setData($found === null ? [] : ['@type' => 'shipment'] + get_object_vars($found));
 
-        return $this->handle(DomainResponseTransformer::class)->transform($this->result());
+        return ($this->transformer())($this->result());
     }
 }

@@ -18,8 +18,8 @@ readonly class OrderOrderItemAdded
      * @param string $orderItemIdentifier
      * @param string $productIdentifier
      * @param int $quantity
-     * @param float $unitPrice
-     * @param float $subtotal
+     * @param string $unitPrice
+     * @param string $subtotal
      * @param DateTimeImmutable $occurredAt
      */
     public function __construct(
@@ -27,8 +27,8 @@ readonly class OrderOrderItemAdded
         public string $orderItemIdentifier,
         public string $productIdentifier,
         public int $quantity,
-        public float $unitPrice,
-        public float $subtotal,
+        public string $unitPrice,
+        public string $subtotal,
         public DateTimeImmutable $occurredAt
     ) {
     }

@@ -18,8 +18,11 @@ class ShipmentEvents
     public const SHIPMENT_SHIPMENT_ADDRESS_UPDATED = ShipmentShipmentAddressUpdated::class;
     public const SHIPMENT_SHIPMENT_ITEM_ADDED = ShipmentShipmentItemAdded::class;
     public const SHIPMENT_SHIPMENT_ITEM_REMOVED = ShipmentShipmentItemRemoved::class;
+    public const SHIPMENT_SHIPMENT_ITEM_UPDATED = ShipmentShipmentItemUpdated::class;
     public const SHIPMENT_TRACKING_EVENT_ADDED = ShipmentTrackingEventAdded::class;
     public const SHIPMENT_TRACKING_EVENT_REMOVED = ShipmentTrackingEventRemoved::class;
+    public const SHIPMENT_TRACKING_EVENT_UPDATED = ShipmentTrackingEventUpdated::class;
+    public const SHIPMENT_COMPUTED_UPDATED = ShipmentComputedUpdated::class;
 
     public static function getAll(): array
     {
@@ -30,8 +33,11 @@ class ShipmentEvents
             'ShipmentShipmentAddressUpdated' => self::SHIPMENT_SHIPMENT_ADDRESS_UPDATED,
             'ShipmentShipmentItemAdded' => self::SHIPMENT_SHIPMENT_ITEM_ADDED,
             'ShipmentShipmentItemRemoved' => self::SHIPMENT_SHIPMENT_ITEM_REMOVED,
+            'ShipmentShipmentItemUpdated' => self::SHIPMENT_SHIPMENT_ITEM_UPDATED,
             'ShipmentTrackingEventAdded' => self::SHIPMENT_TRACKING_EVENT_ADDED,
             'ShipmentTrackingEventRemoved' => self::SHIPMENT_TRACKING_EVENT_REMOVED,
+            'ShipmentTrackingEventUpdated' => self::SHIPMENT_TRACKING_EVENT_UPDATED,
+            'ShipmentComputedUpdated' => self::SHIPMENT_COMPUTED_UPDATED,
         ];
     }
 }

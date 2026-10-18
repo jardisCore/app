@@ -23,7 +23,7 @@ readonly class ShipmentUpdated
      * @param string $status
      * @param ?int $weightGrams
      * @param int $packageCount
-     * @param ?float $insuranceValue
+     * @param ?string $insuranceValue
      * @param ?DateTimeImmutable $estimatedDelivery
      * @param ?DateTimeImmutable $shippedAt
      * @param ?DateTimeImmutable $deliveredAt
@@ -40,7 +40,7 @@ readonly class ShipmentUpdated
         public string $status,
         public ?int $weightGrams,
         public int $packageCount,
-        public ?float $insuranceValue,
+        public ?string $insuranceValue,
         public ?DateTimeImmutable $estimatedDelivery,
         public ?DateTimeImmutable $shippedAt,
         public ?DateTimeImmutable $deliveredAt,

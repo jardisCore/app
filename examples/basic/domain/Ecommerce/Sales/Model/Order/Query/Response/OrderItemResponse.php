@@ -15,8 +15,12 @@ class OrderItemResponse
     public string $identifier = '';
     public string $productIdentifier = '';
     public int $quantity = 0;
-    public float $unitPrice = 0.0;
-    public float $subtotal = 0.0;
+
+    /** @var numeric-string */
+    public string $unitPrice = '0';
+
+    /** @var numeric-string */
+    public string $subtotal = '0';
 
     /** @var ItemDiscountResponse[] */
     public array $itemDiscount = [];

@@ -17,7 +17,6 @@ use Ecommerce\Sales\Model\Order\Command\Validation\OrderItemValidator;
 use Ecommerce\Sales\Model\Order\Command\Validation\OrderValidator;
 use JardisSupport\Validation\ObjectValidator;
 use JardisSupport\Validation\ValidatorRegistry;
-use JsonException;
 use Throwable;
 use Ecommerce\Sales\Model\Order\Command\Order as CommandOrder;
 
@@ -34,7 +33,6 @@ class ValidateCreateOrder extends EcommerceContext
      *
      * @param CommandOrder $dto Command DTO
      * @throws ValidationException If validation fails
-     * @throws JsonException
      * @throws Throwable
      */
     public function __invoke(CommandOrder $dto): void
@@ -46,12 +44,13 @@ class ValidateCreateOrder extends EcommerceContext
         $registry->register(OrderItem::class, ($this->handle(OrderItemValidator::class))());
         $registry->register(ItemDiscount::class, ($this->handle(ItemDiscountValidator::class))());
 
-        $validator = new ObjectValidator($registry);
+        $validator = new ObjectValidator($registry, indexedLists: true);
         $result = $validator->validate($dto);
         $errors = $this->filterEmptyErrors($result->getErrors());
+        $kinds = $this->filterEmptyErrors($result->getKinds());
 
         if (!empty($errors)) {
-            throw new ValidationException(json_encode($errors, JSON_THROW_ON_ERROR));
+            throw new ValidationException($errors, $kinds);
         }
     }
 

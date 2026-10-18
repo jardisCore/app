@@ -8,17 +8,16 @@ use Ecommerce\EcommerceContext;
 use Ecommerce\Sales\Model\Order\Query\Handler\GetOrderByIdHandler;
 use Ecommerce\Sales\Model\Order\Query\Handler\GetOrderByIdsHandler;
 use Ecommerce\Sales\Model\Order\Query\Handler\GetOrderByOrderNumberHandler;
-use Ecommerce\Sales\Model\Order\Query\Handler\GetOrderDetailListHandler;
-use Ecommerce\Sales\Model\Order\Query\Handler\GetOrderItemListHandler;
+use Ecommerce\Sales\Model\Order\Query\Handler\GetOrderByOrderNumbersHandler;
 use Ecommerce\Sales\Model\Order\Query\Handler\GetOrderListHandler;
-use Ecommerce\Sales\Model\Order\Query\OrderDetailListFilter;
-use Ecommerce\Sales\Model\Order\Query\OrderItemListFilter;
 use Ecommerce\Sales\Model\Order\Query\OrderListFilter;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
+use JardisSupport\Workflow\Data\ReadResult;
 use Throwable;
 use Ecommerce\Sales\Model\Order\Query\OrderById as QueryOrderById;
 use Ecommerce\Sales\Model\Order\Query\OrderByIds as QueryOrderByIds;
 use Ecommerce\Sales\Model\Order\Query\OrderByOrderNumber as QueryOrderByOrderNumber;
+use Ecommerce\Sales\Model\Order\Query\OrderByOrderNumbers as QueryOrderByOrderNumbers;
 
 /**
  * Order Aggregate Read Facade.
@@ -71,31 +70,29 @@ class OrderRead extends EcommerceContext
     }
 
     /**
+     * Gets OrderByOrderNumbers aggregate.
+     *
+     * @param QueryOrderByOrderNumbers $orderByOrderNumbers Query parameters
      * @param string $version Optional ClassVersion override (default: caller version)
-     * @return array{items: array<int, array<string, mixed>>, total: int, limit: int, offset: int}
+     * @return DomainResponseInterface
      * @throws Throwable
      */
-    public function orderDetailList(OrderDetailListFilter $filter, string $version = ''): array
-    {
-        return $this->context(GetOrderDetailListHandler::class, $filter, $version)();
+    public function getOrderByOrderNumbers(
+        QueryOrderByOrderNumbers $orderByOrderNumbers,
+        string $version = ''
+    ): DomainResponseInterface {
+        return $this->context(GetOrderByOrderNumbersHandler::class, $orderByOrderNumbers, $version)();
     }
 
     /**
+     * Declared query `orderList` (Queries.json, visibility public).
+     *
+     * @param OrderListFilter $filter Declared query parameters
      * @param string $version Optional ClassVersion override (default: caller version)
-     * @return array{items: array<int, array<string, mixed>>, total: int, limit: int, offset: int}
+     * @return ReadResult<array<string, mixed>>
      * @throws Throwable
      */
-    public function orderItemList(OrderItemListFilter $filter, string $version = ''): array
-    {
-        return $this->context(GetOrderItemListHandler::class, $filter, $version)();
-    }
-
-    /**
-     * @param string $version Optional ClassVersion override (default: caller version)
-     * @return array{items: array<int, array<string, mixed>>, total: int, limit: int, offset: int}
-     * @throws Throwable
-     */
-    public function orderList(OrderListFilter $filter, string $version = ''): array
+    public function orderList(OrderListFilter $filter, string $version = ''): ReadResult
     {
         return $this->context(GetOrderListHandler::class, $filter, $version)();
     }

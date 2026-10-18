@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Ecommerce\Catalog\Model\Category\Command\Handler\Action;
 
-use Ecommerce\Catalog\Model\Category\Aggregate\Category;
 use Ecommerce\Catalog\FieldMap;
+use Ecommerce\Catalog\Model\Category\Aggregate\Category;
 use Ecommerce\EcommerceContext;
 use JardisSupport\Data\FieldMapper;
 use Throwable;
@@ -56,7 +56,12 @@ class HydrateCreateCategoryEntities extends EcommerceContext
 
         // CategoryTranslation collection
         foreach ($category->categoryTranslation as $categoryTranslationDto) {
-            $handler->addCategoryTranslation($this->handle(FieldMapper::class)->toColumns(get_object_vars($categoryTranslationDto), $fieldMap->categoryTranslationsColumns()));
+            $handler->addCategoryTranslation(
+                $this->handle(FieldMapper::class)->toColumns(
+                    get_object_vars($categoryTranslationDto),
+                    $fieldMap->categoryTranslationsColumns()
+                )
+            );
         }
     }
 }

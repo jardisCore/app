@@ -5,23 +5,23 @@ declare(strict_types=1);
 namespace Ecommerce\Sales\Process\RuleGuardedOrderIntake\Command\Handler\Action;
 
 use Ecommerce\EcommerceContext;
-use Ecommerce\Sales\Process\RuleGuardedOrderIntake\Command\RuleGuardedOrderIntake;
 use Ecommerce\Sales\Closure\OrderEligibleForProcessing;
-use JardisSupport\Contract\Workflow\WorkflowContextInterface;
-use JardisSupport\Contract\Workflow\WorkflowResultInterface;
-use JardisSupport\Workflow\WorkflowResult;
+use Ecommerce\Sales\Closure\StockAvailable;
+use Ecommerce\Sales\Process\RuleGuardedOrderIntake\Command\Handler\RuleGuardedOrderIntakeContext;
+use JardisSupport\Contract\Kernel\ResponseStatus;
+use JardisSupport\Workflow\Data\NodeResult;
+use JardisSupport\Workflow\Data\Route;
 use Throwable;
 
 /**
- * Rule-Knoten (A6): prueft die ungebundene Katalog-Rule
- * OrderEligibleForProcessing ueber den generierten Adapter, bevor der
- * teure Aggregat-Aufruf ueberhaupt startet.
+ * Node CheckOrderEligibility of the process RuleGuardedOrderIntake (rule).
  *
- * Status: onSuccess | onFail
+ * Rule-Knoten (A6, S9): prueft das Rule-Set OrderIntakeChecks
+ * (Mitglieder StockAvailable, OrderEligibleForProcessing) ueber den
+ * generierten Adapter, bevor der teure Aggregat-Aufruf ueberhaupt
+ * startet.
  *
- * Rule-Knoten (docs/rules-layer/PLAN.md A6): prueft die Katalog-Rule OrderEligibleForProcessing
- * ueber die Kernel-Naht ($this->handle()) — passed => ON_SUCCESS, rejected
- * => ON_FAIL. Generierter Adapter, kein Entwickler-Body (ForceOverwrite).
+ * Evaluates the rules StockAvailable, OrderEligibleForProcessing.
  */
 final class CheckOrderEligibility extends EcommerceContext
 {
@@ -29,21 +29,26 @@ final class CheckOrderEligibility extends EcommerceContext
      * @node-id n1
      * @throws Throwable
      */
-    public function __invoke(WorkflowContextInterface $context): WorkflowResultInterface
+    public function __invoke(RuleGuardedOrderIntakeContext $ctx): NodeResult
     {
-        /** @var RuleGuardedOrderIntake $cmd */
-        $cmd = $this->payload();
-
-        $result = $this->handle(OrderEligibleForProcessing::class)($cmd);
-
-        if ($result->passed) {
-            return new WorkflowResult(WorkflowResult::ON_SUCCESS, []);
+        $result = $this->handle(StockAvailable::class)($ctx->input()->order);
+        if (!$result->passed) {
+            return NodeResult::reject(
+                ResponseStatus::RuleViolation,
+                $result->messageKey,
+                ['rule' => $result->rule] + $result->context + ['set' => 'OrderIntakeChecks']
+            );
         }
 
-        return new WorkflowResult(WorkflowResult::ON_FAIL, [
-            'rule'       => $result->rule,
-            'messageKey' => $result->messageKey,
-            'context'    => $result->context,
-        ]);
+        $result = $this->handle(OrderEligibleForProcessing::class)($ctx->input()->order);
+        if (!$result->passed) {
+            return NodeResult::reject(
+                ResponseStatus::RuleViolation,
+                $result->messageKey,
+                ['rule' => $result->rule] + $result->context + ['set' => 'OrderIntakeChecks']
+            );
+        }
+
+        return NodeResult::route(Route::OnTrue);
     }
 }

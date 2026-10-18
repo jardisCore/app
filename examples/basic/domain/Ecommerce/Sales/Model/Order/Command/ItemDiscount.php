@@ -13,7 +13,7 @@ readonly class ItemDiscount
 {
     public function __construct(
         public string $discountCode,
-        public float $amount
+        public string $amount
     ) {
     }
 }

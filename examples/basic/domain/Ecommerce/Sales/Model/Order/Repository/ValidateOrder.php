@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Ecommerce\Sales\Model\Order\Repository;
 
 use Ecommerce\EcommerceContext;
-use Ecommerce\Sales\Model\Order\Command\Validation\ValidationException;
 use Ecommerce\Sales\Entity\Validation\AddressValidator;
 use Ecommerce\Sales\Entity\Validation\CustomerValidator;
 use Ecommerce\Sales\Entity\Validation\ItemDiscountValidator;
 use Ecommerce\Sales\Entity\Validation\OrderItemValidator;
 use Ecommerce\Sales\Entity\Validation\OrderValidator;
-use JsonException;
+use Ecommerce\Sales\Model\Order\Command\Validation\ValidationException;
+use JardisSupport\Validation\CompositeFieldValidator;
 use Throwable;
 use Ecommerce\Sales\Model\Order\Aggregate\Order as OrderHandler;
 
@@ -28,7 +28,6 @@ class ValidateOrder extends EcommerceContext
      *
      * @param OrderHandler $handler Aggregate handler
      * @throws ValidationException If validation fails
-     * @throws JsonException
      * @throws Throwable
      */
     public function __invoke(OrderHandler $handler): void
@@ -38,37 +37,48 @@ class ValidateOrder extends EcommerceContext
         }
 
         $errors = [];
+        $kinds = [];
         $aggregate = $handler->getData();
 
         if (!empty($handler->getEntityData('order')['values'])) {
-            $this->validateEntity($aggregate, OrderValidator::class, 'order', $errors);
+            $this->validateEntity($aggregate, OrderValidator::class, 'order', $errors, $kinds);
         }
 
         $customer = $aggregate->getCustomer();
         if ($customer !== null && !empty($handler->getEntityData('customer')['values'])) {
-            $this->validateEntity($customer, CustomerValidator::class, 'customer', $errors);
+            $this->validateEntity($customer, CustomerValidator::class, 'customer', $errors, $kinds);
         }
         if ($customer !== null) {
             $address = $customer->getAddress();
             if ($address !== null && !empty($handler->getEntityData('address')['values'])) {
-                $this->validateEntity($address, AddressValidator::class, 'address', $errors);
+                $this->validateEntity($address, AddressValidator::class, 'address', $errors, $kinds);
             }
         }
         $orderItemCollection = $handler->getCollectionData('orderItem');
         foreach ($aggregate->getOrderItem() as $index => $orderItem) {
             if (!empty($orderItemCollection[$index]['values'])) {
-                $this->validateEntity($orderItem, OrderItemValidator::class, "orderItem[{$index}]", $errors);
+                $this->validateEntity($orderItem, OrderItemValidator::class, "orderItem[{$index}]", $errors, $kinds);
             }
         }
         $itemDiscountCollection = $handler->getCollectionData('itemDiscount');
-        foreach (array_merge([], ...array_map(fn(object $e) => $e->getItemDiscount(), $aggregate->getOrderItem())) as $index => $itemDiscount) {
-            if (!empty($itemDiscountCollection[$index]['values'])) {
-                $this->validateEntity($itemDiscount, ItemDiscountValidator::class, "itemDiscount[{$index}]", $errors);
+        $itemDiscountPosition = 0;
+        foreach ($aggregate->getOrderItem() as $orderItemIndex => $orderItem) {
+            foreach ($orderItem->getItemDiscount() as $itemDiscountIndex => $itemDiscount) {
+                if (!empty($itemDiscountCollection[$itemDiscountPosition]['values'])) {
+                    $this->validateEntity(
+                        $itemDiscount,
+                        ItemDiscountValidator::class,
+                        "orderItem[{$orderItemIndex}].itemDiscount[{$itemDiscountIndex}]",
+                        $errors,
+                        $kinds
+                    );
+                }
+                $itemDiscountPosition++;
             }
         }
 
         if (!empty($errors)) {
-            throw new ValidationException(json_encode($errors, JSON_THROW_ON_ERROR));
+            throw new ValidationException($errors, $kinds, root: 'order');
         }
     }
 
@@ -79,19 +89,24 @@ class ValidateOrder extends EcommerceContext
      * @param class-string $validatorClass Validator class name
      * @param string $entityName Entity identifier for error grouping
      * @param array<string, mixed> $errors Collected errors (by reference)
+     * @param array<string, mixed> $kinds Collected validator kinds, same shape (by reference)
      * @throws Throwable
      */
     protected function validateEntity(
         object $entity,
         string $validatorClass,
         string $entityName,
-        array &$errors
+        array &$errors,
+        array &$kinds
     ): void {
-        $validator = ($this->handle($validatorClass))();
+        $validatorInstance = $this->handle($validatorClass);
+        /** @var callable(): CompositeFieldValidator $validatorInstance */
+        $validator = $validatorInstance();
         $result = $validator->validate($entity);
 
         if (!$result->isValid()) {
             $errors[$entityName] = $result->getErrors();
+            $kinds[$entityName] = $result->getKinds();
         }
     }
 }

@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Ecommerce\Sales\Model\Invoice\Query\Handler;
 
 use Ecommerce\EcommerceContext;
-use Ecommerce\Response\DomainResponseTransformer;
 use Ecommerce\Sales\Model\Invoice\Query\Response\InvoiceResponse;
 use Ecommerce\Sales\Model\Invoice\Repository\InvoiceRepository;
 use Exception;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
 use JardisSupport\Data\FieldMapper;
+use JardisSupport\Data\Handler\ProjectWire;
 use JardisSupport\Data\Hydration;
 use ReflectionException;
 use Throwable;
@@ -21,6 +21,8 @@ use Ecommerce\Sales\Model\Invoice\Query\InvoiceByIds as QueryInvoiceByIds;
  */
 class GetInvoiceByIdsHandler extends EcommerceContext
 {
+    private const BULK_WARN_ABOVE = 100;
+
     /**
      * Executes the Query endpoint operation.
      *
@@ -34,13 +36,24 @@ class GetInvoiceByIdsHandler extends EcommerceContext
         /** @var QueryInvoiceByIds $invoiceByIds */
         $invoiceByIds = $this->payload();
 
+        $logger = $this->resource()->logger();
+        if ($logger !== null) {
+            $count = count($invoiceByIds->ids);
+            if ($count > self::BULK_WARN_ABOVE) {
+                $logger->warning('Bulk read {handler} received {count} keys (threshold {threshold}).', [
+                    'handler' => self::class,
+                    'count' => $count,
+                    'threshold' => self::BULK_WARN_ABOVE,
+                ]);
+            }
+        }
+
         /** @var array<int, array<string, mixed>> $result */
         $result = $this->handle(InvoiceRepository::class)->getInvoiceByIds($invoiceByIds, false);
 
         /** @var array<string, array<string, string>> $readMaps */
         $readMaps = [
             'invoice' => [
-                'id' => 'id',
                 'identifier' => 'identifier',
                 'invoiceNumber' => 'invoice_number',
                 'orderNumber' => 'order_number',
@@ -72,19 +85,40 @@ class GetInvoiceByIdsHandler extends EcommerceContext
         ];
         $mapEntity = static fn(string $entity): array => $readMaps[$entity] ?? [];
 
+        $wireTypes = [
+            'issuedAt' => 'date-time',
+            'dueAt' => 'date-time',
+            'paidAt' => 'date-time',
+            'createdAt' => 'date-time',
+            'invoiceLine' => [
+                'createdAt' => 'date-time',
+            ],
+        ];
+
+        $projectWire = $this->handle(ProjectWire::class);
+        $fieldMapper = $this->handle(FieldMapper::class);
+        $hydration = $this->handle(Hydration::class);
+
         /** @var array<int, InvoiceResponse> $projected */
         $projected = array_map(
-            function (array $row) use ($mapEntity): InvoiceResponse {
-                $mapped = $this->handle(FieldMapper::class)->fromAggregate($row, $mapEntity, 'invoice');
+            function (array $row) use (
+                $mapEntity,
+                $fieldMapper,
+                $hydration,
+                $projectWire,
+                $wireTypes
+            ): InvoiceResponse {
+                $mapped = $fieldMapper->fromAggregate($row, $mapEntity, 'invoice');
+                $mapped = $projectWire($mapped, $wireTypes);
                 $invoiceResponse = new InvoiceResponse();
-                $this->handle(Hydration::class)->hydrateAggregate($invoiceResponse, $mapped);
+                $hydration->hydrateAggregate($invoiceResponse, $mapped);
                 return $invoiceResponse;
             },
             $result,
         );
 
-        $this->result()->setData(['invoice' => $projected]);
+        $this->result()->setData(['@type' => 'invoiceList', 'items' => $projected]);
 
-        return $this->handle(DomainResponseTransformer::class)->transform($this->result());
+        return ($this->transformer())($this->result());
     }
 }

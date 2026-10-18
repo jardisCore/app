@@ -5,18 +5,20 @@ declare(strict_types=1);
 namespace Ecommerce\Sales\Model\Order\Repository;
 
 use Ecommerce\EcommerceContext;
-use Ecommerce\Sales\Model\Order\Aggregate\Entity\Address;
-use Ecommerce\Sales\Model\Order\Aggregate\Entity\Customer;
 use Ecommerce\Sales\Model\Order\Aggregate\Entity\ItemDiscount;
 use Ecommerce\Sales\Model\Order\Aggregate\Entity\OrderItem;
+use Ecommerce\Sales\Model\Order\Aggregate\Order as OrderHandler;
 use Exception;
 use JardisSupport\Contract\DbConnection\ConnectionPoolInterface;
+use JardisSupport\Contract\DbConnection\DbConnectionInterface;
+use JardisSupport\Contract\DbConnection\SavepointInterface;
 use JardisSupport\Contract\Kernel\ContextResponseInterface;
+use JardisSupport\Contract\Repository\Exception\TransientConflictException;
+use JardisSupport\Contract\Repository\Exception\UniqueViolationException;
+use JardisSupport\Repository\Adapter\PdoConnection;
 use JardisSupport\Repository\Repository;
 use PDOException;
-use RuntimeException;
 use Throwable;
-use Ecommerce\Sales\Model\Order\Aggregate\Order as OrderHandler;
 
 /**
  * Persists Order with all dependencies.
@@ -33,10 +35,13 @@ class PersistOrder extends EcommerceContext
      *
      * @param OrderHandler $handler Aggregate handler with business logic
      * @return ContextResponseInterface Response with events
+     * @throws ConcurrencyConflictException
      * @throws Exception
      * @throws PDOException
-     * @throws RuntimeException
-     * @throws Throwable
+     * @throws \RuntimeException
+     * @throws \Throwable
+     * @throws TransientConflictException
+     * @throws UniqueViolationException
      */
     public function __invoke(OrderHandler $handler): ContextResponseInterface
     {
@@ -45,10 +50,12 @@ class PersistOrder extends EcommerceContext
             return $this->result();
         }
 
-        $writer = $this->resolveConnection();
+        $writer = $this->resolveWriter();
         $ownsTransaction = !$writer->inTransaction();
         if ($ownsTransaction) {
             $writer->beginTransaction();
+        } else {
+            $writer->savepoint('jardis_persist_order');
         }
 
         $isNew = false;
@@ -63,12 +70,48 @@ class PersistOrder extends EcommerceContext
 
             if ($ownsTransaction) {
                 $writer->commit();
+            } else {
+                $writer->releaseSavepoint('jardis_persist_order');
             }
 
             return $this->result();
+        } catch (UniqueViolationException $violation) {
+            if ($ownsTransaction) {
+                $writer->rollback();
+            } else {
+                $writer->rollbackToSavepoint('jardis_persist_order');
+                $writer->releaseSavepoint('jardis_persist_order');
+            }
+            throw new ConcurrencyConflictException(
+                'duplicate',
+                'Order',
+                $this->conflictContext($handler),
+                $this->violatedFields($violation)
+            );
+        } catch (TransientConflictException $transient) {
+            if ($ownsTransaction) {
+                if ($writer->inTransaction()) {
+                    $writer->rollback();
+                }
+            } else {
+                try {
+                    $writer->rollbackToSavepoint('jardis_persist_order');
+                    $writer->releaseSavepoint('jardis_persist_order');
+                } catch (\RuntimeException) {
+                    throw $transient;
+                }
+            }
+            throw new ConcurrencyConflictException(
+                'stale_write',
+                'Order',
+                $this->conflictContext($handler)
+            );
         } catch (\Throwable $e) {
             if ($ownsTransaction) {
                 $writer->rollback();
+            } else {
+                $writer->rollbackToSavepoint('jardis_persist_order');
+                $writer->releaseSavepoint('jardis_persist_order');
             }
             throw $e;
         }
@@ -78,7 +121,8 @@ class PersistOrder extends EcommerceContext
      * Persists address entity data.
      *
      * @param OrderHandler $handler Aggregate handler
-     * @throws RuntimeException
+     * @throws ConcurrencyConflictException
+     * @throws \RuntimeException
      * @throws Throwable
      */
     protected function persistAddress(OrderHandler $handler): void
@@ -94,12 +138,21 @@ class PersistOrder extends EcommerceContext
                 ($addressData['onInserted'])($newId);
             }
         } elseif (!empty($addressData['values'])) {
-            $this->getRepository()->update(
-                $addressData['table'],
-                $addressData['pkColumn'],
-                $addressData['pkValue'],
-                $this->normalizeBoolValues($addressData['values'])
-            );
+            if (
+                !$this->getRepository()->update(
+                    $addressData['table'],
+                    $addressData['pkColumn'],
+                    $addressData['pkValue'],
+                    $this->normalizeBoolValues($addressData['values']),
+                    $this->normalizeBoolValues($addressData['expected'])
+                )
+            ) {
+                throw new ConcurrencyConflictException(
+                    'stale_write',
+                    'Order',
+                    $this->conflictContext($handler)
+                );
+            }
         }
     }
 
@@ -107,7 +160,8 @@ class PersistOrder extends EcommerceContext
      * Persists customer entity data.
      *
      * @param OrderHandler $handler Aggregate handler
-     * @throws RuntimeException
+     * @throws ConcurrencyConflictException
+     * @throws \RuntimeException
      * @throws Throwable
      */
     protected function persistCustomer(OrderHandler $handler): void
@@ -123,12 +177,21 @@ class PersistOrder extends EcommerceContext
                 ($customerData['onInserted'])($newId);
             }
         } elseif (!empty($customerData['values'])) {
-            $this->getRepository()->update(
-                $customerData['table'],
-                $customerData['pkColumn'],
-                $customerData['pkValue'],
-                $this->normalizeBoolValues($customerData['values'])
-            );
+            if (
+                !$this->getRepository()->update(
+                    $customerData['table'],
+                    $customerData['pkColumn'],
+                    $customerData['pkValue'],
+                    $this->normalizeBoolValues($customerData['values']),
+                    $this->normalizeBoolValues($customerData['expected'])
+                )
+            ) {
+                throw new ConcurrencyConflictException(
+                    'stale_write',
+                    'Order',
+                    $this->conflictContext($handler)
+                );
+            }
         }
     }
 
@@ -137,7 +200,8 @@ class PersistOrder extends EcommerceContext
      *
      * @param OrderHandler $handler Aggregate handler
      * @return bool Whether the entity is new
-     * @throws RuntimeException
+     * @throws ConcurrencyConflictException
+     * @throws \RuntimeException
      * @throws Throwable
      */
     protected function persistOrder(OrderHandler $handler): bool
@@ -153,12 +217,21 @@ class PersistOrder extends EcommerceContext
                 ($orderData['onInserted'])($newId);
             }
         } elseif (!empty($orderData['values'])) {
-            $this->getRepository()->update(
-                $orderData['table'],
-                $orderData['pkColumn'],
-                $orderData['pkValue'],
-                $this->normalizeBoolValues($orderData['values'])
-            );
+            if (
+                !$this->getRepository()->update(
+                    $orderData['table'],
+                    $orderData['pkColumn'],
+                    $orderData['pkValue'],
+                    $this->normalizeBoolValues($orderData['values']),
+                    $this->normalizeBoolValues($orderData['expected'])
+                )
+            ) {
+                throw new ConcurrencyConflictException(
+                    'stale_write',
+                    'Order',
+                    $this->conflictContext($handler)
+                );
+            }
         }
 
         return $orderData['isNew'];
@@ -168,7 +241,8 @@ class PersistOrder extends EcommerceContext
      * Persists orderItem collection data.
      *
      * @param OrderHandler $handler Aggregate handler
-     * @throws RuntimeException
+     * @throws ConcurrencyConflictException
+     * @throws \RuntimeException
      * @throws Throwable
      */
     protected function persistOrderItem(OrderHandler $handler): void
@@ -184,12 +258,21 @@ class PersistOrder extends EcommerceContext
                     ($orderItemData['onInserted'])($newId);
                 }
             } elseif (!empty($orderItemData['values'])) {
-                $this->getRepository()->update(
-                    $orderItemData['table'],
-                    $orderItemData['pkColumn'],
-                    $orderItemData['pkValue'],
-                    $this->normalizeBoolValues($orderItemData['values'])
-                );
+                if (
+                    !$this->getRepository()->update(
+                        $orderItemData['table'],
+                        $orderItemData['pkColumn'],
+                        $orderItemData['pkValue'],
+                        $this->normalizeBoolValues($orderItemData['values']),
+                        $this->normalizeBoolValues($orderItemData['expected'])
+                    )
+                ) {
+                    throw new ConcurrencyConflictException(
+                        'stale_write',
+                        'Order',
+                        $this->conflictContext($handler)
+                    );
+                }
             }
         }
     }
@@ -198,7 +281,8 @@ class PersistOrder extends EcommerceContext
      * Persists itemDiscount collection data.
      *
      * @param OrderHandler $handler Aggregate handler
-     * @throws RuntimeException
+     * @throws ConcurrencyConflictException
+     * @throws \RuntimeException
      * @throws Throwable
      */
     protected function persistItemDiscount(OrderHandler $handler): void
@@ -214,12 +298,21 @@ class PersistOrder extends EcommerceContext
                     ($itemDiscountData['onInserted'])($newId);
                 }
             } elseif (!empty($itemDiscountData['values'])) {
-                $this->getRepository()->update(
-                    $itemDiscountData['table'],
-                    $itemDiscountData['pkColumn'],
-                    $itemDiscountData['pkValue'],
-                    $this->normalizeBoolValues($itemDiscountData['values'])
-                );
+                if (
+                    !$this->getRepository()->update(
+                        $itemDiscountData['table'],
+                        $itemDiscountData['pkColumn'],
+                        $itemDiscountData['pkValue'],
+                        $this->normalizeBoolValues($itemDiscountData['values']),
+                        $this->normalizeBoolValues($itemDiscountData['expected'])
+                    )
+                ) {
+                    throw new ConcurrencyConflictException(
+                        'stale_write',
+                        'Order',
+                        $this->conflictContext($handler)
+                    );
+                }
             }
         }
     }
@@ -231,7 +324,7 @@ class PersistOrder extends EcommerceContext
      * Deletes are performed in FK-safe order.
      *
      * @param OrderHandler $handler Aggregate handler
-     * @throws RuntimeException
+     * @throws \RuntimeException
      * @throws Throwable
      */
     protected function deleteRemovedEntities(OrderHandler $handler): void
@@ -248,14 +341,6 @@ class PersistOrder extends EcommerceContext
         if (!empty($removedIds['orderItem'])) {
             $this->getRepository()->deleteAll(OrderItem::SOURCE, OrderItem::PRIMARY_KEY, $removedIds['orderItem']);
         }
-
-        if (!empty($removedIds['customer'])) {
-            $this->getRepository()->deleteAll(Customer::SOURCE, Customer::PRIMARY_KEY, $removedIds['customer']);
-        }
-
-        if (!empty($removedIds['address'])) {
-            $this->getRepository()->deleteAll(Address::SOURCE, Address::PRIMARY_KEY, $removedIds['address']);
-        }
     }
 
     /**
@@ -264,13 +349,15 @@ class PersistOrder extends EcommerceContext
      * Deletes all entities in FK-safe order.
      *
      * @param OrderHandler $handler The aggregate handler
+     * @throws ConcurrencyConflictException
      * @throws PDOException
-     * @throws RuntimeException
-     * @throws Throwable
+     * @throws \RuntimeException
+     * @throws \Throwable
+     * @throws TransientConflictException
      */
     protected function deleteAggregate(OrderHandler $handler): void
     {
-        $writer = $this->resolveConnection();
+        $writer = $this->resolveWriter();
         $ownsTransaction = !$writer->inTransaction();
 
         $rootData = $handler->getEntityData('order');
@@ -278,6 +365,8 @@ class PersistOrder extends EcommerceContext
 
         if ($ownsTransaction) {
             $writer->beginTransaction();
+        } else {
+            $writer->savepoint('jardis_persist_order');
         }
 
         try {
@@ -294,35 +383,115 @@ class PersistOrder extends EcommerceContext
             }
 
             if ($aggregateId !== null) {
-                $this->getRepository()->delete($rootData['table'], $rootData['pkColumn'], $aggregateId);
-            }
-
-            $customerData = $handler->getEntityData('customer');
-            if ($customerData['pkValue'] !== null) {
-                $this->getRepository()->delete(Customer::SOURCE, Customer::PRIMARY_KEY, $customerData['pkValue']);
-            }
-
-            $addressData = $handler->getEntityData('address');
-            if ($addressData['pkValue'] !== null) {
-                $this->getRepository()->delete(Address::SOURCE, Address::PRIMARY_KEY, $addressData['pkValue']);
+                if (
+                    !$this->getRepository()->delete(
+                        $rootData['table'],
+                        $rootData['pkColumn'],
+                        $aggregateId,
+                        $this->normalizeBoolValues($rootData['snapshot'])
+                    )
+                ) {
+                    throw new ConcurrencyConflictException(
+                        'stale_delete',
+                        'Order',
+                        $this->conflictContext($handler)
+                    );
+                }
             }
 
             if ($ownsTransaction) {
                 $writer->commit();
+            } else {
+                $writer->releaseSavepoint('jardis_persist_order');
             }
+        } catch (TransientConflictException $transient) {
+            if ($ownsTransaction) {
+                if ($writer->inTransaction()) {
+                    $writer->rollback();
+                }
+            } else {
+                try {
+                    $writer->rollbackToSavepoint('jardis_persist_order');
+                    $writer->releaseSavepoint('jardis_persist_order');
+                } catch (\RuntimeException) {
+                    throw $transient;
+                }
+            }
+            throw new ConcurrencyConflictException(
+                'stale_delete',
+                'Order',
+                $this->conflictContext($handler)
+            );
         } catch (\Throwable $e) {
             if ($ownsTransaction) {
                 $writer->rollback();
+            } else {
+                $writer->rollbackToSavepoint('jardis_persist_order');
+                $writer->releaseSavepoint('jardis_persist_order');
             }
             throw $e;
         }
     }
 
     /**
+     * Context of every 409 of this aggregate: the outer-door identifier of the
+     * root (`id` only without a public unique key), never FK or child internals.
+     *
+     * @param OrderHandler $handler Aggregate handler
+     * @return array<string, mixed>
+     */
+    private function conflictContext(OrderHandler $handler): array
+    {
+        return ['orderNumber' => $handler->getData()->getOrderNumber()];
+    }
+
+    /**
+     * Outer-door names of the fields a unique violation hit (`violated` of the 409
+     * `duplicate`): root fields by name, child fields as `<kindProperty>.<field>`;
+     * columns without an outer name are left out, unknown columns/table give [].
+     *
+     * @return list<string>
+     */
+    private function violatedFields(UniqueViolationException $e): array
+    {
+        $names = match ($e->getTable()) {
+            'addresses' => [
+                'city' => 'address.city',
+                'country' => 'address.country',
+                'postal_code' => 'address.postalCode',
+                'street' => 'address.street',
+            ],
+            'customers' => [
+                'email' => 'customer.email',
+                'name' => 'customer.customerName',
+                'phone' => 'customer.phone',
+            ],
+            'item_discounts' => ['amount' => 'itemDiscount.amount', 'discount_code' => 'itemDiscount.discountCode'],
+            'order_items' => [
+                'product_identifier' => 'orderItem.productIdentifier',
+                'quantity' => 'orderItem.quantity',
+                'subtotal' => 'orderItem.subtotal',
+                'unit_price' => 'orderItem.unitPrice',
+            ],
+            'orders' => ['order_number' => 'orderNumber', 'status' => 'status', 'total_amount' => 'totalAmount'],
+            default => [],
+        };
+
+        $fields = [];
+        foreach ($e->getColumns() as $column) {
+            if (isset($names[$column])) {
+                $fields[] = $names[$column];
+            }
+        }
+
+        return $fields;
+    }
+
+    /**
      * Gets Repository service (shared via Factory).
      *
      * @return Repository
-     * @throws RuntimeException
+     * @throws \RuntimeException
      * @throws Throwable
      */
     protected function getRepository(): Repository
@@ -345,24 +514,40 @@ class PersistOrder extends EcommerceContext
     }
 
     /**
-     * Resolves the database connection to a PDO instance.
+     * Resolves the write connection as a savepoint-capable connection.
      *
-     * Handles ConnectionPoolInterface (read/write splitting) and plain PDO.
+     * Handles ConnectionPoolInterface (its writer) and plain PDO (wrapped).
+     *
+     * @throws \RuntimeException If no database connection is configured or its writer cannot hold savepoints
+     */
+    protected function resolveWriter(): DbConnectionInterface&SavepointInterface
+    {
+        $connection = $this->resource()->dbConnection();
+
+        if ($connection instanceof \PDO) {
+            return new PdoConnection($connection);
+        }
+
+        if ($connection instanceof ConnectionPoolInterface) {
+            $writer = $connection->getWriter();
+
+            if ($writer instanceof SavepointInterface) {
+                return $writer;
+            }
+
+            throw new \RuntimeException('The write connection does not support savepoints');
+        }
+
+        throw new \RuntimeException('No database connection configured');
+    }
+
+    /**
+     * Resolves the database connection to a PDO instance (the writer's own).
      *
      * @throws \RuntimeException If no database connection is configured
      */
     protected function resolveConnection(): \PDO
     {
-        $connection = $this->resource()->dbConnection();
-
-        if ($connection instanceof \PDO) {
-            return $connection;
-        }
-
-        if ($connection instanceof ConnectionPoolInterface) {
-            return $connection->getWriter()->pdo();
-        }
-
-        throw new \RuntimeException('No database connection configured');
+        return $this->resolveWriter()->pdo();
     }
 }
