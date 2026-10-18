@@ -15,11 +15,11 @@ readonly class AddInvoiceLine
         public string $invoiceIdentifier,
         public int $position,
         public string $description,
-        public float $quantity,
+        public string $quantity,
         public string $unit,
-        public float $unitPrice,
-        public ?float $discountPercent,
-        public float $lineTotal,
+        public string $unitPrice,
+        public ?string $discountPercent,
+        public string $lineTotal,
         public int $taxIncluded
     ) {
     }

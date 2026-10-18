@@ -7,18 +7,19 @@ namespace Ecommerce\Fulfillment\Model\Shipment;
 use Ecommerce\EcommerceContext;
 use Ecommerce\Fulfillment\Model\Shipment\Query\Handler\GetShipmentByIdHandler;
 use Ecommerce\Fulfillment\Model\Shipment\Query\Handler\GetShipmentByIdentifierHandler;
+use Ecommerce\Fulfillment\Model\Shipment\Query\Handler\GetShipmentByIdentifiersHandler;
 use Ecommerce\Fulfillment\Model\Shipment\Query\Handler\GetShipmentByIdsHandler;
+use Ecommerce\Fulfillment\Model\Shipment\Query\Handler\GetShipmentByOrderNumberHandler;
 use Ecommerce\Fulfillment\Model\Shipment\Query\Handler\GetShipmentListHandler;
-use Ecommerce\Fulfillment\Model\Shipment\Query\Handler\GetShipmentTrackingListHandler;
-use Ecommerce\Fulfillment\Model\Shipment\Query\Handler\GetShipmentbyOrderNumberHandler;
+use Ecommerce\Fulfillment\Model\Shipment\Query\ShipmentByOrderNumberFilter;
 use Ecommerce\Fulfillment\Model\Shipment\Query\ShipmentListFilter;
-use Ecommerce\Fulfillment\Model\Shipment\Query\ShipmentTrackingListFilter;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
+use JardisSupport\Workflow\Data\ReadResult;
 use Throwable;
 use Ecommerce\Fulfillment\Model\Shipment\Query\ShipmentById as QueryShipmentById;
 use Ecommerce\Fulfillment\Model\Shipment\Query\ShipmentByIdentifier as QueryShipmentByIdentifier;
+use Ecommerce\Fulfillment\Model\Shipment\Query\ShipmentByIdentifiers as QueryShipmentByIdentifiers;
 use Ecommerce\Fulfillment\Model\Shipment\Query\ShipmentByIds as QueryShipmentByIds;
-use Ecommerce\Fulfillment\Model\Shipment\Query\ShipmentbyOrderNumber as QueryShipmentbyOrderNumber;
 
 /**
  * Shipment Aggregate Read Facade.
@@ -58,6 +59,21 @@ class ShipmentRead extends EcommerceContext
     }
 
     /**
+     * Gets ShipmentByIdentifiers aggregate.
+     *
+     * @param QueryShipmentByIdentifiers $shipmentByIdentifiers Query parameters
+     * @param string $version Optional ClassVersion override (default: caller version)
+     * @return DomainResponseInterface
+     * @throws Throwable
+     */
+    public function getShipmentByIdentifiers(
+        QueryShipmentByIdentifiers $shipmentByIdentifiers,
+        string $version = ''
+    ): DomainResponseInterface {
+        return $this->context(GetShipmentByIdentifiersHandler::class, $shipmentByIdentifiers, $version)();
+    }
+
+    /**
      * Gets ShipmentByIds aggregate.
      *
      * @param QueryShipmentByIds $shipmentByIds Query parameters
@@ -71,37 +87,28 @@ class ShipmentRead extends EcommerceContext
     }
 
     /**
-     * Gets ShipmentbyOrderNumber aggregate.
+     * Declared query `shipmentByOrderNumber` (Queries.json, visibility public).
      *
-     * @param QueryShipmentbyOrderNumber $shipmentbyOrderNumber Query parameters
+     * @param ShipmentByOrderNumberFilter $filter Declared query parameters
      * @param string $version Optional ClassVersion override (default: caller version)
-     * @return DomainResponseInterface
+     * @return ReadResult<array<string, mixed>>
      * @throws Throwable
      */
-    public function getShipmentbyOrderNumber(
-        QueryShipmentbyOrderNumber $shipmentbyOrderNumber,
-        string $version = ''
-    ): DomainResponseInterface {
-        return $this->context(GetShipmentbyOrderNumberHandler::class, $shipmentbyOrderNumber, $version)();
+    public function shipmentByOrderNumber(ShipmentByOrderNumberFilter $filter, string $version = ''): ReadResult
+    {
+        return $this->context(GetShipmentByOrderNumberHandler::class, $filter, $version)();
     }
 
     /**
+     * Declared query `shipmentList` (Queries.json, visibility public).
+     *
+     * @param ShipmentListFilter $filter Declared query parameters
      * @param string $version Optional ClassVersion override (default: caller version)
-     * @return array{items: array<int, array<string, mixed>>, total: int, limit: int, offset: int}
+     * @return ReadResult<array<string, mixed>>
      * @throws Throwable
      */
-    public function shipmentList(ShipmentListFilter $filter, string $version = ''): array
+    public function shipmentList(ShipmentListFilter $filter, string $version = ''): ReadResult
     {
         return $this->context(GetShipmentListHandler::class, $filter, $version)();
-    }
-
-    /**
-     * @param string $version Optional ClassVersion override (default: caller version)
-     * @return array{items: array<int, array<string, mixed>>, total: int, limit: int, offset: int}
-     * @throws Throwable
-     */
-    public function shipmentTrackingList(ShipmentTrackingListFilter $filter, string $version = ''): array
-    {
-        return $this->context(GetShipmentTrackingListHandler::class, $filter, $version)();
     }
 }

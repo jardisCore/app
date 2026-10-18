@@ -9,24 +9,15 @@ use JardisSupport\Contract\Kernel\EventScope;
 
 /**
  * A tiny, immutable `DomainResponseInterface` implementation the example
- * app's own route handlers build directly — the same "any framework/any
+ * app's own route handlers build directly - the same "any framework/any
  * caller can implement this Contract" property N3 relies on (F4/M3: the
- * DomainResponse-to-HTTP contract is framework-neutral, contract v2.1
+ * DomainResponse-to-HTTP contract is framework-neutral, contract
  * `docs/response-envelope.md`). Used for two purposes:
  *
  * 1. POST /orders (F8, F6): the generated `RuleGuardedOrderIntakeHandler`
- *    never surfaces the created order's own 201/orderNumber in its own
- *    returned DomainResponse — verified empirically against the real
- *    fixture + MySQL (P7 diagnostic run), not assumed: its `PlaceOrder`
- *    action node's ON_FAIL edge routes to `OrderRejectedStub`, a
- *    deliberately unfilled "KI-/Dev-Hoheit" stub (see its own docblock)
- *    that unconditionally reports workflow success regardless of the
- *    real outcome, and even on the true happy path the handler only ever
- *    harvests Domain-scoped *events* from the workflow chain into its own
- *    result — never the `orderNumber` a node returned as its data. The
- *    route handler still only calls legitimate BC facades (`process()` to
- *    create, the read facade to confirm) — this VO is just the honest
- *    carrier for the 201-with-real-data response the PLAN's AK names.
+ *    answers a successful run with 200 and the data of its last node; a
+ *    create answers 201 Created with the reloaded order, so the route
+ *    handler carries the read facade's data under the status of its choice.
  * 2. Synthetic status routes (204/400/401/403/409, PLAN P7 Block B): a
  *    thin handler exercising a status this generated fixture's own routes
  *    never produce builds one directly, honestly declared as synthetic.
@@ -34,14 +25,11 @@ use JardisSupport\Contract\Kernel\EventScope;
 final readonly class StaticDomainResponse implements DomainResponseInterface
 {
     /**
-     * `$data` and `$errors` carry the SAME shape the implemented Contract
-     * promises — both keyed by context name, never flat. That is also what
-     * this app already passes in: `RegisterOrderRoutes` hands over
-     * `$confirmed->getData()` unchanged and reads it back through its
-     * context key. Declaring them wider than the interface would make this
-     * example show a shape the generated pipeline never produces.
+     * `$data` is flat - the business object itself (generated responses
+     * carry its type as `@type`), as the Contract promises; `$errors` is
+     * keyed by context name.
      *
-     * @param array<string, array<string, mixed>> $data
+     * @param array<string, mixed> $data
      * @param array<string, array<int, string>> $errors
      * @param array<string, mixed> $metadata
      * @param array<string, array<int, object>> $events

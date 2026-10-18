@@ -13,6 +13,9 @@ use Ecommerce\Catalog\Model\Product\Command\Handler\RemoveProductImage;
 use Ecommerce\Catalog\Model\Product\Command\Handler\RemoveProductVariant;
 use Ecommerce\Catalog\Model\Product\Command\Handler\RemoveProductVariantPrice;
 use Ecommerce\Catalog\Model\Product\Command\Handler\UpdateProduct;
+use Ecommerce\Catalog\Model\Product\Command\Handler\UpdateProductImage;
+use Ecommerce\Catalog\Model\Product\Command\Handler\UpdateProductVariant;
+use Ecommerce\Catalog\Model\Product\Command\Handler\UpdateProductVariantPrice;
 use Ecommerce\Catalog\Model\Product\Event\ProductEvents;
 use Ecommerce\EcommerceContext;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
@@ -26,6 +29,9 @@ use Ecommerce\Catalog\Model\Product\Command\RemoveProductImage as CommandRemoveP
 use Ecommerce\Catalog\Model\Product\Command\RemoveProductVariant as CommandRemoveProductVariant;
 use Ecommerce\Catalog\Model\Product\Command\RemoveProductVariantPrice as CommandRemoveProductVariantPrice;
 use Ecommerce\Catalog\Model\Product\Command\UpdateProduct as CommandUpdateProduct;
+use Ecommerce\Catalog\Model\Product\Command\UpdateProductImage as CommandUpdateProductImage;
+use Ecommerce\Catalog\Model\Product\Command\UpdateProductVariant as CommandUpdateProductVariant;
+use Ecommerce\Catalog\Model\Product\Command\UpdateProductVariantPrice as CommandUpdateProductVariantPrice;
 
 /**
  * Product Aggregate Facade.
@@ -54,12 +60,16 @@ class Product extends EcommerceContext
      *
      * @param CommandUpdateProduct $updateProduct
      * @param string $version Optional ClassVersion override (default: caller version)
+     * @param array<string, mixed> $expected Optional read basis (CAS): outer field name => value the caller read
      * @return DomainResponseInterface
      * @throws Throwable
      */
-    public function updateProduct(CommandUpdateProduct $updateProduct, string $version = ''): DomainResponseInterface
-    {
-        return $this->context(UpdateProduct::class, $updateProduct, $version)();
+    public function updateProduct(
+        CommandUpdateProduct $updateProduct,
+        string $version = '',
+        array $expected = []
+    ): DomainResponseInterface {
+        return $this->context(UpdateProduct::class, $updateProduct, $version)($expected);
     }
 
     /**
@@ -93,6 +103,21 @@ class Product extends EcommerceContext
     }
 
     /**
+     * Update ProductImage operation.
+     *
+     * @param CommandUpdateProductImage $updateProductImage
+     * @param string $version Optional ClassVersion override (default: caller version)
+     * @return DomainResponseInterface
+     * @throws Throwable
+     */
+    public function updateProductImage(
+        CommandUpdateProductImage $updateProductImage,
+        string $version = ''
+    ): DomainResponseInterface {
+        return $this->context(UpdateProductImage::class, $updateProductImage, $version)();
+    }
+
+    /**
      * Add ProductVariant operation.
      *
      * @param CommandAddProductVariant $addProductVariant
@@ -123,6 +148,21 @@ class Product extends EcommerceContext
     }
 
     /**
+     * Update ProductVariant operation.
+     *
+     * @param CommandUpdateProductVariant $updateProductVariant
+     * @param string $version Optional ClassVersion override (default: caller version)
+     * @return DomainResponseInterface
+     * @throws Throwable
+     */
+    public function updateProductVariant(
+        CommandUpdateProductVariant $updateProductVariant,
+        string $version = ''
+    ): DomainResponseInterface {
+        return $this->context(UpdateProductVariant::class, $updateProductVariant, $version)();
+    }
+
+    /**
      * Add ProductVariantPrice operation.
      *
      * @param CommandAddProductVariantPrice $addProductVariantPrice
@@ -150,6 +190,21 @@ class Product extends EcommerceContext
         string $version = ''
     ): DomainResponseInterface {
         return $this->context(RemoveProductVariantPrice::class, $removeProductVariantPrice, $version)();
+    }
+
+    /**
+     * Update ProductVariantPrice operation.
+     *
+     * @param CommandUpdateProductVariantPrice $updateProductVariantPrice
+     * @param string $version Optional ClassVersion override (default: caller version)
+     * @return DomainResponseInterface
+     * @throws Throwable
+     */
+    public function updateProductVariantPrice(
+        CommandUpdateProductVariantPrice $updateProductVariantPrice,
+        string $version = ''
+    ): DomainResponseInterface {
+        return $this->context(UpdateProductVariantPrice::class, $updateProductVariantPrice, $version)();
     }
 
     /**

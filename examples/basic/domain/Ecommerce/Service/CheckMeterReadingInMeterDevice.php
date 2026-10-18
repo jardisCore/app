@@ -7,14 +7,13 @@ namespace Ecommerce\Service;
 use DateTimeImmutable;
 use Ecommerce\EcommerceContext;
 use Ecommerce\Sales\Process\CrossBcServiceDemo\Command\CrossBcServiceDemo;
-use Ecommerce\Sales\Sales;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
-use JardisSupport\Contract\Workflow\WorkflowContextInterface;
-use JardisSupport\Workflow\WorkflowResult;
-use MeterDevice\Counter\Aggregate\Counter\Command\UpdateCounter;
+use JardisSupport\Workflow\Data\NodeResult;
+use JardisSupport\Workflow\Data\ProcessContext;
+use JardisSupport\Workflow\Data\Route;
 use MeterDevice\Counter\Counter;
+use MeterDevice\Counter\Model\Counter\Command\UpdateCounter;
 use MeterDevice\Counter\Process\RecordCounterUpdate\Command\RecordCounterUpdate;
-use RuntimeException;
 use Throwable;
 
 /**
@@ -27,6 +26,13 @@ use Throwable;
  *
  * ACL-Hinweis: Antwort in eigenes Vokabular uebersetzen, fremdes DTO
  * nicht unveraendert durchreichen.
+ *
+ * Antwort: ein NodeResult (jardissupport/workflow). NodeResult::ok() bei Erfolg,
+ * NodeResult::route(Route::OnFalse|OnTimeout|OnSkip, ...) fuer einen Zweig,
+ * NodeResult::reject(<4xx-Status>, <messageKey>, <context>) fuer eine Ablehnung.
+ * Die Fehlerform baut das Paket aus dem Kontext: 400 'fields', 409 'reason' /
+ * 'aggregate' / 'violated', 422 'rule'; weitere Schluessel bleiben Kontext der Form.
+ * Ein 5xx-Fall ist eine Exception, kein reject().
  */
 final class CheckMeterReadingInMeterDevice extends EcommerceContext
 {
@@ -35,13 +41,12 @@ final class CheckMeterReadingInMeterDevice extends EcommerceContext
      * fremden BC Counter aus: Schreiben ueber dessen Prozess
      * ($bc->process()->recordCounterUpdate()). Kein Aggregat-Direktzugriff (G7).
      *
-     * @return array{status: string, data: array<string, mixed>}
      * @throws Throwable
      */
-    public function __invoke(WorkflowContextInterface $context): array
+    public function __invoke(ProcessContext $context): NodeResult
     {
         /** @var CrossBcServiceDemo $cmd */
-        $cmd = $this->payload();
+        $cmd = $context->input();
 
         /** @var Counter $counter */
         $counter = $this->handle(Counter::class);
@@ -64,9 +69,8 @@ final class CheckMeterReadingInMeterDevice extends EcommerceContext
 
         // ACL — Antwort ins eigene Vokabular mappen; fremdes DTO nicht
         // unveraendert durchreichen.
-        return [
-            'status' => $response->isSuccess() ? WorkflowResult::ON_SUCCESS : WorkflowResult::ON_FAIL,
-            'data'   => ['counterIdentifier' => $cmd->counterIdentifier],
-        ];
+        $answer = ['counterIdentifier' => $cmd->counterIdentifier];
+
+        return $response->isSuccess() ? NodeResult::ok($answer) : NodeResult::route(Route::OnFalse, $answer);
     }
 }

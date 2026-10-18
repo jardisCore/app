@@ -175,7 +175,7 @@ final class AppTest extends TestCase
         $routes = new Routes($this->factory);
         $routes->post('/orders', static fn () => new DomainResponse(
             status: ResponseStatus::Created->value,
-            data: ['Sales' => ['id' => '7']],
+            data: ['@type' => 'order', 'id' => '7'],
         ));
         $app = new App($routes, $this->kernel(), new AppConfig());
 
@@ -183,7 +183,7 @@ final class AppTest extends TestCase
 
         $this->assertSame(201, $response->getStatusCode());
         $body = json_decode((string) $response->getBody(), true);
-        $this->assertSame(['Sales' => ['id' => '7']], $body['data']);
+        $this->assertSame(['@type' => 'order', 'id' => '7'], $body['data']);
     }
 
     public function testResponseInterfaceReturnedFromHandlerIsPassedThroughUnchanged(): void

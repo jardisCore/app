@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Ecommerce\Fulfillment\Model\Shipment\Query\Response;
 
-use DateTime;
 use JardisSupport\Contract\Workflow\AggregateResponse;
 
 /**
@@ -15,7 +14,6 @@ use JardisSupport\Contract\Workflow\AggregateResponse;
  */
 class ShipmentResponse implements AggregateResponse
 {
-    public int $id = 0;
     public string $identifier = '';
     public string $orderNumber = '';
     public string $customerIdentifier = '';
@@ -25,12 +23,14 @@ class ShipmentResponse implements AggregateResponse
     public string $status = '';
     public ?int $weightGrams = null;
     public int $packageCount = 0;
-    public ?float $insuranceValue = null;
-    public ?DateTime $estimatedDelivery = null;
-    public ?DateTime $shippedAt = null;
-    public ?DateTime $deliveredAt = null;
+
+    /** @var ?numeric-string */
+    public ?string $insuranceValue = null;
+    public ?string $estimatedDelivery = null;
+    public ?string $shippedAt = null;
+    public ?string $deliveredAt = null;
     public ?string $note = null;
-    public ?DateTime $createdAt = null;
+    public ?string $createdAt = null;
     public ?ShipmentAddressResponse $shipmentAddress = null;
 
     /** @var ShipmentItemResponse[] */

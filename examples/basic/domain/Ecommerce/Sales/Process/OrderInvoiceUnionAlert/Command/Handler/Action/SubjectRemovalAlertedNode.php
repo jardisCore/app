@@ -7,23 +7,16 @@ namespace Ecommerce\Sales\Process\OrderInvoiceUnionAlert\Command\Handler\Action;
 use Ecommerce\EcommerceContext;
 use Ecommerce\Sales\Model\Invoice\Command\RemoveInvoice;
 use Ecommerce\Sales\Model\Order\Command\RemoveOrder;
-use Ecommerce\Sales\Process\OrderInvoiceUnionAlert\Command\OrderInvoiceUnionAlert;
+use Ecommerce\Sales\Process\OrderInvoiceUnionAlert\Command\Handler\OrderInvoiceUnionAlertContext;
 use Ecommerce\Sales\Process\OrderInvoiceUnionAlert\Event\SubjectRemovalAlerted;
-use JardisSupport\Contract\Kernel\EventScope;
-use JardisSupport\Contract\Workflow\WorkflowContextInterface;
-use JardisSupport\Contract\Workflow\WorkflowResultInterface;
 use JardisSupport\Data\Identity;
-use JardisSupport\Workflow\WorkflowResult;
+use JardisSupport\Scheduling\Clock\SystemClock;
+use JardisSupport\Workflow\Data\NodeResult;
+use JardisSupport\Workflow\Data\Route;
 use Throwable;
 
 /**
- * Event-Kasten ◇ — verkuendet das Domain-Event SubjectRemovalAlerted.
- *
- * Hilfen aus dem Workflow-Context (siehe WorkflowContextInterface):
- *  - $cmd       = $this->payload();                       // Initial-Params (Command-DTO)
- *  - $prev      = $context->getPrevious();                // direkter Vorgaenger (Status + getData())
- *  - $latest    = $context->getLatest(NodeFqcn::class);   // juengste Invocation eines Knotens
- *  - $allCalls  = $context->getAll(NodeFqcn::class);      // History (Iteration-Counter)
+ * Node SubjectRemovalAlertedNode of the process OrderInvoiceUnionAlert (action).
  */
 final class SubjectRemovalAlertedNode extends EcommerceContext
 {
@@ -31,40 +24,17 @@ final class SubjectRemovalAlertedNode extends EcommerceContext
      * @node-id v2b3c402
      * @throws Throwable
      */
-    public function __invoke(WorkflowContextInterface $context): WorkflowResultInterface
+    public function __invoke(OrderInvoiceUnionAlertContext $ctx): NodeResult
     {
-        /** @var OrderInvoiceUnionAlert $cmd */
-        $cmd = $this->payload();
+        $removal = $ctx->input()->subjectRemoval;
 
-        $result = $this->logic($cmd, $context);
-
-        return new WorkflowResult($result['status'], $result['data']);
-    }
-
-    /**
-     * Verkuendet das Domain-Event SubjectRemovalAlerted.
-     * Das Event reist im data-Frachtraum unter EventScope::Domain->value;
-     * der Orchestrator erntet es nach dem Lauf aus der Kette.
-     *
-     * @return array{status: string, data: array<string, mixed>}
-     * @throws Throwable
-     */
-    protected function logic(OrderInvoiceUnionAlert $cmd, WorkflowContextInterface $context): array
-    {
-        return [
-            'status' => WorkflowResult::ON_SUCCESS,
-            'data'   => [
-                EventScope::Domain->value => [
-                    new SubjectRemovalAlerted(
-                        removedOrderId: match (true) {
-                            $cmd->subjectRemoval instanceof RemoveOrder => $cmd->subjectRemoval->orderNumber,
-                            $cmd->subjectRemoval instanceof RemoveInvoice => $cmd->subjectRemoval->invoiceIdentifier,
-                        },
-                        eventId: $this->handle(Identity::class)->generateUuid7(),
-                        occurredAt: new \DateTimeImmutable(),
-                    ),
-                ],
-            ],
-        ];
+        return NodeResult::route(Route::OnTrue)->withEvents(new SubjectRemovalAlerted(
+            removedOrderId: match (true) {
+                $removal instanceof RemoveOrder => $removal->orderNumber,
+                $removal instanceof RemoveInvoice => $removal->invoiceIdentifier,
+            },
+            eventId: $this->handle(Identity::class)->generateUuid7(),
+            occurredAt: $this->handle(SystemClock::class)->now(),
+        ));
     }
 }

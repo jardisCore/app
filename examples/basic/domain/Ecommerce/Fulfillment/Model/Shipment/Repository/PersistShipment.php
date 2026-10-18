@@ -5,17 +5,20 @@ declare(strict_types=1);
 namespace Ecommerce\Fulfillment\Model\Shipment\Repository;
 
 use Ecommerce\EcommerceContext;
-use Ecommerce\Fulfillment\Model\Shipment\Aggregate\Entity\ShipmentAddress;
 use Ecommerce\Fulfillment\Model\Shipment\Aggregate\Entity\ShipmentItem;
 use Ecommerce\Fulfillment\Model\Shipment\Aggregate\Entity\TrackingEvent;
+use Ecommerce\Fulfillment\Model\Shipment\Aggregate\Shipment as ShipmentHandler;
 use Exception;
 use JardisSupport\Contract\DbConnection\ConnectionPoolInterface;
+use JardisSupport\Contract\DbConnection\DbConnectionInterface;
+use JardisSupport\Contract\DbConnection\SavepointInterface;
 use JardisSupport\Contract\Kernel\ContextResponseInterface;
+use JardisSupport\Contract\Repository\Exception\TransientConflictException;
+use JardisSupport\Contract\Repository\Exception\UniqueViolationException;
+use JardisSupport\Repository\Adapter\PdoConnection;
 use JardisSupport\Repository\Repository;
 use PDOException;
-use RuntimeException;
 use Throwable;
-use Ecommerce\Fulfillment\Model\Shipment\Aggregate\Shipment as ShipmentHandler;
 
 /**
  * Persists Shipment with all dependencies.
@@ -32,10 +35,13 @@ class PersistShipment extends EcommerceContext
      *
      * @param ShipmentHandler $handler Aggregate handler with business logic
      * @return ContextResponseInterface Response with events
+     * @throws ConcurrencyConflictException
      * @throws Exception
      * @throws PDOException
-     * @throws RuntimeException
-     * @throws Throwable
+     * @throws \RuntimeException
+     * @throws \Throwable
+     * @throws TransientConflictException
+     * @throws UniqueViolationException
      */
     public function __invoke(ShipmentHandler $handler): ContextResponseInterface
     {
@@ -44,10 +50,12 @@ class PersistShipment extends EcommerceContext
             return $this->result();
         }
 
-        $writer = $this->resolveConnection();
+        $writer = $this->resolveWriter();
         $ownsTransaction = !$writer->inTransaction();
         if ($ownsTransaction) {
             $writer->beginTransaction();
+        } else {
+            $writer->savepoint('jardis_persist_shipment');
         }
 
         $isNew = false;
@@ -61,12 +69,48 @@ class PersistShipment extends EcommerceContext
 
             if ($ownsTransaction) {
                 $writer->commit();
+            } else {
+                $writer->releaseSavepoint('jardis_persist_shipment');
             }
 
             return $this->result();
+        } catch (UniqueViolationException $violation) {
+            if ($ownsTransaction) {
+                $writer->rollback();
+            } else {
+                $writer->rollbackToSavepoint('jardis_persist_shipment');
+                $writer->releaseSavepoint('jardis_persist_shipment');
+            }
+            throw new ConcurrencyConflictException(
+                'duplicate',
+                'Shipment',
+                $this->conflictContext($handler),
+                $this->violatedFields($violation)
+            );
+        } catch (TransientConflictException $transient) {
+            if ($ownsTransaction) {
+                if ($writer->inTransaction()) {
+                    $writer->rollback();
+                }
+            } else {
+                try {
+                    $writer->rollbackToSavepoint('jardis_persist_shipment');
+                    $writer->releaseSavepoint('jardis_persist_shipment');
+                } catch (\RuntimeException) {
+                    throw $transient;
+                }
+            }
+            throw new ConcurrencyConflictException(
+                'stale_write',
+                'Shipment',
+                $this->conflictContext($handler)
+            );
         } catch (\Throwable $e) {
             if ($ownsTransaction) {
                 $writer->rollback();
+            } else {
+                $writer->rollbackToSavepoint('jardis_persist_shipment');
+                $writer->releaseSavepoint('jardis_persist_shipment');
             }
             throw $e;
         }
@@ -76,7 +120,8 @@ class PersistShipment extends EcommerceContext
      * Persists shipmentAddress entity data.
      *
      * @param ShipmentHandler $handler Aggregate handler
-     * @throws RuntimeException
+     * @throws ConcurrencyConflictException
+     * @throws \RuntimeException
      * @throws Throwable
      */
     protected function persistShipmentAddress(ShipmentHandler $handler): void
@@ -92,12 +137,21 @@ class PersistShipment extends EcommerceContext
                 ($shipmentAddressData['onInserted'])($newId);
             }
         } elseif (!empty($shipmentAddressData['values'])) {
-            $this->getRepository()->update(
-                $shipmentAddressData['table'],
-                $shipmentAddressData['pkColumn'],
-                $shipmentAddressData['pkValue'],
-                $this->normalizeBoolValues($shipmentAddressData['values'])
-            );
+            if (
+                !$this->getRepository()->update(
+                    $shipmentAddressData['table'],
+                    $shipmentAddressData['pkColumn'],
+                    $shipmentAddressData['pkValue'],
+                    $this->normalizeBoolValues($shipmentAddressData['values']),
+                    $this->normalizeBoolValues($shipmentAddressData['expected'])
+                )
+            ) {
+                throw new ConcurrencyConflictException(
+                    'stale_write',
+                    'Shipment',
+                    $this->conflictContext($handler)
+                );
+            }
         }
     }
 
@@ -106,7 +160,8 @@ class PersistShipment extends EcommerceContext
      *
      * @param ShipmentHandler $handler Aggregate handler
      * @return bool Whether the entity is new
-     * @throws RuntimeException
+     * @throws ConcurrencyConflictException
+     * @throws \RuntimeException
      * @throws Throwable
      */
     protected function persistShipment(ShipmentHandler $handler): bool
@@ -122,12 +177,21 @@ class PersistShipment extends EcommerceContext
                 ($shipmentData['onInserted'])($newId);
             }
         } elseif (!empty($shipmentData['values'])) {
-            $this->getRepository()->update(
-                $shipmentData['table'],
-                $shipmentData['pkColumn'],
-                $shipmentData['pkValue'],
-                $this->normalizeBoolValues($shipmentData['values'])
-            );
+            if (
+                !$this->getRepository()->update(
+                    $shipmentData['table'],
+                    $shipmentData['pkColumn'],
+                    $shipmentData['pkValue'],
+                    $this->normalizeBoolValues($shipmentData['values']),
+                    $this->normalizeBoolValues($shipmentData['expected'])
+                )
+            ) {
+                throw new ConcurrencyConflictException(
+                    'stale_write',
+                    'Shipment',
+                    $this->conflictContext($handler)
+                );
+            }
         }
 
         return $shipmentData['isNew'];
@@ -137,7 +201,8 @@ class PersistShipment extends EcommerceContext
      * Persists shipmentItem collection data.
      *
      * @param ShipmentHandler $handler Aggregate handler
-     * @throws RuntimeException
+     * @throws ConcurrencyConflictException
+     * @throws \RuntimeException
      * @throws Throwable
      */
     protected function persistShipmentItem(ShipmentHandler $handler): void
@@ -153,12 +218,21 @@ class PersistShipment extends EcommerceContext
                     ($shipmentItemData['onInserted'])($newId);
                 }
             } elseif (!empty($shipmentItemData['values'])) {
-                $this->getRepository()->update(
-                    $shipmentItemData['table'],
-                    $shipmentItemData['pkColumn'],
-                    $shipmentItemData['pkValue'],
-                    $this->normalizeBoolValues($shipmentItemData['values'])
-                );
+                if (
+                    !$this->getRepository()->update(
+                        $shipmentItemData['table'],
+                        $shipmentItemData['pkColumn'],
+                        $shipmentItemData['pkValue'],
+                        $this->normalizeBoolValues($shipmentItemData['values']),
+                        $this->normalizeBoolValues($shipmentItemData['expected'])
+                    )
+                ) {
+                    throw new ConcurrencyConflictException(
+                        'stale_write',
+                        'Shipment',
+                        $this->conflictContext($handler)
+                    );
+                }
             }
         }
     }
@@ -167,7 +241,8 @@ class PersistShipment extends EcommerceContext
      * Persists trackingEvent collection data.
      *
      * @param ShipmentHandler $handler Aggregate handler
-     * @throws RuntimeException
+     * @throws ConcurrencyConflictException
+     * @throws \RuntimeException
      * @throws Throwable
      */
     protected function persistTrackingEvent(ShipmentHandler $handler): void
@@ -183,12 +258,21 @@ class PersistShipment extends EcommerceContext
                     ($trackingEventData['onInserted'])($newId);
                 }
             } elseif (!empty($trackingEventData['values'])) {
-                $this->getRepository()->update(
-                    $trackingEventData['table'],
-                    $trackingEventData['pkColumn'],
-                    $trackingEventData['pkValue'],
-                    $this->normalizeBoolValues($trackingEventData['values'])
-                );
+                if (
+                    !$this->getRepository()->update(
+                        $trackingEventData['table'],
+                        $trackingEventData['pkColumn'],
+                        $trackingEventData['pkValue'],
+                        $this->normalizeBoolValues($trackingEventData['values']),
+                        $this->normalizeBoolValues($trackingEventData['expected'])
+                    )
+                ) {
+                    throw new ConcurrencyConflictException(
+                        'stale_write',
+                        'Shipment',
+                        $this->conflictContext($handler)
+                    );
+                }
             }
         }
     }
@@ -200,7 +284,7 @@ class PersistShipment extends EcommerceContext
      * Deletes are performed in FK-safe order.
      *
      * @param ShipmentHandler $handler Aggregate handler
-     * @throws RuntimeException
+     * @throws \RuntimeException
      * @throws Throwable
      */
     protected function deleteRemovedEntities(ShipmentHandler $handler): void
@@ -221,14 +305,6 @@ class PersistShipment extends EcommerceContext
                 $removedIds['trackingEvent']
             );
         }
-
-        if (!empty($removedIds['shipmentAddress'])) {
-            $this->getRepository()->deleteAll(
-                ShipmentAddress::SOURCE,
-                ShipmentAddress::PRIMARY_KEY,
-                $removedIds['shipmentAddress']
-            );
-        }
     }
 
     /**
@@ -237,13 +313,15 @@ class PersistShipment extends EcommerceContext
      * Deletes all entities in FK-safe order.
      *
      * @param ShipmentHandler $handler The aggregate handler
+     * @throws ConcurrencyConflictException
      * @throws PDOException
-     * @throws RuntimeException
-     * @throws Throwable
+     * @throws \RuntimeException
+     * @throws \Throwable
+     * @throws TransientConflictException
      */
     protected function deleteAggregate(ShipmentHandler $handler): void
     {
-        $writer = $this->resolveConnection();
+        $writer = $this->resolveWriter();
         $ownsTransaction = !$writer->inTransaction();
 
         $rootData = $handler->getEntityData('shipment');
@@ -251,6 +329,8 @@ class PersistShipment extends EcommerceContext
 
         if ($ownsTransaction) {
             $writer->beginTransaction();
+        } else {
+            $writer->savepoint('jardis_persist_shipment');
         }
 
         try {
@@ -267,30 +347,141 @@ class PersistShipment extends EcommerceContext
             }
 
             if ($aggregateId !== null) {
-                $this->getRepository()->delete($rootData['table'], $rootData['pkColumn'], $aggregateId);
-            }
-
-            $shipmentAddressData = $handler->getEntityData('shipmentAddress');
-            if ($shipmentAddressData['pkValue'] !== null) {
-                $this->getRepository()->delete(ShipmentAddress::SOURCE, ShipmentAddress::PRIMARY_KEY, $shipmentAddressData['pkValue']);
+                if (
+                    !$this->getRepository()->delete(
+                        $rootData['table'],
+                        $rootData['pkColumn'],
+                        $aggregateId,
+                        $this->normalizeBoolValues($rootData['snapshot'])
+                    )
+                ) {
+                    throw new ConcurrencyConflictException(
+                        'stale_delete',
+                        'Shipment',
+                        $this->conflictContext($handler)
+                    );
+                }
             }
 
             if ($ownsTransaction) {
                 $writer->commit();
+            } else {
+                $writer->releaseSavepoint('jardis_persist_shipment');
             }
+        } catch (TransientConflictException $transient) {
+            if ($ownsTransaction) {
+                if ($writer->inTransaction()) {
+                    $writer->rollback();
+                }
+            } else {
+                try {
+                    $writer->rollbackToSavepoint('jardis_persist_shipment');
+                    $writer->releaseSavepoint('jardis_persist_shipment');
+                } catch (\RuntimeException) {
+                    throw $transient;
+                }
+            }
+            throw new ConcurrencyConflictException(
+                'stale_delete',
+                'Shipment',
+                $this->conflictContext($handler)
+            );
         } catch (\Throwable $e) {
             if ($ownsTransaction) {
                 $writer->rollback();
+            } else {
+                $writer->rollbackToSavepoint('jardis_persist_shipment');
+                $writer->releaseSavepoint('jardis_persist_shipment');
             }
             throw $e;
         }
     }
 
     /**
+     * Context of every 409 of this aggregate: the outer-door identifier of the
+     * root (`id` only without a public unique key), never FK or child internals.
+     *
+     * @param ShipmentHandler $handler Aggregate handler
+     * @return array<string, mixed>
+     */
+    private function conflictContext(ShipmentHandler $handler): array
+    {
+        return ['identifier' => $handler->getData()->getIdentifier()];
+    }
+
+    /**
+     * Outer-door names of the fields a unique violation hit (`violated` of the 409
+     * `duplicate`): root fields by name, child fields as `<kindProperty>.<field>`;
+     * columns without an outer name are left out, unknown columns/table give [].
+     *
+     * @return list<string>
+     */
+    private function violatedFields(UniqueViolationException $e): array
+    {
+        $names = match ($e->getTable()) {
+            'shipment_addresses' => [
+                'city' => 'shipmentAddress.city',
+                'company' => 'shipmentAddress.company',
+                'country' => 'shipmentAddress.country',
+                'phone' => 'shipmentAddress.phone',
+                'postal_code' => 'shipmentAddress.postalCode',
+                'recipient_name' => 'shipmentAddress.recipientName',
+                'state' => 'shipmentAddress.state',
+                'street' => 'shipmentAddress.street',
+                'street2' => 'shipmentAddress.street2',
+            ],
+            'shipment_items' => [
+                'is_fragile' => 'shipmentItem.isFragile',
+                'lot_number' => 'shipmentItem.lotNumber',
+                'product_name' => 'shipmentItem.productName',
+                'product_sku' => 'shipmentItem.productSku',
+                'quantity' => 'shipmentItem.quantity',
+                'serial_number' => 'shipmentItem.serialNumber',
+                'weight_grams' => 'shipmentItem.weightGrams',
+            ],
+            'shipments' => [
+                'carrier' => 'carrier',
+                'customer_identifier' => 'customerIdentifier',
+                'delivered_at' => 'deliveredAt',
+                'estimated_delivery' => 'estimatedDelivery',
+                'identifier' => 'identifier',
+                'insurance_value' => 'insuranceValue',
+                'note' => 'note',
+                'order_number' => 'orderNumber',
+                'package_count' => 'packageCount',
+                'service_level' => 'serviceLevel',
+                'shipped_at' => 'shippedAt',
+                'status' => 'status',
+                'tracking_number' => 'trackingNumber',
+                'weight_grams' => 'weightGrams',
+            ],
+            'tracking_events' => [
+                'detail' => 'trackingEvent.detail',
+                'event_code' => 'trackingEvent.eventCode',
+                'location' => 'trackingEvent.location',
+                'occurred_at' => 'trackingEvent.occurredAt',
+                'postal_code' => 'trackingEvent.postalCode',
+                'reported_at' => 'trackingEvent.reportedAt',
+                'status' => 'trackingEvent.status',
+            ],
+            default => [],
+        };
+
+        $fields = [];
+        foreach ($e->getColumns() as $column) {
+            if (isset($names[$column])) {
+                $fields[] = $names[$column];
+            }
+        }
+
+        return $fields;
+    }
+
+    /**
      * Gets Repository service (shared via Factory).
      *
      * @return Repository
-     * @throws RuntimeException
+     * @throws \RuntimeException
      * @throws Throwable
      */
     protected function getRepository(): Repository
@@ -313,24 +504,40 @@ class PersistShipment extends EcommerceContext
     }
 
     /**
-     * Resolves the database connection to a PDO instance.
+     * Resolves the write connection as a savepoint-capable connection.
      *
-     * Handles ConnectionPoolInterface (read/write splitting) and plain PDO.
+     * Handles ConnectionPoolInterface (its writer) and plain PDO (wrapped).
+     *
+     * @throws \RuntimeException If no database connection is configured or its writer cannot hold savepoints
+     */
+    protected function resolveWriter(): DbConnectionInterface&SavepointInterface
+    {
+        $connection = $this->resource()->dbConnection();
+
+        if ($connection instanceof \PDO) {
+            return new PdoConnection($connection);
+        }
+
+        if ($connection instanceof ConnectionPoolInterface) {
+            $writer = $connection->getWriter();
+
+            if ($writer instanceof SavepointInterface) {
+                return $writer;
+            }
+
+            throw new \RuntimeException('The write connection does not support savepoints');
+        }
+
+        throw new \RuntimeException('No database connection configured');
+    }
+
+    /**
+     * Resolves the database connection to a PDO instance (the writer's own).
      *
      * @throws \RuntimeException If no database connection is configured
      */
     protected function resolveConnection(): \PDO
     {
-        $connection = $this->resource()->dbConnection();
-
-        if ($connection instanceof \PDO) {
-            return $connection;
-        }
-
-        if ($connection instanceof ConnectionPoolInterface) {
-            return $connection->getWriter()->pdo();
-        }
-
-        throw new \RuntimeException('No database connection configured');
+        return $this->resolveWriter()->pdo();
     }
 }

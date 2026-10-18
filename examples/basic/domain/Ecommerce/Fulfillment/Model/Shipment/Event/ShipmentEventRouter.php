@@ -19,8 +19,11 @@ use JardisSupport\Contract\EventListener\EventListenerRegistryInterface;
  *   ecommerce.fulfillment.shipment.shipment-address.updated
  *   ecommerce.fulfillment.shipment.shipment-item.added
  *   ecommerce.fulfillment.shipment.shipment-item.removed
+ *   ecommerce.fulfillment.shipment.shipment-item.updated
  *   ecommerce.fulfillment.shipment.tracking-event.added
  *   ecommerce.fulfillment.shipment.tracking-event.removed
+ *   ecommerce.fulfillment.shipment.tracking-event.updated
+ *   ecommerce.fulfillment.shipment.computed.updated
  */
 class ShipmentEventRouter
 {
@@ -32,8 +35,11 @@ class ShipmentEventRouter
         $this->onShipmentShipmentAddressUpdated($registry);
         $this->onShipmentShipmentItemAdded($registry);
         $this->onShipmentShipmentItemRemoved($registry);
+        $this->onShipmentShipmentItemUpdated($registry);
         $this->onShipmentTrackingEventAdded($registry);
         $this->onShipmentTrackingEventRemoved($registry);
+        $this->onShipmentTrackingEventUpdated($registry);
+        $this->onShipmentComputedUpdated($registry);
     }
 
     // ecommerce.fulfillment.shipment.created
@@ -84,6 +90,14 @@ class ShipmentEventRouter
         });
     }
 
+    // ecommerce.fulfillment.shipment.shipment-item.updated
+    protected function onShipmentShipmentItemUpdated(EventListenerRegistryInterface $registry): void
+    {
+        $registry->listen(ShipmentShipmentItemUpdated::class, function (ShipmentShipmentItemUpdated $event) {
+            // configure transport
+        });
+    }
+
     // ecommerce.fulfillment.shipment.tracking-event.added
     protected function onShipmentTrackingEventAdded(EventListenerRegistryInterface $registry): void
     {
@@ -96,6 +110,22 @@ class ShipmentEventRouter
     protected function onShipmentTrackingEventRemoved(EventListenerRegistryInterface $registry): void
     {
         $registry->listen(ShipmentTrackingEventRemoved::class, function (ShipmentTrackingEventRemoved $event) {
+            // configure transport
+        });
+    }
+
+    // ecommerce.fulfillment.shipment.tracking-event.updated
+    protected function onShipmentTrackingEventUpdated(EventListenerRegistryInterface $registry): void
+    {
+        $registry->listen(ShipmentTrackingEventUpdated::class, function (ShipmentTrackingEventUpdated $event) {
+            // configure transport
+        });
+    }
+
+    // ecommerce.fulfillment.shipment.computed.updated
+    protected function onShipmentComputedUpdated(EventListenerRegistryInterface $registry): void
+    {
+        $registry->listen(ShipmentComputedUpdated::class, function (ShipmentComputedUpdated $event) {
             // configure transport
         });
     }

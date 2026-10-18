@@ -9,10 +9,8 @@ use Ecommerce\Fulfillment\Model\Shipment\Aggregate\Entity\Shipment as ShipmentAg
 use Ecommerce\Fulfillment\Model\Shipment\Aggregate\Shipment as ShipmentHandler;
 use Ecommerce\Fulfillment\Model\Shipment\Query\ShipmentById as ShipmentByIdQuery;
 use Ecommerce\Fulfillment\Model\Shipment\Query\ShipmentByIdentifier as ShipmentByIdentifierQuery;
+use Ecommerce\Fulfillment\Model\Shipment\Query\ShipmentByIdentifiers as ShipmentByIdentifiersQuery;
 use Ecommerce\Fulfillment\Model\Shipment\Query\ShipmentByIds as ShipmentByIdsQuery;
-use Ecommerce\Fulfillment\Model\Shipment\Query\ShipmentListFilter;
-use Ecommerce\Fulfillment\Model\Shipment\Query\ShipmentTrackingListFilter;
-use Ecommerce\Fulfillment\Model\Shipment\Query\ShipmentbyOrderNumber as ShipmentbyOrderNumberQuery;
 use JardisSupport\Contract\Kernel\ContextResponseInterface;
 use JardisSupport\Data\Hydration;
 use ReflectionException;
@@ -51,9 +49,29 @@ class ShipmentRepository extends EcommerceContext
      * @throws ReflectionException
      * @throws Throwable
      */
-    public function getShipmentByIdentifier(ShipmentByIdentifierQuery $query, bool $asHandler = true): ShipmentHandler|array|null
-    {
+    public function getShipmentByIdentifier(
+        ShipmentByIdentifierQuery $query,
+        bool $asHandler = true
+    ): ShipmentHandler|array|null {
         $rootContainer = $this->handle(QueryShipmentByIdentifier::class)($query);
+
+        return $this->buildAggregate($rootContainer, $asHandler);
+    }
+
+    /**
+     * Get Shipment aggregate.
+     *
+     * @param ShipmentByIdentifiersQuery $query Query parameters
+     * @param bool $asHandler If true, return handler with hydrated aggregate; if false, return array
+     * @return ShipmentHandler|array|null Handler with aggregate, nested array, or null if not found
+     * @throws ReflectionException
+     * @throws Throwable
+     */
+    public function getShipmentByIdentifiers(
+        ShipmentByIdentifiersQuery $query,
+        bool $asHandler = true
+    ): ShipmentHandler|array|null {
+        $rootContainer = $this->handle(QueryShipmentByIdentifiers::class)($query);
 
         return $this->buildAggregate($rootContainer, $asHandler);
     }
@@ -70,22 +88,6 @@ class ShipmentRepository extends EcommerceContext
     public function getShipmentByIds(ShipmentByIdsQuery $query, bool $asHandler = true): ShipmentHandler|array|null
     {
         $rootContainer = $this->handle(QueryShipmentByIds::class)($query);
-
-        return $this->buildAggregate($rootContainer, $asHandler);
-    }
-
-    /**
-     * Get Shipment aggregate.
-     *
-     * @param ShipmentbyOrderNumberQuery $query Query parameters
-     * @param bool $asHandler If true, return handler with hydrated aggregate; if false, return array
-     * @return ShipmentHandler|array|null Handler with aggregate, nested array, or null if not found
-     * @throws ReflectionException
-     * @throws Throwable
-     */
-    public function getShipmentbyOrderNumber(ShipmentbyOrderNumberQuery $query, bool $asHandler = true): ShipmentHandler|array|null
-    {
-        $rootContainer = $this->handle(QueryShipmentbyOrderNumber::class)($query);
 
         return $this->buildAggregate($rootContainer, $asHandler);
     }
@@ -149,39 +151,5 @@ class ShipmentRepository extends EcommerceContext
         $this->handle(ValidateShipment::class)($handler);
 
         return $this->handle(PersistShipment::class)($handler);
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $rows
-     * @return array{items: array<int, array<string, mixed>>, total: int, limit: int, offset: int}
-     */
-    protected function listResponse(array $rows, int $limit, int $offset): array
-    {
-        $total = (int) ($rows[0]['total_count'] ?? 0);
-
-        return [
-            'items' => array_map(fn(array $row) => array_diff_key($row, ['total_count' => true]), $rows),
-            'total' => $total,
-            'limit' => $limit,
-            'offset' => $offset,
-        ];
-    }
-
-    /**
-     * @return array{items: array<int, array<string, mixed>>, total: int, limit: int, offset: int}
-     * @throws Throwable
-     */
-    public function shipmentList(ShipmentListFilter $filter): array
-    {
-        return $this->listResponse($this->handle(QueryShipmentList::class)($filter), $filter->limit, $filter->offset);
-    }
-
-    /**
-     * @return array{items: array<int, array<string, mixed>>, total: int, limit: int, offset: int}
-     * @throws Throwable
-     */
-    public function shipmentTrackingList(ShipmentTrackingListFilter $filter): array
-    {
-        return $this->listResponse($this->handle(QueryShipmentTrackingList::class)($filter), $filter->limit, $filter->offset);
     }
 }

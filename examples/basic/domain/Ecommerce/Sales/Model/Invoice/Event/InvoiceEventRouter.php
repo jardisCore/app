@@ -18,6 +18,7 @@ use JardisSupport\Contract\EventListener\EventListenerRegistryInterface;
  *   ecommerce.sales.invoice.updated
  *   ecommerce.sales.invoice.invoice-line.added
  *   ecommerce.sales.invoice.invoice-line.removed
+ *   ecommerce.sales.invoice.invoice-line.updated
  */
 class InvoiceEventRouter
 {
@@ -28,6 +29,7 @@ class InvoiceEventRouter
         $this->onInvoiceUpdated($registry);
         $this->onInvoiceInvoiceLineAdded($registry);
         $this->onInvoiceInvoiceLineRemoved($registry);
+        $this->onInvoiceInvoiceLineUpdated($registry);
     }
 
     // ecommerce.sales.invoice.created
@@ -66,6 +68,14 @@ class InvoiceEventRouter
     protected function onInvoiceInvoiceLineRemoved(EventListenerRegistryInterface $registry): void
     {
         $registry->listen(InvoiceInvoiceLineRemoved::class, function (InvoiceInvoiceLineRemoved $event) {
+            // configure transport
+        });
+    }
+
+    // ecommerce.sales.invoice.invoice-line.updated
+    protected function onInvoiceInvoiceLineUpdated(EventListenerRegistryInterface $registry): void
+    {
+        $registry->listen(InvoiceInvoiceLineUpdated::class, function (InvoiceInvoiceLineUpdated $event) {
             // configure transport
         });
     }

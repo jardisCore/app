@@ -6,6 +6,7 @@ namespace Ecommerce;
 
 use JardisSupport\ClassVersion\ClassVersion;
 use JardisSupport\ClassVersion\Data\ClassVersionConfig;
+use JardisSupport\ClassVersion\Reader\LoadClassFromProxy;
 use JardisSupport\ClassVersion\Reader\LoadClassFromSubDirectory;
 use JardisSupport\ClassVersion\Support\ClassResolutionCache;
 use JardisSupport\Contract\ClassVersion\ClassVersionInterface;
@@ -15,28 +16,51 @@ use JardisSupport\Contract\Kernel\GeneratedContextInterface;
 use JardisSupport\Factory\Factory;
 use LogicException;
 use Throwable;
-use Ecommerce\Response\ContextResponse;
+use JardisSupport\Workflow\Data\Response\ContextResponse;
+use JardisSupport\Workflow\Handler\Response\TransformResponse;
+use JardisSupport\Workflow\Handler\Response\BuildResponseData;
+use JardisSupport\Workflow\Data\ProcessOutcome;
+use JardisSupport\Workflow\Data\Failure\FailureForm;
+use JardisSupport\Scheduling\Clock\SystemClock;
+use Psr\Clock\ClockInterface;
+use JardisSupport\Workflow\Data\ReadResult;
 
 /**
  * Ecommerce Domain Context.
  *
  * All bounded context classes in this domain extend this class.
- * handle()/context() are family-internal only (protected); the generated
- * facade's own accessor methods are the sole outer door.
+ * 1:1-structural port of the former jardiscore/kernel BoundedContext
+ * (Kernel-Entkopplung P4) — handle()/context() are family-internal
+ * only (protected); the generated facade's own accessor methods are
+ * the sole outer door.
  */
 class EcommerceContext implements GeneratedContextInterface
 {
+    /**
+     * Container-Schlüssel der Test-Stellvertreter-Liste (I3):
+     * array<class-string, object> — Klassenname → Stellvertreter.
+     * Nur Tests legen sie ab; ohne Eintrag verhält sich alles wie heute
+     * (keine Betriebssperre — Bescheid Rolf 2026-09-26, Punkt b).
+     */
+    public const CLOSURE_STAND_INS = 'jardis.test.closureStandIns';
+
     private DomainKernelInterface $domainKernel;
     private mixed $payload;
     private string $version;
+    private ?object $actor;
     private ?ContextResponseInterface $result = null;
     private ?ClassVersionInterface $classVersionInstance = null;
 
-    public function __construct(DomainKernelInterface $domainKernel, mixed $payload = null, string $version = '')
-    {
+    public function __construct(
+        DomainKernelInterface $domainKernel,
+        mixed $payload = null,
+        string $version = '',
+        ?object $actor = null,
+    ) {
         $this->domainKernel = $domainKernel;
         $this->payload = $payload;
         $this->version = $version;
+        $this->actor = $actor;
     }
 
     /**
@@ -45,7 +69,7 @@ class EcommerceContext implements GeneratedContextInterface
      *
      * @template T
      * @param class-string<T> $className
-     * @return T|null
+     * @return T
      * @throws Throwable
      * @throws LogicException
      */
@@ -56,7 +80,9 @@ class EcommerceContext implements GeneratedContextInterface
 
     /**
      * Starts a fresh context for the given generated-context subclass,
-     * setting payload+version explicitly. The kernel is inherited.
+     * setting payload+version explicitly (and the actor of the request, the
+     * door's request attributes, when the process declares one); an empty
+     * version is the caller's own. The kernel is inherited.
      * Family-internal only; rejects non-GeneratedContextInterface targets.
      *
      * @template T of GeneratedContextInterface
@@ -65,9 +91,13 @@ class EcommerceContext implements GeneratedContextInterface
      * @throws Throwable
      * @throws LogicException
      */
-    protected function context(string $className, mixed $payload, string $version = ''): mixed
+    protected function context(string $className, mixed $payload, string $version = '', ?object $actor = null): mixed
     {
-        return $this->resolve($className, $payload, $version, [], requireGeneratedContext: true);
+        // An absent version is the caller's own: a facade reached through the kernel seam
+        // (a node calling a process or aggregate facade) keeps the class version of the run.
+        $version = $version !== '' ? $version : $this->version;
+
+        return $this->resolve($className, $payload, $version, [], requireGeneratedContext: true, actor: $actor);
     }
 
     /**
@@ -82,6 +112,7 @@ class EcommerceContext implements GeneratedContextInterface
         string $version,
         array $parameters,
         bool $requireGeneratedContext,
+        ?object $actor = null,
     ): mixed {
         try {
             $container = $this->resource()->container();
@@ -89,13 +120,17 @@ class EcommerceContext implements GeneratedContextInterface
 
             $resolved = $this->resolveClassName($className, $version);
 
+            // Only a run that carries an actor names it: a target class whose
+            // constructor takes no `actor` (an aggregate handler) is built as before.
+            $named = $actor === null ? [] : ['actor' => $actor];
+
             if (is_object($resolved)) {
                 return $resolved;
             }
 
             return match (true) {
                 is_subclass_of($resolved, GeneratedContextInterface::class)
-                    => $factory->create($resolved, $this->domainKernel, $payload, $version, ...$parameters),
+                    => $factory->create($resolved, $this->domainKernel, $payload, $version, ...$parameters, ...$named),
                 $requireGeneratedContext
                     => throw new LogicException(sprintf(
                         'context() requires a %s subclass; %s does not implement it.',
@@ -116,6 +151,57 @@ class EcommerceContext implements GeneratedContextInterface
         }
     }
 
+    /**
+     * Reads through an own-BC query handler: starts the handler's context with
+     * the given filter as payload (the class version of this run) and answers
+     * its ReadResult. The read door of a process node (own BC only).
+     *
+     * @template T of GeneratedContextInterface
+     * @param class-string<T> $handler
+     * @return ReadResult<array<string, mixed>>
+     * @throws LogicException when the handler lies outside the own bounded context (M9)
+     * @throws Throwable
+     */
+    protected function read(string $handler, object $filter): ReadResult
+    {
+        $own = $this->ownBoundedContext();
+        if (!str_starts_with($handler, $own)) {
+            throw new LogicException(sprintf(
+                'read() reads the own bounded context (%s) only; %s lies outside it. '
+                . 'Reach a foreign bounded context through its process() or its {Agg}Read facade.',
+                $own,
+                $handler,
+            ));
+        }
+
+        /** @var callable(): ReadResult<array<string, mixed>> $query */
+        $query = $this->context($handler, $filter, $this->version);
+
+        return $query();
+    }
+
+    /**
+     * The namespace prefix `{Domain}\{BC}\` of the bounded context this run belongs to: the
+     * first class of the caller's lineage below the domain namespace (a test harness that
+     * extends a generated class belongs to the BC of that class).
+     * @throws LogicException
+     */
+    private function ownBoundedContext(): string
+    {
+        $domain = __NAMESPACE__ . '\\';
+        foreach ([static::class, ...array_values(class_parents($this))] as $class) {
+            if (!str_starts_with($class, $domain)) {
+                continue;
+            }
+            $segments = explode('\\', substr($class, strlen($domain)));
+            if (count($segments) > 1) {
+                return $domain . $segments[0] . '\\';
+            }
+        }
+
+        throw new LogicException(sprintf('%s belongs to no bounded context of %s.', static::class, $domain));
+    }
+
     protected function resource(): DomainKernelInterface
     {
         return $this->domainKernel;
@@ -131,6 +217,17 @@ class EcommerceContext implements GeneratedContextInterface
         return $this->version;
     }
 
+    /**
+     * The actor of this run: the request attributes a process reads (the
+     * `{Name}Actor` DTO the door built), null for a run without one. The
+     * process handler hands it to the runner, whose start check answers 401
+     * when a declared actor is missing.
+     */
+    protected function actor(): ?object
+    {
+        return $this->actor;
+    }
+
     protected function result(): ContextResponseInterface
     {
         if ($this->result === null) {
@@ -139,6 +236,47 @@ class EcommerceContext implements GeneratedContextInterface
         }
 
         return $this->result;
+    }
+
+    /**
+     * The envelope builder of this run (the package's TransformResponse),
+     * stamped with the run's class version (V10): `meta.version` names the
+     * version the caller asked for, also when that version has no class of its
+     * own and the baseline served the call. The ONE place a generated class
+     * obtains its transformer - every handler, process and node answers through
+     * it, none builds its own.
+     * @throws LogicException
+     * @throws Throwable
+     */
+    protected function transformer(): TransformResponse
+    {
+        return new TransformResponse($this->clock(), $this->version);
+    }
+
+    /**
+     * The clock of this run (PSR-20): the one source of every instant the
+     * generat stamps - the envelope's timestamp and duration, the `auto`
+     * columns of a persist. Resolved through the kernel seam, so a test
+     * replaces it with a FixedClock via CLOSURE_STAND_INS under SystemClock.
+     * @throws LogicException
+     * @throws Throwable
+     */
+    protected function clock(): ClockInterface
+    {
+        return $this->handle(SystemClock::class);
+    }
+
+    /**
+     * The wire data of a failure form - the package's one mapping from a
+     * FailureForm to the `data` of the envelope (BuildResponseData).
+     *
+     * @return array<string, mixed>
+     * @throws LogicException
+     * @throws Throwable
+     */
+    protected function failureData(FailureForm $form): array
+    {
+        return $this->handle(BuildResponseData::class)(new ProcessOutcome($form->status(), $form), '');
     }
 
     /**
@@ -168,16 +306,28 @@ class EcommerceContext implements GeneratedContextInterface
      *
      * The generated aggregate tree is Platform-free; version overrides
      * (e.g. v2) live as an immediate subdirectory next to the baseline
-     * class (…/Handler/v2/CreateCounter), resolved by
+     * class (…/Handler/v2/Create{Aggregate}), resolved by
      * LoadClassFromSubDirectory. Override only for a custom setup.
      */
     protected function classVersion(): ClassVersionInterface
     {
         $config = $this->classVersionConfig();
+        $container = $this->resource()->container();
+
+        // Test-Stellvertreter (I3): nur mit Container-Eintrag —
+        // sonst null, ClassVersion verhält sich exakt wie heute.
+        $standIns = null;
+        if ($container->has(self::CLOSURE_STAND_INS)) {
+            $standIns = new LoadClassFromProxy($config);
+            foreach ($container->get(self::CLOSURE_STAND_INS) as $className => $standIn) {
+                $standIns->addProxy($className, $standIn);
+            }
+        }
 
         return new ClassVersion(
             $config,
             new LoadClassFromSubDirectory($config),
+            proxyClassFinder: $standIns,
             cache: new ClassResolutionCache(),
         );
     }

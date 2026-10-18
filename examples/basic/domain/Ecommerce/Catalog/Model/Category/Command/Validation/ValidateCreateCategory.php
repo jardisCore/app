@@ -11,7 +11,6 @@ use Ecommerce\Catalog\Model\Category\Command\Validation\CategoryValidator;
 use Ecommerce\EcommerceContext;
 use JardisSupport\Validation\ObjectValidator;
 use JardisSupport\Validation\ValidatorRegistry;
-use JsonException;
 use Throwable;
 use Ecommerce\Catalog\Model\Category\Command\Category as CommandCategory;
 
@@ -28,7 +27,6 @@ class ValidateCreateCategory extends EcommerceContext
      *
      * @param CommandCategory $dto Command DTO
      * @throws ValidationException If validation fails
-     * @throws JsonException
      * @throws Throwable
      */
     public function __invoke(CommandCategory $dto): void
@@ -37,12 +35,13 @@ class ValidateCreateCategory extends EcommerceContext
         $registry->register(Category::class, ($this->handle(CategoryValidator::class))());
         $registry->register(CategoryTranslation::class, ($this->handle(CategoryTranslationValidator::class))());
 
-        $validator = new ObjectValidator($registry);
+        $validator = new ObjectValidator($registry, indexedLists: true);
         $result = $validator->validate($dto);
         $errors = $this->filterEmptyErrors($result->getErrors());
+        $kinds = $this->filterEmptyErrors($result->getKinds());
 
         if (!empty($errors)) {
-            throw new ValidationException(json_encode($errors, JSON_THROW_ON_ERROR));
+            throw new ValidationException($errors, $kinds);
         }
     }
 

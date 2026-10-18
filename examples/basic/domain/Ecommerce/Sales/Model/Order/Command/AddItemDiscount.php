@@ -15,7 +15,7 @@ readonly class AddItemDiscount
         public string $orderNumber,
         public string $orderItemIdentifier,
         public string $discountCode,
-        public float $amount
+        public string $amount
     ) {
     }
 }

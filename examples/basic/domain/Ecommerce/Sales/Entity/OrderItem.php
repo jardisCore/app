@@ -27,6 +27,7 @@ class OrderItem
      *
      * @var array<string, mixed>
      */
+    // phpcs:ignore PSR2.Classes.PropertyDeclaration.Underscore -- Reflection-Slot jardissupport/data
     protected array $__snapshot = [
         'id' => null,
         'identifier' => null,
@@ -54,7 +55,7 @@ class OrderItem
      * @var ?int
      */
     #[Column(name: 'order_id', type: 'int')]
-    #[ForeignKey(referencedTable: 'orders', referencedColumn: 'id', onUpdate: 'NO ACTION', onDelete: 'NO ACTION')]
+    #[ForeignKey(referencedTable: 'orders', referencedColumn: 'id')]
     protected ?int $orderId = null;
 
     /**
@@ -70,16 +71,16 @@ class OrderItem
     protected ?int $quantity = null;
 
     /**
-     * @var ?float
+     * @var ?numeric-string
      */
     #[Column(name: 'unit_price', type: 'decimal', precision: 10, scale: 2)]
-    protected ?float $unitPrice = null;
+    protected ?string $unitPrice = null;
 
     /**
-     * @var ?float
+     * @var ?numeric-string
      */
     #[Column(name: 'subtotal', type: 'decimal', precision: 10, scale: 2)]
-    protected ?float $subtotal = null;
+    protected ?string $subtotal = null;
 
     /**
      * Returns the snapshot of original values.
@@ -116,12 +117,18 @@ class OrderItem
         return $this->quantity;
     }
 
-    public function getUnitPrice(): ?float
+    /**
+     * @return ?numeric-string
+     */
+    public function getUnitPrice(): ?string
     {
         return $this->unitPrice;
     }
 
-    public function getSubtotal(): ?float
+    /**
+     * @return ?numeric-string
+     */
+    public function getSubtotal(): ?string
     {
         return $this->subtotal;
     }
@@ -150,13 +157,19 @@ class OrderItem
         return $this;
     }
 
-    public function setUnitPrice(?float $unitPrice): self
+    /**
+     * @param ?numeric-string $unitPrice
+     */
+    public function setUnitPrice(?string $unitPrice): self
     {
         $this->unitPrice = $unitPrice;
         return $this;
     }
 
-    public function setSubtotal(?float $subtotal): self
+    /**
+     * @param ?numeric-string $subtotal
+     */
+    public function setSubtotal(?string $subtotal): self
     {
         $this->subtotal = $subtotal;
         return $this;

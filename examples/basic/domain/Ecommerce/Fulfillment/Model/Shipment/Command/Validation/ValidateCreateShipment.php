@@ -15,7 +15,6 @@ use Ecommerce\Fulfillment\Model\Shipment\Command\Validation\ShipmentValidator;
 use Ecommerce\Fulfillment\Model\Shipment\Command\Validation\TrackingEventValidator;
 use JardisSupport\Validation\ObjectValidator;
 use JardisSupport\Validation\ValidatorRegistry;
-use JsonException;
 use Throwable;
 use Ecommerce\Fulfillment\Model\Shipment\Command\Shipment as CommandShipment;
 
@@ -32,7 +31,6 @@ class ValidateCreateShipment extends EcommerceContext
      *
      * @param CommandShipment $dto Command DTO
      * @throws ValidationException If validation fails
-     * @throws JsonException
      * @throws Throwable
      */
     public function __invoke(CommandShipment $dto): void
@@ -43,12 +41,13 @@ class ValidateCreateShipment extends EcommerceContext
         $registry->register(ShipmentItem::class, ($this->handle(ShipmentItemValidator::class))());
         $registry->register(TrackingEvent::class, ($this->handle(TrackingEventValidator::class))());
 
-        $validator = new ObjectValidator($registry);
+        $validator = new ObjectValidator($registry, indexedLists: true);
         $result = $validator->validate($dto);
         $errors = $this->filterEmptyErrors($result->getErrors());
+        $kinds = $this->filterEmptyErrors($result->getKinds());
 
         if (!empty($errors)) {
-            throw new ValidationException(json_encode($errors, JSON_THROW_ON_ERROR));
+            throw new ValidationException($errors, $kinds);
         }
     }
 

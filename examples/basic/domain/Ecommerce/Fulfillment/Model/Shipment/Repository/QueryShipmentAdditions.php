@@ -9,7 +9,6 @@ use JardisSupport\Contract\DbConnection\ConnectionPoolInterface;
 use JardisSupport\Contract\DbQuery\DbQueryBuilderInterface;
 use JardisSupport\DbQuery\DbQuery;
 use JardisSupport\Repository\Repository;
-use RuntimeException;
 use Throwable;
 use Ecommerce\Fulfillment\Entity\ShipmentAddress as ShipmentAddressEntity;
 use Ecommerce\Fulfillment\Entity\ShipmentItem as ShipmentItemEntity;
@@ -31,7 +30,7 @@ class QueryShipmentAdditions extends EcommerceContext
      *
      * @param array $rootContainer Container with root entity data
      * @return array<string, array<int, object>>
-     * @throws RuntimeException
+     * @throws \RuntimeException
      * @throws Throwable
      */
     public function __invoke(array $rootContainer = []): array
@@ -67,7 +66,8 @@ class QueryShipmentAdditions extends EcommerceContext
     protected function shipmentItem(): DbQueryBuilderInterface
     {
         return $this->query(ShipmentItemEntity::class)
-            ->where('shipment_id')->in($this->values('shipment', 'id'));
+            ->where('shipment_id')->in($this->values('shipment', 'id'))
+            ->orderBy('id', 'ASC');
     }
 
     /**
@@ -78,7 +78,8 @@ class QueryShipmentAdditions extends EcommerceContext
     {
         return $this->query(TrackingEventEntity::class)
             ->where('shipment_id')->in($this->values('shipment', 'id'))
-            ->orderBy('occurred_at', 'ASC');
+            ->orderBy('occurred_at', 'ASC')
+            ->orderBy('id', 'ASC');
     }
 
     /**
@@ -102,7 +103,7 @@ class QueryShipmentAdditions extends EcommerceContext
      *
      * @param DbQueryBuilderInterface|null $query Query to execute
      * @return array The query results
-     * @throws RuntimeException
+     * @throws \RuntimeException
      * @throws Throwable
      */
     protected function load(?DbQueryBuilderInterface $query): array

@@ -9,7 +9,6 @@ use JardisSupport\Contract\DbConnection\ConnectionPoolInterface;
 use JardisSupport\Contract\DbQuery\DbQueryBuilderInterface;
 use JardisSupport\DbQuery\DbQuery;
 use JardisSupport\Repository\Repository;
-use RuntimeException;
 use Throwable;
 use Ecommerce\Catalog\Entity\ProductImage as ProductImageEntity;
 use Ecommerce\Catalog\Entity\ProductVariant as ProductVariantEntity;
@@ -31,7 +30,7 @@ class QueryProductAdditions extends EcommerceContext
      *
      * @param array $rootContainer Container with root entity data
      * @return array<string, array<int, object>>
-     * @throws RuntimeException
+     * @throws \RuntimeException
      * @throws Throwable
      */
     public function __invoke(array $rootContainer = []): array
@@ -58,7 +57,8 @@ class QueryProductAdditions extends EcommerceContext
     {
         return $this->query(ProductVariantEntity::class)
             ->where('product_id')->in($this->values('product', 'id'))
-            ->orderBy('sort_order', 'ASC');
+            ->orderBy('sort_order', 'ASC')
+            ->orderBy('id', 'ASC');
     }
 
     /**
@@ -68,7 +68,8 @@ class QueryProductAdditions extends EcommerceContext
     protected function productVariantPrice(): DbQueryBuilderInterface
     {
         return $this->query(ProductVariantPriceEntity::class)
-            ->where('variant_id')->in($this->values('productVariant', 'id'));
+            ->where('variant_id')->in($this->values('productVariant', 'id'))
+            ->orderBy('id', 'ASC');
     }
 
     /**
@@ -79,7 +80,8 @@ class QueryProductAdditions extends EcommerceContext
     {
         return $this->query(ProductImageEntity::class)
             ->where('product_id')->in($this->values('product', 'id'))
-            ->orderBy('sort_order', 'ASC');
+            ->orderBy('sort_order', 'ASC')
+            ->orderBy('id', 'ASC');
     }
 
     /**
@@ -103,7 +105,7 @@ class QueryProductAdditions extends EcommerceContext
      *
      * @param DbQueryBuilderInterface|null $query Query to execute
      * @return array The query results
-     * @throws RuntimeException
+     * @throws \RuntimeException
      * @throws Throwable
      */
     protected function load(?DbQueryBuilderInterface $query): array

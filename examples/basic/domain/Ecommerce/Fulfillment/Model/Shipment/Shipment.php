@@ -12,7 +12,10 @@ use Ecommerce\Fulfillment\Model\Shipment\Command\Handler\RemoveShipment;
 use Ecommerce\Fulfillment\Model\Shipment\Command\Handler\RemoveShipmentItem;
 use Ecommerce\Fulfillment\Model\Shipment\Command\Handler\RemoveTrackingEvent;
 use Ecommerce\Fulfillment\Model\Shipment\Command\Handler\SetShipmentAddress;
+use Ecommerce\Fulfillment\Model\Shipment\Command\Handler\SetShipmentComputed;
 use Ecommerce\Fulfillment\Model\Shipment\Command\Handler\UpdateShipment;
+use Ecommerce\Fulfillment\Model\Shipment\Command\Handler\UpdateShipmentItem;
+use Ecommerce\Fulfillment\Model\Shipment\Command\Handler\UpdateTrackingEvent;
 use Ecommerce\Fulfillment\Model\Shipment\Event\ShipmentEvents;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
 use Throwable;
@@ -22,8 +25,11 @@ use Ecommerce\Fulfillment\Model\Shipment\Command\RemoveShipment as CommandRemove
 use Ecommerce\Fulfillment\Model\Shipment\Command\RemoveShipmentItem as CommandRemoveShipmentItem;
 use Ecommerce\Fulfillment\Model\Shipment\Command\RemoveTrackingEvent as CommandRemoveTrackingEvent;
 use Ecommerce\Fulfillment\Model\Shipment\Command\SetShipmentAddress as CommandSetShipmentAddress;
+use Ecommerce\Fulfillment\Model\Shipment\Command\SetShipmentComputed as CommandSetShipmentComputed;
 use Ecommerce\Fulfillment\Model\Shipment\Command\Shipment as CommandShipment;
 use Ecommerce\Fulfillment\Model\Shipment\Command\UpdateShipment as CommandUpdateShipment;
+use Ecommerce\Fulfillment\Model\Shipment\Command\UpdateShipmentItem as CommandUpdateShipmentItem;
+use Ecommerce\Fulfillment\Model\Shipment\Command\UpdateTrackingEvent as CommandUpdateTrackingEvent;
 
 /**
  * Shipment Aggregate Facade.
@@ -52,12 +58,16 @@ class Shipment extends EcommerceContext
      *
      * @param CommandUpdateShipment $updateShipment
      * @param string $version Optional ClassVersion override (default: caller version)
+     * @param array<string, mixed> $expected Optional read basis (CAS): outer field name => value the caller read
      * @return DomainResponseInterface
      * @throws Throwable
      */
-    public function updateShipment(CommandUpdateShipment $updateShipment, string $version = ''): DomainResponseInterface
-    {
-        return $this->context(UpdateShipment::class, $updateShipment, $version)();
+    public function updateShipment(
+        CommandUpdateShipment $updateShipment,
+        string $version = '',
+        array $expected = []
+    ): DomainResponseInterface {
+        return $this->context(UpdateShipment::class, $updateShipment, $version)($expected);
     }
 
     /**
@@ -106,6 +116,21 @@ class Shipment extends EcommerceContext
     }
 
     /**
+     * Update ShipmentItem operation.
+     *
+     * @param CommandUpdateShipmentItem $updateShipmentItem
+     * @param string $version Optional ClassVersion override (default: caller version)
+     * @return DomainResponseInterface
+     * @throws Throwable
+     */
+    public function updateShipmentItem(
+        CommandUpdateShipmentItem $updateShipmentItem,
+        string $version = ''
+    ): DomainResponseInterface {
+        return $this->context(UpdateShipmentItem::class, $updateShipmentItem, $version)();
+    }
+
+    /**
      * Add TrackingEvent operation.
      *
      * @param CommandAddTrackingEvent $addTrackingEvent
@@ -133,6 +158,38 @@ class Shipment extends EcommerceContext
         string $version = ''
     ): DomainResponseInterface {
         return $this->context(RemoveTrackingEvent::class, $removeTrackingEvent, $version)();
+    }
+
+    /**
+     * Update TrackingEvent operation.
+     *
+     * @param CommandUpdateTrackingEvent $updateTrackingEvent
+     * @param string $version Optional ClassVersion override (default: caller version)
+     * @return DomainResponseInterface
+     * @throws Throwable
+     */
+    public function updateTrackingEvent(
+        CommandUpdateTrackingEvent $updateTrackingEvent,
+        string $version = ''
+    ): DomainResponseInterface {
+        return $this->context(UpdateTrackingEvent::class, $updateTrackingEvent, $version)();
+    }
+
+    /**
+     * Set ShipmentComputed operation.
+     *
+     * @param CommandSetShipmentComputed $setShipmentComputed
+     * @param string $version Optional ClassVersion override (default: caller version)
+     * @param array<string, mixed> $expected Optional read basis (CAS): outer field name => value the caller read
+     * @return DomainResponseInterface
+     * @throws Throwable
+     */
+    public function setShipmentComputed(
+        CommandSetShipmentComputed $setShipmentComputed,
+        string $version = '',
+        array $expected = []
+    ): DomainResponseInterface {
+        return $this->context(SetShipmentComputed::class, $setShipmentComputed, $version)($expected);
     }
 
     /**

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Ecommerce\Sales\Model\Order\Query\Response;
 
-use DateTime;
-
 /**
  * Read projection for CustomerResponse.
  *
@@ -18,6 +16,6 @@ class CustomerResponse
     public string $email = '';
     public string $customerName = '';
     public ?string $phone = null;
-    public ?DateTime $createdAt = null;
+    public ?string $createdAt = null;
     public ?AddressResponse $address = null;
 }

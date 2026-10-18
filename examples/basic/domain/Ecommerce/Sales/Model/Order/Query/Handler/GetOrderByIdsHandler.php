@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Ecommerce\Sales\Model\Order\Query\Handler;
 
 use Ecommerce\EcommerceContext;
-use Ecommerce\Response\DomainResponseTransformer;
 use Ecommerce\Sales\Model\Order\Query\Response\OrderResponse;
 use Ecommerce\Sales\Model\Order\Repository\OrderRepository;
 use Exception;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
 use JardisSupport\Data\FieldMapper;
+use JardisSupport\Data\Handler\ProjectWire;
 use JardisSupport\Data\Hydration;
 use ReflectionException;
 use Throwable;
@@ -21,6 +21,8 @@ use Ecommerce\Sales\Model\Order\Query\OrderByIds as QueryOrderByIds;
  */
 class GetOrderByIdsHandler extends EcommerceContext
 {
+    private const BULK_WARN_ABOVE = 100;
+
     /**
      * Executes the Query endpoint operation.
      *
@@ -33,6 +35,18 @@ class GetOrderByIdsHandler extends EcommerceContext
     {
         /** @var QueryOrderByIds $orderByIds */
         $orderByIds = $this->payload();
+
+        $logger = $this->resource()->logger();
+        if ($logger !== null) {
+            $count = count($orderByIds->ids);
+            if ($count > self::BULK_WARN_ABOVE) {
+                $logger->warning('Bulk read {handler} received {count} keys (threshold {threshold}).', [
+                    'handler' => self::class,
+                    'count' => $count,
+                    'threshold' => self::BULK_WARN_ABOVE,
+                ]);
+            }
+        }
 
         /** @var array<int, array<string, mixed>> $result */
         $result = $this->handle(OrderRepository::class)->getOrderByIds($orderByIds, false);
@@ -58,7 +72,6 @@ class GetOrderByIdsHandler extends EcommerceContext
                 'amount' => 'amount',
             ],
             'order' => [
-                'id' => 'id',
                 'orderNumber' => 'order_number',
                 'totalAmount' => 'total_amount',
                 'status' => 'status',
@@ -74,19 +87,31 @@ class GetOrderByIdsHandler extends EcommerceContext
         ];
         $mapEntity = static fn(string $entity): array => $readMaps[$entity] ?? [];
 
+        $wireTypes = [
+            'createdAt' => 'date-time',
+            'customer' => [
+                'createdAt' => 'date-time',
+            ],
+        ];
+
+        $projectWire = $this->handle(ProjectWire::class);
+        $fieldMapper = $this->handle(FieldMapper::class);
+        $hydration = $this->handle(Hydration::class);
+
         /** @var array<int, OrderResponse> $projected */
         $projected = array_map(
-            function (array $row) use ($mapEntity): OrderResponse {
-                $mapped = $this->handle(FieldMapper::class)->fromAggregate($row, $mapEntity, 'order');
+            function (array $row) use ($mapEntity, $fieldMapper, $hydration, $projectWire, $wireTypes): OrderResponse {
+                $mapped = $fieldMapper->fromAggregate($row, $mapEntity, 'order');
+                $mapped = $projectWire($mapped, $wireTypes);
                 $orderResponse = new OrderResponse();
-                $this->handle(Hydration::class)->hydrateAggregate($orderResponse, $mapped);
+                $hydration->hydrateAggregate($orderResponse, $mapped);
                 return $orderResponse;
             },
             $result,
         );
 
-        $this->result()->setData(['order' => $projected]);
+        $this->result()->setData(['@type' => 'orderList', 'items' => $projected]);
 
-        return $this->handle(DomainResponseTransformer::class)->transform($this->result());
+        return ($this->transformer())($this->result());
     }
 }

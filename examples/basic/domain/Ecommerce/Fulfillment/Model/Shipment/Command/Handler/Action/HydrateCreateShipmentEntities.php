@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Ecommerce\Fulfillment\Model\Shipment\Command\Handler\Action;
 
 use Ecommerce\EcommerceContext;
-use Ecommerce\Fulfillment\Model\Shipment\Aggregate\Shipment;
 use Ecommerce\Fulfillment\FieldMap;
+use Ecommerce\Fulfillment\Model\Shipment\Aggregate\Shipment;
 use JardisSupport\Data\FieldMapper;
 use Throwable;
 use Ecommerce\Fulfillment\Model\Shipment\Command\Shipment as CommandShipment;
@@ -56,7 +56,12 @@ class HydrateCreateShipmentEntities extends EcommerceContext
     {
         $fieldMap = $this->handle(FieldMap::class);
 
-        $handler->setShipmentAddress($this->handle(FieldMapper::class)->toColumns(get_object_vars($shipment->shipmentAddress), $fieldMap->shipmentAddressesColumns()));
+        $handler->setShipmentAddress(
+            $this->handle(FieldMapper::class)->toColumns(
+                get_object_vars($shipment->shipmentAddress),
+                $fieldMap->shipmentAddressesColumns()
+            )
+        );
     }
 
     /**
@@ -69,7 +74,12 @@ class HydrateCreateShipmentEntities extends EcommerceContext
 
         // ShipmentItem collection
         foreach ($shipment->shipmentItem as $shipmentItemDto) {
-            $handler->addShipmentItem($this->handle(FieldMapper::class)->toColumns(get_object_vars($shipmentItemDto), $fieldMap->shipmentItemsColumns()));
+            $handler->addShipmentItem(
+                $this->handle(FieldMapper::class)->toColumns(
+                    get_object_vars($shipmentItemDto),
+                    $fieldMap->shipmentItemsColumns()
+                )
+            );
         }
     }
 
@@ -83,7 +93,12 @@ class HydrateCreateShipmentEntities extends EcommerceContext
 
         // TrackingEvent collection
         foreach ($shipment->trackingEvent as $trackingEventDto) {
-            $handler->addTrackingEvent($this->handle(FieldMapper::class)->toColumns(get_object_vars($trackingEventDto), $fieldMap->trackingEventsColumns()));
+            $handler->addTrackingEvent(
+                $this->handle(FieldMapper::class)->toColumns(
+                    get_object_vars($trackingEventDto),
+                    $fieldMap->trackingEventsColumns()
+                )
+            );
         }
     }
 }

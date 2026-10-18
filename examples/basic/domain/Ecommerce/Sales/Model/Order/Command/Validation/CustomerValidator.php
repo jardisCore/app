@@ -8,13 +8,14 @@ use JardisSupport\Validation\CompositeFieldValidator;
 use JardisSupport\Validation\Validator\Email;
 use JardisSupport\Validation\Validator\Length;
 use JardisSupport\Validation\Validator\NotBlank;
+use JardisSupport\Validation\Validator\NotEmpty;
 use JardisSupport\Validation\Validator\PhoneNumber;
 
 /**
  * Request validator for Customer command DTO.
  *
  * Auto-generated validation rules from schema metadata:
- * - NOT NULL → NotBlank
+ * - NOT NULL string (no value list, no FK) → NotEmpty (a blank string is empty, R78), other NOT NULL → NotBlank
  * - VARCHAR(n) → Length::max()
  * - Numeric constraints → Range::between() or Positive
  * - ENUM → Contain::oneOf()
@@ -38,15 +39,17 @@ class CustomerValidator
         $this->validator = new CompositeFieldValidator();
 
         $this->validator->field('email')
-            ->validates(NotBlank::class)
+            ->validates(NotEmpty::class, NotEmpty::trimmed())
             ->validates(Email::class)
             ->validates(Length::class, Length::max(255));
         $this->validator->field('customerName')
-            ->validates(NotBlank::class)
+            ->validates(NotEmpty::class, NotEmpty::trimmed())
             ->validates(Length::class, Length::max(255));
         $this->validator->field('phone')
             ->validates(PhoneNumber::class)
             ->validates(Length::class, Length::max(50));
+        $this->validator->field('address')
+            ->validates(NotBlank::class);
 
         return $this->validator;
     }

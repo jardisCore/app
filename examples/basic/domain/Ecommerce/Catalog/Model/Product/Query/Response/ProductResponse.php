@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Ecommerce\Catalog\Model\Product\Query\Response;
 
-use DateTime;
 use JardisSupport\Contract\Workflow\AggregateResponse;
 
 /**
@@ -15,23 +14,28 @@ use JardisSupport\Contract\Workflow\AggregateResponse;
  */
 class ProductResponse implements AggregateResponse
 {
-    public int $id = 0;
     public string $identifier = '';
     public string $sku = '';
     public string $productName = '';
     public string $slug = '';
     public ?string $description = null;
     public ?string $shortDescription = null;
-    public float $price = 0.0;
-    public ?float $compareAtPrice = null;
-    public ?float $costPrice = null;
+
+    /** @var numeric-string */
+    public string $price = '0';
+
+    /** @var ?numeric-string */
+    public ?string $compareAtPrice = null;
+
+    /** @var ?numeric-string */
+    public ?string $costPrice = null;
     public string $currency = '';
     public ?int $weightGrams = null;
     public int $isActive = 0;
     public int $isFeatured = 0;
     public string $taxClass = '';
-    public ?DateTime $createdAt = null;
-    public ?DateTime $updatedAt = null;
+    public ?string $createdAt = null;
+    public ?string $updatedAt = null;
 
     /** @var ProductVariantResponse[] */
     public array $productVariant = [];

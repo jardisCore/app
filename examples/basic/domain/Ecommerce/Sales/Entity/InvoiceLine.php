@@ -28,6 +28,7 @@ class InvoiceLine
      *
      * @var array<string, mixed>
      */
+    // phpcs:ignore PSR2.Classes.PropertyDeclaration.Underscore -- Reflection-Slot jardissupport/data
     protected array $__snapshot = [
         'id' => null,
         'identifier' => null,
@@ -60,7 +61,7 @@ class InvoiceLine
      * @var ?int
      */
     #[Column(name: 'invoice_id', type: 'int')]
-    #[ForeignKey(referencedTable: 'invoices', referencedColumn: 'id', onUpdate: 'NO ACTION', onDelete: 'NO ACTION')]
+    #[ForeignKey(referencedTable: 'invoices', referencedColumn: 'id')]
     protected ?int $invoiceId = null;
 
     /**
@@ -76,10 +77,10 @@ class InvoiceLine
     protected ?string $description = null;
 
     /**
-     * @var ?float
+     * @var ?numeric-string
      */
     #[Column(name: 'quantity', type: 'decimal', precision: 10, scale: 3)]
-    protected ?float $quantity = null;
+    protected ?string $quantity = null;
 
     /**
      * @var ?string
@@ -88,22 +89,22 @@ class InvoiceLine
     protected ?string $unit = null;
 
     /**
-     * @var ?float
+     * @var ?numeric-string
      */
     #[Column(name: 'unit_price', type: 'decimal', precision: 12, scale: 4)]
-    protected ?float $unitPrice = null;
+    protected ?string $unitPrice = null;
 
     /**
-     * @var ?float
+     * @var ?numeric-string
      */
     #[Column(name: 'discount_percent', type: 'decimal', precision: 5, scale: 2, nullable: true)]
-    protected ?float $discountPercent = null;
+    protected ?string $discountPercent = null;
 
     /**
-     * @var ?float
+     * @var ?numeric-string
      */
     #[Column(name: 'line_total', type: 'decimal', precision: 12, scale: 2)]
-    protected ?float $lineTotal = null;
+    protected ?string $lineTotal = null;
 
     /**
      * @var ?int
@@ -152,7 +153,10 @@ class InvoiceLine
         return $this->description;
     }
 
-    public function getQuantity(): ?float
+    /**
+     * @return ?numeric-string
+     */
+    public function getQuantity(): ?string
     {
         return $this->quantity;
     }
@@ -162,17 +166,26 @@ class InvoiceLine
         return $this->unit;
     }
 
-    public function getUnitPrice(): ?float
+    /**
+     * @return ?numeric-string
+     */
+    public function getUnitPrice(): ?string
     {
         return $this->unitPrice;
     }
 
-    public function getDiscountPercent(): ?float
+    /**
+     * @return ?numeric-string
+     */
+    public function getDiscountPercent(): ?string
     {
         return $this->discountPercent;
     }
 
-    public function getLineTotal(): ?float
+    /**
+     * @return ?numeric-string
+     */
+    public function getLineTotal(): ?string
     {
         return $this->lineTotal;
     }
@@ -211,7 +224,10 @@ class InvoiceLine
         return $this;
     }
 
-    public function setQuantity(?float $quantity): self
+    /**
+     * @param ?numeric-string $quantity
+     */
+    public function setQuantity(?string $quantity): self
     {
         $this->quantity = $quantity;
         return $this;
@@ -223,19 +239,28 @@ class InvoiceLine
         return $this;
     }
 
-    public function setUnitPrice(?float $unitPrice): self
+    /**
+     * @param ?numeric-string $unitPrice
+     */
+    public function setUnitPrice(?string $unitPrice): self
     {
         $this->unitPrice = $unitPrice;
         return $this;
     }
 
-    public function setDiscountPercent(?float $discountPercent): self
+    /**
+     * @param ?numeric-string $discountPercent
+     */
+    public function setDiscountPercent(?string $discountPercent): self
     {
         $this->discountPercent = $discountPercent;
         return $this;
     }
 
-    public function setLineTotal(?float $lineTotal): self
+    /**
+     * @param ?numeric-string $lineTotal
+     */
+    public function setLineTotal(?string $lineTotal): self
     {
         $this->lineTotal = $lineTotal;
         return $this;
@@ -249,7 +274,7 @@ class InvoiceLine
 
     public function setCreatedAt(?DateTime $createdAt = null): self
     {
-        $this->createdAt = $createdAt ?? new DateTime();
+        $this->createdAt = $createdAt;
         return $this;
     }
 }

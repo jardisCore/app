@@ -18,6 +18,7 @@ use JardisSupport\Contract\EventListener\EventListenerRegistryInterface;
  *   ecommerce.catalog.category.updated
  *   ecommerce.catalog.category.category-translation.added
  *   ecommerce.catalog.category.category-translation.removed
+ *   ecommerce.catalog.category.category-translation.updated
  */
 class CategoryEventRouter
 {
@@ -28,6 +29,7 @@ class CategoryEventRouter
         $this->onCategoryUpdated($registry);
         $this->onCategoryCategoryTranslationAdded($registry);
         $this->onCategoryCategoryTranslationRemoved($registry);
+        $this->onCategoryCategoryTranslationUpdated($registry);
     }
 
     // ecommerce.catalog.category.created
@@ -65,8 +67,22 @@ class CategoryEventRouter
     // ecommerce.catalog.category.category-translation.removed
     protected function onCategoryCategoryTranslationRemoved(EventListenerRegistryInterface $registry): void
     {
-        $registry->listen(CategoryCategoryTranslationRemoved::class, function (CategoryCategoryTranslationRemoved $event) {
-            // configure transport
-        });
+        $registry->listen(
+            CategoryCategoryTranslationRemoved::class,
+            function (CategoryCategoryTranslationRemoved $event) {
+                // configure transport
+            }
+        );
+    }
+
+    // ecommerce.catalog.category.category-translation.updated
+    protected function onCategoryCategoryTranslationUpdated(EventListenerRegistryInterface $registry): void
+    {
+        $registry->listen(
+            CategoryCategoryTranslationUpdated::class,
+            function (CategoryCategoryTranslationUpdated $event) {
+                // configure transport
+            }
+        );
     }
 }

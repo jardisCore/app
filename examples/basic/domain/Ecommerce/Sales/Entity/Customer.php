@@ -28,6 +28,7 @@ class Customer
      *
      * @var array<string, mixed>
      */
+    // phpcs:ignore PSR2.Classes.PropertyDeclaration.Underscore -- Reflection-Slot jardissupport/data
     protected array $__snapshot = [
         'id' => null,
         'identifier' => null,
@@ -73,7 +74,7 @@ class Customer
      * @var ?int
      */
     #[Column(name: 'billing_address_id', type: 'int', nullable: true)]
-    #[ForeignKey(referencedTable: 'addresses', referencedColumn: 'id', onUpdate: 'NO ACTION', onDelete: 'NO ACTION')]
+    #[ForeignKey(referencedTable: 'addresses', referencedColumn: 'id')]
     protected ?int $billingAddressId = null;
 
     /**
@@ -159,7 +160,7 @@ class Customer
 
     public function setCreatedAt(?DateTime $createdAt = null): self
     {
-        $this->createdAt = $createdAt ?? new DateTime();
+        $this->createdAt = $createdAt;
         return $this;
     }
 }

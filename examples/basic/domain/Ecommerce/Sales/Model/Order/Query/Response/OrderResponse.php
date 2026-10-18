@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Ecommerce\Sales\Model\Order\Query\Response;
 
-use DateTime;
 use JardisSupport\Contract\Workflow\AggregateResponse;
 
 /**
@@ -15,11 +14,12 @@ use JardisSupport\Contract\Workflow\AggregateResponse;
  */
 class OrderResponse implements AggregateResponse
 {
-    public int $id = 0;
     public string $orderNumber = '';
-    public float $totalAmount = 0.0;
+
+    /** @var numeric-string */
+    public string $totalAmount = '0';
     public string $status = '';
-    public ?DateTime $createdAt = null;
+    public ?string $createdAt = null;
     public ?CustomerResponse $customer = null;
 
     /** @var OrderItemResponse[] */

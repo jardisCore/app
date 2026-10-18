@@ -14,5 +14,7 @@ class ItemDiscountResponse
 {
     public int $id = 0;
     public string $discountCode = '';
-    public float $amount = 0.0;
+
+    /** @var numeric-string */
+    public string $amount = '0';
 }

@@ -9,7 +9,6 @@ use Ecommerce\Catalog\Model\Product\Command\Validation\ProductValidator;
 use Ecommerce\EcommerceContext;
 use JardisSupport\Validation\ObjectValidator;
 use JardisSupport\Validation\ValidatorRegistry;
-use JsonException;
 use Throwable;
 use Ecommerce\Catalog\Model\Product\Command\UpdateProduct as CommandUpdateProduct;
 
@@ -26,7 +25,6 @@ class ValidateUpdateProduct extends EcommerceContext
      *
      * @param CommandUpdateProduct $dto Command DTO
      * @throws ValidationException If validation fails
-     * @throws JsonException
      * @throws Throwable
      */
     public function __invoke(CommandUpdateProduct $dto): void
@@ -34,12 +32,13 @@ class ValidateUpdateProduct extends EcommerceContext
         $registry = new ValidatorRegistry();
         $registry->register(UpdateProduct::class, ($this->handle(ProductValidator::class))());
 
-        $validator = new ObjectValidator($registry);
+        $validator = new ObjectValidator($registry, indexedLists: true);
         $result = $validator->validate($dto);
         $errors = $this->filterEmptyErrors($result->getErrors());
+        $kinds = $this->filterEmptyErrors($result->getKinds());
 
         if (!empty($errors)) {
-            throw new ValidationException(json_encode($errors, JSON_THROW_ON_ERROR));
+            throw new ValidationException($errors, $kinds);
         }
     }
 

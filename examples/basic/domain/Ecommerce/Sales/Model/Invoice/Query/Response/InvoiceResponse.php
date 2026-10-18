@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Ecommerce\Sales\Model\Invoice\Query\Response;
 
-use DateTime;
 use JardisSupport\Contract\Workflow\AggregateResponse;
 
 /**
@@ -15,22 +14,27 @@ use JardisSupport\Contract\Workflow\AggregateResponse;
  */
 class InvoiceResponse implements AggregateResponse
 {
-    public int $id = 0;
     public string $identifier = '';
     public string $invoiceNumber = '';
     public string $orderNumber = '';
     public string $customerIdentifier = '';
     public string $status = '';
     public ?string $paymentMethod = null;
-    public float $totalNet = 0.0;
-    public float $taxRate = 0.0;
-    public float $totalGross = 0.0;
+
+    /** @var numeric-string */
+    public string $totalNet = '0';
+
+    /** @var numeric-string */
+    public string $taxRate = '0';
+
+    /** @var numeric-string */
+    public string $totalGross = '0';
     public string $currency = '';
     public ?string $note = null;
-    public ?DateTime $issuedAt = null;
-    public ?DateTime $dueAt = null;
-    public ?DateTime $paidAt = null;
-    public ?DateTime $createdAt = null;
+    public ?string $issuedAt = null;
+    public ?string $dueAt = null;
+    public ?string $paidAt = null;
+    public ?string $createdAt = null;
 
     /** @var InvoiceLineResponse[] */
     public array $invoiceLine = [];

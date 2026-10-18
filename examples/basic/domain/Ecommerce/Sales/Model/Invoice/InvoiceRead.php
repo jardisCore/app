@@ -7,15 +7,16 @@ namespace Ecommerce\Sales\Model\Invoice;
 use Ecommerce\EcommerceContext;
 use Ecommerce\Sales\Model\Invoice\Query\Handler\GetInvoiceByIdHandler;
 use Ecommerce\Sales\Model\Invoice\Query\Handler\GetInvoiceByIdentifierHandler;
+use Ecommerce\Sales\Model\Invoice\Query\Handler\GetInvoiceByIdentifiersHandler;
 use Ecommerce\Sales\Model\Invoice\Query\Handler\GetInvoiceByIdsHandler;
-use Ecommerce\Sales\Model\Invoice\Query\Handler\GetInvoiceLineListHandler;
 use Ecommerce\Sales\Model\Invoice\Query\Handler\GetInvoiceListHandler;
-use Ecommerce\Sales\Model\Invoice\Query\InvoiceLineListFilter;
 use Ecommerce\Sales\Model\Invoice\Query\InvoiceListFilter;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
+use JardisSupport\Workflow\Data\ReadResult;
 use Throwable;
 use Ecommerce\Sales\Model\Invoice\Query\InvoiceById as QueryInvoiceById;
 use Ecommerce\Sales\Model\Invoice\Query\InvoiceByIdentifier as QueryInvoiceByIdentifier;
+use Ecommerce\Sales\Model\Invoice\Query\InvoiceByIdentifiers as QueryInvoiceByIdentifiers;
 use Ecommerce\Sales\Model\Invoice\Query\InvoiceByIds as QueryInvoiceByIds;
 
 /**
@@ -56,6 +57,21 @@ class InvoiceRead extends EcommerceContext
     }
 
     /**
+     * Gets InvoiceByIdentifiers aggregate.
+     *
+     * @param QueryInvoiceByIdentifiers $invoiceByIdentifiers Query parameters
+     * @param string $version Optional ClassVersion override (default: caller version)
+     * @return DomainResponseInterface
+     * @throws Throwable
+     */
+    public function getInvoiceByIdentifiers(
+        QueryInvoiceByIdentifiers $invoiceByIdentifiers,
+        string $version = ''
+    ): DomainResponseInterface {
+        return $this->context(GetInvoiceByIdentifiersHandler::class, $invoiceByIdentifiers, $version)();
+    }
+
+    /**
      * Gets InvoiceByIds aggregate.
      *
      * @param QueryInvoiceByIds $invoiceByIds Query parameters
@@ -69,21 +85,14 @@ class InvoiceRead extends EcommerceContext
     }
 
     /**
+     * Declared query `invoiceList` (Queries.json, visibility public).
+     *
+     * @param InvoiceListFilter $filter Declared query parameters
      * @param string $version Optional ClassVersion override (default: caller version)
-     * @return array{items: array<int, array<string, mixed>>, total: int, limit: int, offset: int}
+     * @return ReadResult<array<string, mixed>>
      * @throws Throwable
      */
-    public function invoiceLineList(InvoiceLineListFilter $filter, string $version = ''): array
-    {
-        return $this->context(GetInvoiceLineListHandler::class, $filter, $version)();
-    }
-
-    /**
-     * @param string $version Optional ClassVersion override (default: caller version)
-     * @return array{items: array<int, array<string, mixed>>, total: int, limit: int, offset: int}
-     * @throws Throwable
-     */
-    public function invoiceList(InvoiceListFilter $filter, string $version = ''): array
+    public function invoiceList(InvoiceListFilter $filter, string $version = ''): ReadResult
     {
         return $this->context(GetInvoiceListHandler::class, $filter, $version)();
     }

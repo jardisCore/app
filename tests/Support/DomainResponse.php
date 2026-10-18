@@ -16,13 +16,11 @@ use JardisSupport\Contract\Kernel\EventScope;
 final readonly class DomainResponse implements DomainResponseInterface
 {
     /**
-     * `$data` and `$errors` carry the SAME shape the implemented Contract
-     * promises — both are keyed by context name, never flat. A fake that
-     * declares them wider than the interface lets a test build a response
-     * the real generated pipeline can never produce
-     * (`ContextResponse::getData()` always returns `[$context => $data]`).
+     * `$data` is flat, as the Contract promises: the business object itself
+     * (generated responses carry its type as `@type`), not a map keyed by
+     * context name. `$errors` is keyed by context name.
      *
-     * @param array<string, array<string, mixed>> $data
+     * @param array<string, mixed> $data
      * @param array<string, array<int, string>> $errors
      * @param array<string, mixed> $metadata
      * @param array<string, array<int, object>> $events

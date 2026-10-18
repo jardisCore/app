@@ -15,8 +15,8 @@ readonly class AddOrderItem
         public string $orderNumber,
         public string $productIdentifier,
         public int $quantity,
-        public float $unitPrice,
-        public float $subtotal
+        public string $unitPrice,
+        public string $subtotal
     ) {
     }
 }

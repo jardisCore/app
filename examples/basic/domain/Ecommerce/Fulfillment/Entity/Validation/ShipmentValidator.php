@@ -10,14 +10,16 @@ use Ecommerce\Fulfillment\Data\ShipmentStatus;
 use JardisSupport\Validation\CompositeFieldValidator;
 use JardisSupport\Validation\Validator\Contain;
 use JardisSupport\Validation\Validator\DateTime;
+use JardisSupport\Validation\Validator\Format;
 use JardisSupport\Validation\Validator\Length;
 use JardisSupport\Validation\Validator\NotBlank;
+use JardisSupport\Validation\Validator\NotEmpty;
 
 /**
  * Validator for Shipment entity.
  *
  * Auto-generated validation rules from schema metadata:
- * - NOT NULL → NotBlank
+ * - NOT NULL string (no value list, no FK) → NotEmpty (a blank string is empty), other NOT NULL → NotBlank
  * - VARCHAR(n) → Length::max()
  * - Numeric constraints → Range::between() or Positive
  * - ENUM → Contain::oneOf()
@@ -44,10 +46,10 @@ class ShipmentValidator
         $this->validator = new CompositeFieldValidator();
 
         $this->validator->field('orderNumber')
-            ->validates(NotBlank::class)
+            ->validates(NotEmpty::class, NotEmpty::trimmed())
             ->validates(Length::class, Length::max(50));
         $this->validator->field('customerIdentifier')
-            ->validates(NotBlank::class)
+            ->validates(NotEmpty::class, NotEmpty::trimmed())
             ->validates(Length::class, Length::max(36));
         $this->validator->field('carrier')
             ->validates(NotBlank::class)
@@ -60,8 +62,8 @@ class ShipmentValidator
         $this->validator->field('status')
             ->validates(NotBlank::class)
             ->validates(Contain::class, Contain::oneOf(ShipmentStatus::cases()));
-        $this->validator->field('packageCount')
-            ->validates(NotBlank::class);
+        $this->validator->field('insuranceValue')
+            ->validates(Format::class, Format::pattern('/^-?\d{1,8}(\.\d{1,2})?$/'));
         $this->validator->field('estimatedDelivery')
             ->validates(DateTime::class);
         $this->validator->field('shippedAt')

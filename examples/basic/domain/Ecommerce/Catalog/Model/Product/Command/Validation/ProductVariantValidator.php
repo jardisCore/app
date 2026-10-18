@@ -6,15 +6,17 @@ namespace Ecommerce\Catalog\Model\Product\Command\Validation;
 
 use JardisSupport\Validation\CompositeFieldValidator;
 use JardisSupport\Validation\Validator\Count;
+use JardisSupport\Validation\Validator\Format;
 use JardisSupport\Validation\Validator\Length;
 use JardisSupport\Validation\Validator\NotBlank;
+use JardisSupport\Validation\Validator\NotEmpty;
 use JardisSupport\Validation\Validator\Positive;
 
 /**
  * Request validator for ProductVariant command DTO.
  *
  * Auto-generated validation rules from schema metadata:
- * - NOT NULL → NotBlank
+ * - NOT NULL string (no value list, no FK) → NotEmpty (a blank string is empty, R78), other NOT NULL → NotBlank
  * - VARCHAR(n) → Length::max()
  * - Numeric constraints → Range::between() or Positive
  * - ENUM → Contain::oneOf()
@@ -38,24 +40,25 @@ class ProductVariantValidator
         $this->validator = new CompositeFieldValidator();
 
         $this->validator->field('sku')
-            ->validates(NotBlank::class)
+            ->validates(NotEmpty::class, NotEmpty::trimmed())
             ->validates(Length::class, Length::max(100));
         $this->validator->field('variantName')
-            ->validates(NotBlank::class)
+            ->validates(NotEmpty::class, NotEmpty::trimmed())
             ->validates(Length::class, Length::max(255));
         $this->validator->field('optionName')
-            ->validates(NotBlank::class)
+            ->validates(NotEmpty::class, NotEmpty::trimmed())
             ->validates(Length::class, Length::max(100));
         $this->validator->field('optionValue')
-            ->validates(NotBlank::class)
+            ->validates(NotEmpty::class, NotEmpty::trimmed())
             ->validates(Length::class, Length::max(100));
         $this->validator->field('priceModifier')
-            ->validates(NotBlank::class);
+            ->validates(NotBlank::class)
+            ->validates(Format::class, Format::pattern('/^-?\d{1,8}(\.\d{1,2})?$/'));
         $this->validator->field('stockQuantity')
             ->validates(NotBlank::class)
-            ->validates(Positive::class);
+            ->validates(Positive::class, Positive::allowZero());
         $this->validator->field('lowStockThreshold')
-            ->validates(Positive::class);
+            ->validates(Positive::class, Positive::allowZero());
         $this->validator->field('isAvailable')
             ->validates(NotBlank::class);
         $this->validator->field('sortOrder')

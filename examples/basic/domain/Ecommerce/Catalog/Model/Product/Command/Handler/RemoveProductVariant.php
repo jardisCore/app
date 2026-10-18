@@ -8,14 +8,17 @@ use DateTimeImmutable;
 use Ecommerce\Catalog\Model\Product\Aggregate\Product;
 use Ecommerce\Catalog\Model\Product\Command\Validation\ValidationException;
 use Ecommerce\Catalog\Model\Product\Event\ProductProductVariantRemoved;
+use Ecommerce\Catalog\Model\Product\Repository\ConcurrencyConflictException;
 use Ecommerce\Catalog\Model\Product\Repository\ProductRepository;
 use Ecommerce\EcommerceContext;
-use Ecommerce\Response\DomainResponseTransformer;
 use Exception;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
 use JardisSupport\Contract\Kernel\EventScope;
 use JardisSupport\Contract\Kernel\ResponseStatus;
-use RuntimeException;
+use JardisSupport\Contract\Repository\Exception\TransientConflictException;
+use JardisSupport\Workflow\Handler\Failure\ConcurrencyConflictPayload;
+use JardisSupport\Workflow\Handler\Failure\NotFoundPayload;
+use JardisSupport\Workflow\Handler\Failure\ValidationPayload;
 use Throwable;
 use Ecommerce\Catalog\Model\Product\Command\RemoveProductVariant as CommandRemoveProductVariant;
 use Ecommerce\Catalog\Model\Product\Query\ProductByIdentifier as QueryProduct;
@@ -31,9 +34,11 @@ class RemoveProductVariant extends EcommerceContext
      * Removes a ProductVariant from the collection.
      *
      * @return DomainResponseInterface
+     * @throws ConcurrencyConflictException
      * @throws Exception
-     * @throws RuntimeException
      * @throws Throwable
+     * @throws TransientConflictException
+     * @throws ValidationException
      */
     public function __invoke(): DomainResponseInterface
     {
@@ -42,8 +47,23 @@ class RemoveProductVariant extends EcommerceContext
             $removeProductVariant = $this->payload();
 
             $query = $this->handle(QueryProduct::class, identifier: $removeProductVariant->productIdentifier);
-            /** @var Product $handler */
+            /** @var Product|null $handler */
             $handler = $this->handle(ProductRepository::class)->getProductByIdentifier($query);
+            if ($handler === null) {
+                $this->result()->setData(
+                    $this->failureData(
+                        ($this->handle(NotFoundPayload::class))(
+                            'notFound',
+                            ['productIdentifier' => $removeProductVariant->productIdentifier]
+                        )
+                    )
+                );
+
+                return ($this->transformer())(
+                    $this->result(),
+                    ResponseStatus::NotFound
+                );
+            }
 
             $items = $handler->getData()->getProductVariant();
             $found = false;
@@ -55,13 +75,28 @@ class RemoveProductVariant extends EcommerceContext
                 }
             }
             if (!$found) {
-                throw new RuntimeException("ProductVariant not found: " . $removeProductVariant->productVariantIdentifier);
+                $this->result()->setData(
+                    $this->failureData(
+                        ($this->handle(NotFoundPayload::class))(
+                            'notFound',
+                            ['productVariantIdentifier' => $removeProductVariant->productVariantIdentifier]
+                        )
+                    )
+                );
+
+                return ($this->transformer())(
+                    $this->result(),
+                    ResponseStatus::NotFound
+                );
             }
 
             $persistResult = $this->handle(ProductRepository::class)->persist($handler);
             $this->result()->addResult($persistResult);
 
-            $this->result()->setData(['productIdentifier' => $removeProductVariant->productIdentifier]);
+            $this->result()->setData([
+                '@type' => 'product',
+                'productIdentifier' => $removeProductVariant->productIdentifier,
+            ]);
 
             $event = $this->handle(
                 ProductProductVariantRemoved::class,
@@ -71,18 +106,40 @@ class RemoveProductVariant extends EcommerceContext
             );
             $this->result()->addEvent($event, EventScope::Internal);
 
-            return $this->handle(DomainResponseTransformer::class)->transform($this->result());
+            return ($this->transformer())($this->result());
         } catch (ValidationException $e) {
             $this->result()->addError($e->getMessage());
+            $this->result()->setData(
+                $this->failureData(($this->handle(ValidationPayload::class))('validation', $e->fields))
+            );
 
-            return $this->handle(DomainResponseTransformer::class)->transform(
+            return ($this->transformer())(
                 $this->result(),
                 ResponseStatus::ValidationError
             );
-        } catch (\Throwable $e) {
+        } catch (ConcurrencyConflictException $e) {
+            $this->result()->setData(
+                $this->failureData(
+                    ($this->handle(ConcurrencyConflictPayload::class))(
+                        'concurrencyConflict',
+                        $e->getReason(),
+                        $e->getAggregate(),
+                        $e->getContext(),
+                        $e->getViolated()
+                    )
+                )
+            );
+
+            return ($this->transformer())(
+                $this->result(),
+                ResponseStatus::Conflict
+            );
+        } catch (TransientConflictException $transient) {
+            throw $transient;
+        } catch (Throwable $e) {
             $this->result()->addError($e->getMessage());
 
-            return $this->handle(DomainResponseTransformer::class)->transform(
+            return ($this->transformer())(
                 $this->result(),
                 ResponseStatus::InternalError
             );

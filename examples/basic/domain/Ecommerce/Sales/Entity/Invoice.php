@@ -29,6 +29,7 @@ class Invoice
      *
      * @var array<string, mixed>
      */
+    // phpcs:ignore PSR2.Classes.PropertyDeclaration.Underscore -- Reflection-Slot jardissupport/data
     protected array $__snapshot = [
         'id' => null,
         'identifier' => null,
@@ -92,22 +93,22 @@ class Invoice
     protected ?InvoicePaymentMethod $paymentMethod = null;
 
     /**
-     * @var ?float
+     * @var ?numeric-string
      */
     #[Column(name: 'total_net', type: 'decimal', precision: 12, scale: 2)]
-    protected ?float $totalNet = null;
+    protected ?string $totalNet = null;
 
     /**
-     * @var ?float
+     * @var ?numeric-string
      */
     #[Column(name: 'tax_rate', type: 'decimal', precision: 5, scale: 2)]
-    protected ?float $taxRate = null;
+    protected ?string $taxRate = null;
 
     /**
-     * @var ?float
+     * @var ?numeric-string
      */
     #[Column(name: 'total_gross', type: 'decimal', precision: 12, scale: 2)]
-    protected ?float $totalGross = null;
+    protected ?string $totalGross = null;
 
     /**
      * @var ?string
@@ -130,7 +131,7 @@ class Invoice
     /**
      * @var ?DateTime
      */
-    #[Column(name: 'due_at', type: 'date', nullable: true)]
+    #[Column(name: 'due_at', type: 'datetime', nullable: true)]
     protected ?DateTime $dueAt = null;
 
     /**
@@ -190,17 +191,26 @@ class Invoice
         return $this->paymentMethod;
     }
 
-    public function getTotalNet(): ?float
+    /**
+     * @return ?numeric-string
+     */
+    public function getTotalNet(): ?string
     {
         return $this->totalNet;
     }
 
-    public function getTaxRate(): ?float
+    /**
+     * @return ?numeric-string
+     */
+    public function getTaxRate(): ?string
     {
         return $this->taxRate;
     }
 
-    public function getTotalGross(): ?float
+    /**
+     * @return ?numeric-string
+     */
+    public function getTotalGross(): ?string
     {
         return $this->totalGross;
     }
@@ -271,19 +281,28 @@ class Invoice
         return $this;
     }
 
-    public function setTotalNet(?float $totalNet): self
+    /**
+     * @param ?numeric-string $totalNet
+     */
+    public function setTotalNet(?string $totalNet): self
     {
         $this->totalNet = $totalNet;
         return $this;
     }
 
-    public function setTaxRate(?float $taxRate): self
+    /**
+     * @param ?numeric-string $taxRate
+     */
+    public function setTaxRate(?string $taxRate): self
     {
         $this->taxRate = $taxRate;
         return $this;
     }
 
-    public function setTotalGross(?float $totalGross): self
+    /**
+     * @param ?numeric-string $totalGross
+     */
+    public function setTotalGross(?string $totalGross): self
     {
         $this->totalGross = $totalGross;
         return $this;
@@ -321,7 +340,7 @@ class Invoice
 
     public function setCreatedAt(?DateTime $createdAt = null): self
     {
-        $this->createdAt = $createdAt ?? new DateTime();
+        $this->createdAt = $createdAt;
         return $this;
     }
 }

@@ -17,6 +17,7 @@ class CategoryEvents
     public const CATEGORY_UPDATED = CategoryUpdated::class;
     public const CATEGORY_CATEGORY_TRANSLATION_ADDED = CategoryCategoryTranslationAdded::class;
     public const CATEGORY_CATEGORY_TRANSLATION_REMOVED = CategoryCategoryTranslationRemoved::class;
+    public const CATEGORY_CATEGORY_TRANSLATION_UPDATED = CategoryCategoryTranslationUpdated::class;
 
     public static function getAll(): array
     {
@@ -26,6 +27,7 @@ class CategoryEvents
             'CategoryUpdated' => self::CATEGORY_UPDATED,
             'CategoryCategoryTranslationAdded' => self::CATEGORY_CATEGORY_TRANSLATION_ADDED,
             'CategoryCategoryTranslationRemoved' => self::CATEGORY_CATEGORY_TRANSLATION_REMOVED,
+            'CategoryCategoryTranslationUpdated' => self::CATEGORY_CATEGORY_TRANSLATION_UPDATED,
         ];
     }
 }

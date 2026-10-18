@@ -6,13 +6,13 @@ namespace Ecommerce\Sales\Entity\Validation;
 
 use JardisSupport\Validation\CompositeFieldValidator;
 use JardisSupport\Validation\Validator\Length;
-use JardisSupport\Validation\Validator\NotBlank;
+use JardisSupport\Validation\Validator\NotEmpty;
 
 /**
  * Validator for Address entity.
  *
  * Auto-generated validation rules from schema metadata:
- * - NOT NULL → NotBlank
+ * - NOT NULL string (no value list, no FK) → NotEmpty (a blank string is empty), other NOT NULL → NotBlank
  * - VARCHAR(n) → Length::max()
  * - Numeric constraints → Range::between() or Positive
  * - ENUM → Contain::oneOf()
@@ -39,16 +39,16 @@ class AddressValidator
         $this->validator = new CompositeFieldValidator();
 
         $this->validator->field('street')
-            ->validates(NotBlank::class)
+            ->validates(NotEmpty::class, NotEmpty::trimmed())
             ->validates(Length::class, Length::max(255));
         $this->validator->field('city')
-            ->validates(NotBlank::class)
+            ->validates(NotEmpty::class, NotEmpty::trimmed())
             ->validates(Length::class, Length::max(100));
         $this->validator->field('postalCode')
-            ->validates(NotBlank::class)
+            ->validates(NotEmpty::class, NotEmpty::trimmed())
             ->validates(Length::class, Length::max(20));
         $this->validator->field('country')
-            ->validates(NotBlank::class)
+            ->validates(NotEmpty::class, NotEmpty::trimmed())
             ->validates(Length::class, Length::max(2));
 
         return $this->validator;

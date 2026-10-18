@@ -9,10 +9,9 @@ use JardisSupport\Contract\DbConnection\ConnectionPoolInterface;
 use JardisSupport\Contract\DbQuery\DbQueryBuilderInterface;
 use JardisSupport\DbQuery\DbQuery;
 use JardisSupport\Repository\Repository;
-use RuntimeException;
 use Throwable;
-use Ecommerce\Fulfillment\Model\Shipment\Query\ShipmentByIds as ShipmentByIdsQuery;
 use Ecommerce\Fulfillment\Entity\Shipment as ShipmentEntity;
+use Ecommerce\Fulfillment\Model\Shipment\Query\ShipmentByIds as ShipmentByIdsQuery;
 
 /**
  * Root query class for Shipment (ByIds variant).
@@ -29,7 +28,7 @@ class QueryShipmentByIds extends EcommerceContext
      *
      * @param ShipmentByIdsQuery $query Query parameters
      * @return array<string, array<int, object>>
-     * @throws RuntimeException
+     * @throws \RuntimeException
      * @throws Throwable
      */
     public function __invoke(ShipmentByIdsQuery $query): array
@@ -48,7 +47,8 @@ class QueryShipmentByIds extends EcommerceContext
     protected function shipment(array $ids): DbQueryBuilderInterface
     {
         return $this->query(ShipmentEntity::class)
-            ->where('id')->in($ids);
+            ->where('id')->in($ids)
+            ->orderBy('id', 'ASC');
     }
 
     /**
@@ -72,7 +72,7 @@ class QueryShipmentByIds extends EcommerceContext
      *
      * @param DbQueryBuilderInterface|null $query Query to execute
      * @return array The query results
-     * @throws RuntimeException
+     * @throws \RuntimeException
      * @throws Throwable
      */
     protected function load(?DbQueryBuilderInterface $query): array
