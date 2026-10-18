@@ -11,7 +11,6 @@ use Ecommerce\Sales\Model\Order\Command\Validation\AddressValidator;
 use Ecommerce\Sales\Model\Order\Command\Validation\CustomerValidator;
 use JardisSupport\Validation\ObjectValidator;
 use JardisSupport\Validation\ValidatorRegistry;
-use JsonException;
 use Throwable;
 use Ecommerce\Sales\Model\Order\Command\SetCustomer as CommandSetCustomer;
 
@@ -28,7 +27,6 @@ class ValidateSetCustomer extends EcommerceContext
      *
      * @param CommandSetCustomer $dto Command DTO
      * @throws ValidationException If validation fails
-     * @throws JsonException
      * @throws Throwable
      */
     public function __invoke(CommandSetCustomer $dto): void
@@ -37,12 +35,13 @@ class ValidateSetCustomer extends EcommerceContext
         $registry->register(SetCustomer::class, ($this->handle(CustomerValidator::class))());
         $registry->register(Address::class, ($this->handle(AddressValidator::class))());
 
-        $validator = new ObjectValidator($registry);
+        $validator = new ObjectValidator($registry, indexedLists: true);
         $result = $validator->validate($dto);
         $errors = $this->filterEmptyErrors($result->getErrors());
+        $kinds = $this->filterEmptyErrors($result->getKinds());
 
         if (!empty($errors)) {
-            throw new ValidationException(json_encode($errors, JSON_THROW_ON_ERROR));
+            throw new ValidationException($errors, $kinds);
         }
     }
 

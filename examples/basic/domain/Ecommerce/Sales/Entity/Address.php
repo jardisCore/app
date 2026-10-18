@@ -26,6 +26,7 @@ class Address
      *
      * @var array<string, mixed>
      */
+    // phpcs:ignore PSR2.Classes.PropertyDeclaration.Underscore -- Reflection-Slot jardissupport/data
     protected array $__snapshot = [
         'id' => null,
         'street' => null,

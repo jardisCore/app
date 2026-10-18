@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Ecommerce\Fulfillment\Model\Shipment\Repository;
 
 use Ecommerce\EcommerceContext;
-use Ecommerce\Fulfillment\Model\Shipment\Command\Validation\ValidationException;
 use Ecommerce\Fulfillment\Entity\Validation\ShipmentAddressValidator;
 use Ecommerce\Fulfillment\Entity\Validation\ShipmentItemValidator;
 use Ecommerce\Fulfillment\Entity\Validation\ShipmentValidator;
 use Ecommerce\Fulfillment\Entity\Validation\TrackingEventValidator;
-use JsonException;
+use Ecommerce\Fulfillment\Model\Shipment\Command\Validation\ValidationException;
+use JardisSupport\Validation\CompositeFieldValidator;
 use Throwable;
 use Ecommerce\Fulfillment\Model\Shipment\Aggregate\Shipment as ShipmentHandler;
 
@@ -27,7 +27,6 @@ class ValidateShipment extends EcommerceContext
      *
      * @param ShipmentHandler $handler Aggregate handler
      * @throws ValidationException If validation fails
-     * @throws JsonException
      * @throws Throwable
      */
     public function __invoke(ShipmentHandler $handler): void
@@ -37,20 +36,33 @@ class ValidateShipment extends EcommerceContext
         }
 
         $errors = [];
+        $kinds = [];
         $aggregate = $handler->getData();
 
         if (!empty($handler->getEntityData('shipment')['values'])) {
-            $this->validateEntity($aggregate, ShipmentValidator::class, 'shipment', $errors);
+            $this->validateEntity($aggregate, ShipmentValidator::class, 'shipment', $errors, $kinds);
         }
 
         $shipmentAddress = $aggregate->getShipmentAddress();
         if ($shipmentAddress !== null && !empty($handler->getEntityData('shipmentAddress')['values'])) {
-            $this->validateEntity($shipmentAddress, ShipmentAddressValidator::class, 'shipmentAddress', $errors);
+            $this->validateEntity(
+                $shipmentAddress,
+                ShipmentAddressValidator::class,
+                'shipmentAddress',
+                $errors,
+                $kinds
+            );
         }
         $shipmentItemCollection = $handler->getCollectionData('shipmentItem');
         foreach ($aggregate->getShipmentItem() as $index => $shipmentItem) {
             if (!empty($shipmentItemCollection[$index]['values'])) {
-                $this->validateEntity($shipmentItem, ShipmentItemValidator::class, "shipmentItem[{$index}]", $errors);
+                $this->validateEntity(
+                    $shipmentItem,
+                    ShipmentItemValidator::class,
+                    "shipmentItem[{$index}]",
+                    $errors,
+                    $kinds
+                );
             }
         }
         $trackingEventCollection = $handler->getCollectionData('trackingEvent');
@@ -60,13 +72,14 @@ class ValidateShipment extends EcommerceContext
                     $trackingEvent,
                     TrackingEventValidator::class,
                     "trackingEvent[{$index}]",
-                    $errors
+                    $errors,
+                    $kinds
                 );
             }
         }
 
         if (!empty($errors)) {
-            throw new ValidationException(json_encode($errors, JSON_THROW_ON_ERROR));
+            throw new ValidationException($errors, $kinds, root: 'shipment');
         }
     }
 
@@ -77,19 +90,24 @@ class ValidateShipment extends EcommerceContext
      * @param class-string $validatorClass Validator class name
      * @param string $entityName Entity identifier for error grouping
      * @param array<string, mixed> $errors Collected errors (by reference)
+     * @param array<string, mixed> $kinds Collected validator kinds, same shape (by reference)
      * @throws Throwable
      */
     protected function validateEntity(
         object $entity,
         string $validatorClass,
         string $entityName,
-        array &$errors
+        array &$errors,
+        array &$kinds
     ): void {
-        $validator = ($this->handle($validatorClass))();
+        $validatorInstance = $this->handle($validatorClass);
+        /** @var callable(): CompositeFieldValidator $validatorInstance */
+        $validator = $validatorInstance();
         $result = $validator->validate($entity);
 
         if (!$result->isValid()) {
             $errors[$entityName] = $result->getErrors();
+            $kinds[$entityName] = $result->getKinds();
         }
     }
 }

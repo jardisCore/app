@@ -6,6 +6,7 @@ namespace Ecommerce\Sales\Model\Order\Aggregate\Action;
 
 use Ecommerce\EcommerceContext;
 use Ecommerce\Sales\Model\Order\Aggregate\Entity\Address;
+use JardisSupport\Contract\Kernel\ResponseStatus;
 use JardisSupport\Data\Hydration;
 use ReflectionException;
 use Throwable;
@@ -21,17 +22,20 @@ class SetAddress extends EcommerceContext
      *
      * @param OrderAggregate $aggregate
      * @param array<string, mixed> $data Entity data
+     * @return ResponseStatus|null NotFound when a path level is absent, null when applied
      * @throws ReflectionException
      * @throws Throwable
      */
-    public function __invoke(OrderAggregate $aggregate, array $data): void
+    public function __invoke(OrderAggregate $aggregate, array $data): ?ResponseStatus
     {
         $hydration = $this->handle(Hydration::class);
         $parent = $aggregate->getCustomer();
-        if ($parent !== null) {
-            $entity = $parent->getAddress() ?? $this->handle(Address::class);
-            $hydration->apply($entity, $data);
-            $parent->setAddress($entity);
+        if ($parent === null) {
+            return ResponseStatus::NotFound;
         }
+        $entity = $parent->getAddress() ?? $this->handle(Address::class);
+        $hydration->apply($entity, $data);
+        $parent->setAddress($entity);
+        return null;
     }
 }

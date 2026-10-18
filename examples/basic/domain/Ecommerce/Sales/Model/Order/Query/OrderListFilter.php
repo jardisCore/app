@@ -5,17 +5,23 @@ declare(strict_types=1);
 namespace Ecommerce\Sales\Model\Order\Query;
 
 /**
- * Filter DTO for OrderList list query.
+ * Query data class for OrderListFilter.
  *
- * Generated code - do not modify directly.
+ * Readonly DTO for query operations.
  */
 readonly class OrderListFilter
 {
     public function __construct(
+        public ?int $id = null,
+        public ?string $orderNumber = null,
+        public ?int $customerId = null,
+        /** @var ?numeric-string */
+        public ?string $totalAmount = null,
         public ?string $status = null,
-        public ?string $search = null,
+        public ?string $createdAtFrom = null,
+        public ?string $createdAtUntil = null,
         public int $limit = 20,
-        public int $offset = 0,
+        public int $offset = 0
     ) {
     }
 }

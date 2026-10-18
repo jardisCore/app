@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Ecommerce\Sales\Model\Invoice\Command\Handler\Action;
 
 use Ecommerce\EcommerceContext;
-use Ecommerce\Sales\Model\Invoice\Aggregate\Invoice;
 use Ecommerce\Sales\FieldMap;
+use Ecommerce\Sales\Model\Invoice\Aggregate\Invoice;
 use JardisSupport\Data\FieldMapper;
 use Throwable;
 use Ecommerce\Sales\Model\Invoice\Command\Invoice as CommandInvoice;
@@ -56,7 +56,12 @@ class HydrateCreateInvoiceEntities extends EcommerceContext
 
         // InvoiceLine collection
         foreach ($invoice->invoiceLine as $invoiceLineDto) {
-            $handler->addInvoiceLine($this->handle(FieldMapper::class)->toColumns(get_object_vars($invoiceLineDto), $fieldMap->invoiceLinesColumns()));
+            $handler->addInvoiceLine(
+                $this->handle(FieldMapper::class)->toColumns(
+                    get_object_vars($invoiceLineDto),
+                    $fieldMap->invoiceLinesColumns()
+                )
+            );
         }
     }
 }

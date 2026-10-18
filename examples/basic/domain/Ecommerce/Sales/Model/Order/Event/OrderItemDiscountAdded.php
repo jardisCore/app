@@ -17,14 +17,14 @@ readonly class OrderItemDiscountAdded
      * @param string $orderNumber
      * @param int $itemDiscountId
      * @param string $discountCode
-     * @param float $amount
+     * @param string $amount
      * @param DateTimeImmutable $occurredAt
      */
     public function __construct(
         public string $orderNumber,
         public int $itemDiscountId,
         public string $discountCode,
-        public float $amount,
+        public string $amount,
         public DateTimeImmutable $occurredAt
     ) {
     }

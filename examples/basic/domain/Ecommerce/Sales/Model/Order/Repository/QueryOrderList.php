@@ -9,7 +9,6 @@ use Ecommerce\Sales\Model\Order\Query\OrderListFilter;
 use JardisSupport\Contract\DbConnection\ConnectionPoolInterface;
 use JardisSupport\DbQuery\DbQuery;
 use JardisSupport\Repository\Repository;
-use RuntimeException;
 use Throwable;
 use Ecommerce\Sales\Entity\Order as OrderEntity;
 
@@ -23,26 +22,52 @@ class QueryOrderList extends EcommerceContext
 {
     /**
      * @return array<int, array<string, mixed>>
-     * @throws RuntimeException
+     * @throws \RuntimeException
      * @throws Throwable
      */
     public function __invoke(OrderListFilter $filter): array
     {
         $query = $this->handle(DbQuery::class)
             ->from(OrderEntity::SOURCE, 'order')
-            ->select('order.id AS id, order.order_number AS orderNumber, order.total_amount AS totalAmount, order.status AS status, order.created_at AS createdAt, customer.name AS customerName, customer.email AS email, COUNT(*) OVER() AS total_count')
-            ->leftJoin('customers', 'customer.id = order.customer_id', 'customer');
+            ->select(
+                'order.order_number AS orderNumber, order.total_amount AS totalAmount, order.status AS status, '
+                . 'order.created_at AS createdAt, COUNT(*) OVER() AS total_count'
+            );
 
-        if ($filter->status !== null) {
-            $query = $query->where('order.status')->equals($filter->status);
+        $hasId = $filter->id !== null;
+        $hasOrderNumber = $filter->orderNumber !== null;
+        $hasCustomerId = $filter->customerId !== null;
+        $hasTotalAmount = $filter->totalAmount !== null;
+        $hasStatus = $filter->status !== null;
+        $hasCreatedAtFrom = $filter->createdAtFrom !== null;
+        $hasCreatedAtUntil = $filter->createdAtUntil !== null;
+
+        if ($hasId) {
+            $query = $query->and('order.id')->equals($filter->id);
         }
-        if ($filter->search !== null) {
-            $query = $query->and('customer.name')->like($filter->search);
+        if ($hasOrderNumber) {
+            $query = $query->and('order.order_number')->equals($filter->orderNumber);
+        }
+        if ($hasCustomerId) {
+            $query = $query->and('order.customer_id')->equals($filter->customerId);
+        }
+        if ($hasTotalAmount) {
+            $query = $query->and('order.total_amount')->equals($filter->totalAmount);
+        }
+        if ($hasStatus) {
+            $query = $query->and('order.status')->equals($filter->status);
+        }
+        if ($hasCreatedAtFrom) {
+            $query = $query->and('order.created_at')->greaterEquals($filter->createdAtFrom);
+        }
+        if ($hasCreatedAtUntil) {
+            $query = $query->and('order.created_at')->lowerEquals($filter->createdAtUntil);
         }
 
         $query = $query
             ->orderBy('order.created_at', 'DESC')
-            ->limit($filter->limit, $filter->offset);
+            ->orderBy('order.id', 'ASC')
+            ->limit(min($filter->limit, 20), $filter->offset);
 
         return $this->handle(Repository::class, $this->resolveConnection())->findByQuery($query);
     }

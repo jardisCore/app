@@ -10,9 +10,7 @@ use Ecommerce\Sales\Model\Order\Aggregate\Order as OrderHandler;
 use Ecommerce\Sales\Model\Order\Query\OrderById as OrderByIdQuery;
 use Ecommerce\Sales\Model\Order\Query\OrderByIds as OrderByIdsQuery;
 use Ecommerce\Sales\Model\Order\Query\OrderByOrderNumber as OrderByOrderNumberQuery;
-use Ecommerce\Sales\Model\Order\Query\OrderDetailListFilter;
-use Ecommerce\Sales\Model\Order\Query\OrderItemListFilter;
-use Ecommerce\Sales\Model\Order\Query\OrderListFilter;
+use Ecommerce\Sales\Model\Order\Query\OrderByOrderNumbers as OrderByOrderNumbersQuery;
 use JardisSupport\Contract\Kernel\ContextResponseInterface;
 use JardisSupport\Data\Hydration;
 use ReflectionException;
@@ -67,9 +65,29 @@ class OrderRepository extends EcommerceContext
      * @throws ReflectionException
      * @throws Throwable
      */
-    public function getOrderByOrderNumber(OrderByOrderNumberQuery $query, bool $asHandler = true): OrderHandler|array|null
-    {
+    public function getOrderByOrderNumber(
+        OrderByOrderNumberQuery $query,
+        bool $asHandler = true
+    ): OrderHandler|array|null {
         $rootContainer = $this->handle(QueryOrderByOrderNumber::class)($query);
+
+        return $this->buildAggregate($rootContainer, $asHandler);
+    }
+
+    /**
+     * Get Order aggregate.
+     *
+     * @param OrderByOrderNumbersQuery $query Query parameters
+     * @param bool $asHandler If true, return handler with hydrated aggregate; if false, return array
+     * @return OrderHandler|array|null Handler with aggregate, nested array, or null if not found
+     * @throws ReflectionException
+     * @throws Throwable
+     */
+    public function getOrderByOrderNumbers(
+        OrderByOrderNumbersQuery $query,
+        bool $asHandler = true
+    ): OrderHandler|array|null {
+        $rootContainer = $this->handle(QueryOrderByOrderNumbers::class)($query);
 
         return $this->buildAggregate($rootContainer, $asHandler);
     }
@@ -133,48 +151,5 @@ class OrderRepository extends EcommerceContext
         $this->handle(ValidateOrder::class)($handler);
 
         return $this->handle(PersistOrder::class)($handler);
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $rows
-     * @return array{items: array<int, array<string, mixed>>, total: int, limit: int, offset: int}
-     */
-    protected function listResponse(array $rows, int $limit, int $offset): array
-    {
-        $total = (int) ($rows[0]['total_count'] ?? 0);
-
-        return [
-            'items' => array_map(fn(array $row) => array_diff_key($row, ['total_count' => true]), $rows),
-            'total' => $total,
-            'limit' => $limit,
-            'offset' => $offset,
-        ];
-    }
-
-    /**
-     * @return array{items: array<int, array<string, mixed>>, total: int, limit: int, offset: int}
-     * @throws Throwable
-     */
-    public function orderDetailList(OrderDetailListFilter $filter): array
-    {
-        return $this->listResponse($this->handle(QueryOrderDetailList::class)($filter), $filter->limit, $filter->offset);
-    }
-
-    /**
-     * @return array{items: array<int, array<string, mixed>>, total: int, limit: int, offset: int}
-     * @throws Throwable
-     */
-    public function orderItemList(OrderItemListFilter $filter): array
-    {
-        return $this->listResponse($this->handle(QueryOrderItemList::class)($filter), $filter->limit, $filter->offset);
-    }
-
-    /**
-     * @return array{items: array<int, array<string, mixed>>, total: int, limit: int, offset: int}
-     * @throws Throwable
-     */
-    public function orderList(OrderListFilter $filter): array
-    {
-        return $this->listResponse($this->handle(QueryOrderList::class)($filter), $filter->limit, $filter->offset);
     }
 }

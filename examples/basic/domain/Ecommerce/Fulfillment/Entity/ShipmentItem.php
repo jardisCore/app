@@ -27,6 +27,7 @@ class ShipmentItem
      *
      * @var array<string, mixed>
      */
+    // phpcs:ignore PSR2.Classes.PropertyDeclaration.Underscore -- Reflection-Slot jardissupport/data
     protected array $__snapshot = [
         'id' => null,
         'identifier' => null,
@@ -57,7 +58,7 @@ class ShipmentItem
      * @var ?int
      */
     #[Column(name: 'shipment_id', type: 'int')]
-    #[ForeignKey(referencedTable: 'shipments', referencedColumn: 'id', onUpdate: 'NO ACTION', onDelete: 'NO ACTION')]
+    #[ForeignKey(referencedTable: 'shipments', referencedColumn: 'id')]
     protected ?int $shipmentId = null;
 
     /**

@@ -9,13 +9,16 @@ use Ecommerce\EcommerceContext;
 use Ecommerce\Fulfillment\Model\Shipment\Aggregate\Shipment;
 use Ecommerce\Fulfillment\Model\Shipment\Command\Validation\ValidationException;
 use Ecommerce\Fulfillment\Model\Shipment\Event\ShipmentShipmentItemRemoved;
+use Ecommerce\Fulfillment\Model\Shipment\Repository\ConcurrencyConflictException;
 use Ecommerce\Fulfillment\Model\Shipment\Repository\ShipmentRepository;
-use Ecommerce\Response\DomainResponseTransformer;
 use Exception;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
 use JardisSupport\Contract\Kernel\EventScope;
 use JardisSupport\Contract\Kernel\ResponseStatus;
-use RuntimeException;
+use JardisSupport\Contract\Repository\Exception\TransientConflictException;
+use JardisSupport\Workflow\Handler\Failure\ConcurrencyConflictPayload;
+use JardisSupport\Workflow\Handler\Failure\NotFoundPayload;
+use JardisSupport\Workflow\Handler\Failure\ValidationPayload;
 use Throwable;
 use Ecommerce\Fulfillment\Model\Shipment\Command\RemoveShipmentItem as CommandRemoveShipmentItem;
 use Ecommerce\Fulfillment\Model\Shipment\Query\ShipmentByIdentifier as QueryShipment;
@@ -31,9 +34,11 @@ class RemoveShipmentItem extends EcommerceContext
      * Removes a ShipmentItem from the collection.
      *
      * @return DomainResponseInterface
+     * @throws ConcurrencyConflictException
      * @throws Exception
-     * @throws RuntimeException
      * @throws Throwable
+     * @throws TransientConflictException
+     * @throws ValidationException
      */
     public function __invoke(): DomainResponseInterface
     {
@@ -42,8 +47,23 @@ class RemoveShipmentItem extends EcommerceContext
             $removeShipmentItem = $this->payload();
 
             $query = $this->handle(QueryShipment::class, identifier: $removeShipmentItem->shipmentIdentifier);
-            /** @var Shipment $handler */
+            /** @var Shipment|null $handler */
             $handler = $this->handle(ShipmentRepository::class)->getShipmentByIdentifier($query);
+            if ($handler === null) {
+                $this->result()->setData(
+                    $this->failureData(
+                        ($this->handle(NotFoundPayload::class))(
+                            'notFound',
+                            ['shipmentIdentifier' => $removeShipmentItem->shipmentIdentifier]
+                        )
+                    )
+                );
+
+                return ($this->transformer())(
+                    $this->result(),
+                    ResponseStatus::NotFound
+                );
+            }
 
             $items = $handler->getData()->getShipmentItem();
             $found = false;
@@ -55,13 +75,28 @@ class RemoveShipmentItem extends EcommerceContext
                 }
             }
             if (!$found) {
-                throw new RuntimeException("ShipmentItem not found: " . $removeShipmentItem->shipmentItemIdentifier);
+                $this->result()->setData(
+                    $this->failureData(
+                        ($this->handle(NotFoundPayload::class))(
+                            'notFound',
+                            ['shipmentItemIdentifier' => $removeShipmentItem->shipmentItemIdentifier]
+                        )
+                    )
+                );
+
+                return ($this->transformer())(
+                    $this->result(),
+                    ResponseStatus::NotFound
+                );
             }
 
             $persistResult = $this->handle(ShipmentRepository::class)->persist($handler);
             $this->result()->addResult($persistResult);
 
-            $this->result()->setData(['shipmentIdentifier' => $removeShipmentItem->shipmentIdentifier]);
+            $this->result()->setData([
+                '@type' => 'shipment',
+                'shipmentIdentifier' => $removeShipmentItem->shipmentIdentifier,
+            ]);
 
             $event = $this->handle(
                 ShipmentShipmentItemRemoved::class,
@@ -71,18 +106,40 @@ class RemoveShipmentItem extends EcommerceContext
             );
             $this->result()->addEvent($event, EventScope::Internal);
 
-            return $this->handle(DomainResponseTransformer::class)->transform($this->result());
+            return ($this->transformer())($this->result());
         } catch (ValidationException $e) {
             $this->result()->addError($e->getMessage());
+            $this->result()->setData(
+                $this->failureData(($this->handle(ValidationPayload::class))('validation', $e->fields))
+            );
 
-            return $this->handle(DomainResponseTransformer::class)->transform(
+            return ($this->transformer())(
                 $this->result(),
                 ResponseStatus::ValidationError
             );
-        } catch (\Throwable $e) {
+        } catch (ConcurrencyConflictException $e) {
+            $this->result()->setData(
+                $this->failureData(
+                    ($this->handle(ConcurrencyConflictPayload::class))(
+                        'concurrencyConflict',
+                        $e->getReason(),
+                        $e->getAggregate(),
+                        $e->getContext(),
+                        $e->getViolated()
+                    )
+                )
+            );
+
+            return ($this->transformer())(
+                $this->result(),
+                ResponseStatus::Conflict
+            );
+        } catch (TransientConflictException $transient) {
+            throw $transient;
+        } catch (Throwable $e) {
             $this->result()->addError($e->getMessage());
 
-            return $this->handle(DomainResponseTransformer::class)->transform(
+            return ($this->transformer())(
                 $this->result(),
                 ResponseStatus::InternalError
             );

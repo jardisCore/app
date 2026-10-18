@@ -2,6 +2,22 @@
 
 All notable changes to `jardiscore/app` are listed here. Versions only move forward (SemVer).
 
+## v1.8.1
+
+The example domain follows the current generat and `jardissupport/workflow` 3.0. No change to `src/`.
+
+### Changed
+
+- `examples/basic/domain/Ecommerce` is rebuilt from the Builder's current generat (no `Ecommerce/Response/` any more: the
+  response classes come from `jardissupport/workflow`); `ExampleApp\RegisterOrderRoutes` answers `POST /orders` from the process
+  envelope and reloads the order through the read facade (flat `data` with `@type`, decimals as strings).
+- `jardissupport/workflow` is `^3.0`: in the root `composer.json` under `require-dev`, in `examples/symfony-demo/composer.json` under `require`.
+
+### Tests
+
+- The `DomainResponse` fake and the acceptance, mapper and route tests use the flat `data` of contracts 2.12 / workflow 3.0
+  (`@type`, no map keyed by context name); the 422 and 400 forms follow the workflow wire contract.
+
 ## v1.8.0
 
 `RequireRequestAttribute` answers 403 when a required request attribute is missing.

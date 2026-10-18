@@ -27,6 +27,7 @@ class ItemDiscount
      *
      * @var array<string, mixed>
      */
+    // phpcs:ignore PSR2.Classes.PropertyDeclaration.Underscore -- Reflection-Slot jardissupport/data
     protected array $__snapshot = [
         'id' => null,
         'item_id' => null,
@@ -45,7 +46,7 @@ class ItemDiscount
      * @var ?int
      */
     #[Column(name: 'item_id', type: 'int')]
-    #[ForeignKey(referencedTable: 'order_items', referencedColumn: 'id', onUpdate: 'NO ACTION', onDelete: 'NO ACTION')]
+    #[ForeignKey(referencedTable: 'order_items', referencedColumn: 'id')]
     protected ?int $itemId = null;
 
     /**
@@ -55,10 +56,10 @@ class ItemDiscount
     protected ?string $discountCode = null;
 
     /**
-     * @var ?float
+     * @var ?numeric-string
      */
     #[Column(name: 'amount', type: 'decimal', precision: 10, scale: 2)]
-    protected ?float $amount = null;
+    protected ?string $amount = null;
 
     /**
      * Returns the snapshot of original values.
@@ -85,7 +86,10 @@ class ItemDiscount
         return $this->discountCode;
     }
 
-    public function getAmount(): ?float
+    /**
+     * @return ?numeric-string
+     */
+    public function getAmount(): ?string
     {
         return $this->amount;
     }
@@ -102,7 +106,10 @@ class ItemDiscount
         return $this;
     }
 
-    public function setAmount(?float $amount): self
+    /**
+     * @param ?numeric-string $amount
+     */
+    public function setAmount(?string $amount): self
     {
         $this->amount = $amount;
         return $this;

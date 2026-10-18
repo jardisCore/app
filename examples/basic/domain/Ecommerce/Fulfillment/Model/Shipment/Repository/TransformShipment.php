@@ -19,6 +19,7 @@ class TransformShipment extends EcommerceContext
      *
      * @param array<string, array<int, mixed>> $container Query results grouped by entity
      * @return array<int, array<string, mixed>>
+     * @throws \RuntimeException
      */
     public function __invoke(array $container = []): array
     {
@@ -50,15 +51,31 @@ class TransformShipment extends EcommerceContext
      * @param array<string, mixed> $dto Data transfer object with context
      * @param array<string, array<int, mixed>> &$container Query results (by reference)
      * @return void
+     * @throws \RuntimeException
      */
     protected function transformShipmentShipmentAddress(array &$parent, array $dto, array &$container): void
     {
+        $matchCount = 0;
+        $matchedShipmentAddress = null;
+
         foreach ($container['shipmentAddress'] as $index => $shipmentAddress) {
             if (is_numeric($index) && $shipmentAddress['id'] == $dto['shipment']['delivery_address_id']) {
-                $parent['shipmentAddress'] = $shipmentAddress;
-
-                break; // ERM: one - stop after first match
+                $matchCount++;
+                $matchedShipmentAddress = $shipmentAddress;
             }
+        }
+
+        if ($matchCount > 1) {
+            throw new \RuntimeException(
+                "Integrity violation: erm:one relation 'shipment.shipmentAddress' expects at most one row per parent, "
+                . "found "
+                . $matchCount
+                . " for parent id '" . (string) $dto['shipment']['delivery_address_id'] . "'."
+            );
+        }
+
+        if ($matchCount === 1) {
+            $parent['shipmentAddress'] = $matchedShipmentAddress;
         }
     }
     /**

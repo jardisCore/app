@@ -6,14 +6,14 @@ namespace Ecommerce\Fulfillment\Model\Shipment\Command\Validation;
 
 use JardisSupport\Validation\CompositeFieldValidator;
 use JardisSupport\Validation\Validator\Length;
-use JardisSupport\Validation\Validator\NotBlank;
+use JardisSupport\Validation\Validator\NotEmpty;
 use JardisSupport\Validation\Validator\PhoneNumber;
 
 /**
  * Request validator for ShipmentAddress command DTO.
  *
  * Auto-generated validation rules from schema metadata:
- * - NOT NULL → NotBlank
+ * - NOT NULL string (no value list, no FK) → NotEmpty (a blank string is empty, R78), other NOT NULL → NotBlank
  * - VARCHAR(n) → Length::max()
  * - Numeric constraints → Range::between() or Positive
  * - ENUM → Contain::oneOf()
@@ -37,25 +37,25 @@ class ShipmentAddressValidator
         $this->validator = new CompositeFieldValidator();
 
         $this->validator->field('recipientName')
-            ->validates(NotBlank::class)
+            ->validates(NotEmpty::class, NotEmpty::trimmed())
             ->validates(Length::class, Length::max(255));
         $this->validator->field('company')
             ->validates(Length::class, Length::max(255));
         $this->validator->field('street')
-            ->validates(NotBlank::class)
+            ->validates(NotEmpty::class, NotEmpty::trimmed())
             ->validates(Length::class, Length::max(255));
         $this->validator->field('street2')
             ->validates(Length::class, Length::max(255));
         $this->validator->field('city')
-            ->validates(NotBlank::class)
+            ->validates(NotEmpty::class, NotEmpty::trimmed())
             ->validates(Length::class, Length::max(100));
         $this->validator->field('postalCode')
-            ->validates(NotBlank::class)
+            ->validates(NotEmpty::class, NotEmpty::trimmed())
             ->validates(Length::class, Length::max(20));
         $this->validator->field('state')
             ->validates(Length::class, Length::max(100));
         $this->validator->field('country')
-            ->validates(NotBlank::class)
+            ->validates(NotEmpty::class, NotEmpty::trimmed())
             ->validates(Length::class, Length::max(2));
         $this->validator->field('phone')
             ->validates(PhoneNumber::class)

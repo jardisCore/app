@@ -9,9 +9,8 @@ use Ecommerce\Sales\Model\Invoice\Aggregate\Entity\Invoice as InvoiceAggregate;
 use Ecommerce\Sales\Model\Invoice\Aggregate\Invoice as InvoiceHandler;
 use Ecommerce\Sales\Model\Invoice\Query\InvoiceById as InvoiceByIdQuery;
 use Ecommerce\Sales\Model\Invoice\Query\InvoiceByIdentifier as InvoiceByIdentifierQuery;
+use Ecommerce\Sales\Model\Invoice\Query\InvoiceByIdentifiers as InvoiceByIdentifiersQuery;
 use Ecommerce\Sales\Model\Invoice\Query\InvoiceByIds as InvoiceByIdsQuery;
-use Ecommerce\Sales\Model\Invoice\Query\InvoiceLineListFilter;
-use Ecommerce\Sales\Model\Invoice\Query\InvoiceListFilter;
 use JardisSupport\Contract\Kernel\ContextResponseInterface;
 use JardisSupport\Data\Hydration;
 use ReflectionException;
@@ -50,9 +49,29 @@ class InvoiceRepository extends EcommerceContext
      * @throws ReflectionException
      * @throws Throwable
      */
-    public function getInvoiceByIdentifier(InvoiceByIdentifierQuery $query, bool $asHandler = true): InvoiceHandler|array|null
-    {
+    public function getInvoiceByIdentifier(
+        InvoiceByIdentifierQuery $query,
+        bool $asHandler = true
+    ): InvoiceHandler|array|null {
         $rootContainer = $this->handle(QueryInvoiceByIdentifier::class)($query);
+
+        return $this->buildAggregate($rootContainer, $asHandler);
+    }
+
+    /**
+     * Get Invoice aggregate.
+     *
+     * @param InvoiceByIdentifiersQuery $query Query parameters
+     * @param bool $asHandler If true, return handler with hydrated aggregate; if false, return array
+     * @return InvoiceHandler|array|null Handler with aggregate, nested array, or null if not found
+     * @throws ReflectionException
+     * @throws Throwable
+     */
+    public function getInvoiceByIdentifiers(
+        InvoiceByIdentifiersQuery $query,
+        bool $asHandler = true
+    ): InvoiceHandler|array|null {
+        $rootContainer = $this->handle(QueryInvoiceByIdentifiers::class)($query);
 
         return $this->buildAggregate($rootContainer, $asHandler);
     }
@@ -132,39 +151,5 @@ class InvoiceRepository extends EcommerceContext
         $this->handle(ValidateInvoice::class)($handler);
 
         return $this->handle(PersistInvoice::class)($handler);
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $rows
-     * @return array{items: array<int, array<string, mixed>>, total: int, limit: int, offset: int}
-     */
-    protected function listResponse(array $rows, int $limit, int $offset): array
-    {
-        $total = (int) ($rows[0]['total_count'] ?? 0);
-
-        return [
-            'items' => array_map(fn(array $row) => array_diff_key($row, ['total_count' => true]), $rows),
-            'total' => $total,
-            'limit' => $limit,
-            'offset' => $offset,
-        ];
-    }
-
-    /**
-     * @return array{items: array<int, array<string, mixed>>, total: int, limit: int, offset: int}
-     * @throws Throwable
-     */
-    public function invoiceLineList(InvoiceLineListFilter $filter): array
-    {
-        return $this->listResponse($this->handle(QueryInvoiceLineList::class)($filter), $filter->limit, $filter->offset);
-    }
-
-    /**
-     * @return array{items: array<int, array<string, mixed>>, total: int, limit: int, offset: int}
-     * @throws Throwable
-     */
-    public function invoiceList(InvoiceListFilter $filter): array
-    {
-        return $this->listResponse($this->handle(QueryInvoiceList::class)($filter), $filter->limit, $filter->offset);
     }
 }

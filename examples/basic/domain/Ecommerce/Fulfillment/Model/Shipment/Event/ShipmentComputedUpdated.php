@@ -1,0 +1,51 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Ecommerce\Fulfillment\Model\Shipment\Event;
+
+use DateTimeImmutable;
+
+/**
+ * Event: computed values of Shipment were written.
+ *
+ * Dispatched after a process persisted the derived (computed) fields of Shipment.
+ */
+readonly class ShipmentComputedUpdated
+{
+    /**
+     * @param string $shipmentIdentifier
+     * @param string $orderNumber
+     * @param string $customerIdentifier
+     * @param string $carrier
+     * @param string $serviceLevel
+     * @param ?string $trackingNumber
+     * @param string $status
+     * @param ?int $weightGrams
+     * @param int $packageCount
+     * @param ?string $insuranceValue
+     * @param ?DateTimeImmutable $estimatedDelivery
+     * @param ?DateTimeImmutable $shippedAt
+     * @param ?DateTimeImmutable $deliveredAt
+     * @param ?string $note
+     * @param DateTimeImmutable $occurredAt
+     */
+    public function __construct(
+        public string $shipmentIdentifier,
+        public string $orderNumber,
+        public string $customerIdentifier,
+        public string $carrier,
+        public string $serviceLevel,
+        public ?string $trackingNumber,
+        public string $status,
+        public ?int $weightGrams,
+        public int $packageCount,
+        public ?string $insuranceValue,
+        public ?DateTimeImmutable $estimatedDelivery,
+        public ?DateTimeImmutable $shippedAt,
+        public ?DateTimeImmutable $deliveredAt,
+        public ?string $note,
+        public DateTimeImmutable $occurredAt
+    ) {
+    }
+}

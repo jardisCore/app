@@ -28,6 +28,7 @@ class ProductVariantPrice
      *
      * @var array<string, mixed>
      */
+    // phpcs:ignore PSR2.Classes.PropertyDeclaration.Underscore -- Reflection-Slot jardissupport/data
     protected array $__snapshot = [
         'id' => null,
         'variant_id' => null,
@@ -49,7 +50,7 @@ class ProductVariantPrice
      * @var ?int
      */
     #[Column(name: 'variant_id', type: 'int')]
-    #[ForeignKey(referencedTable: 'product_variants', referencedColumn: 'id', onUpdate: 'NO ACTION', onDelete: 'NO ACTION')]
+    #[ForeignKey(referencedTable: 'product_variants', referencedColumn: 'id')]
     protected ?int $variantId = null;
 
     /**
@@ -59,10 +60,10 @@ class ProductVariantPrice
     protected ?string $region = null;
 
     /**
-     * @var ?float
+     * @var ?numeric-string
      */
     #[Column(name: 'price', type: 'decimal', precision: 10, scale: 2)]
-    protected ?float $price = null;
+    protected ?string $price = null;
 
     /**
      * @var ?string
@@ -107,7 +108,10 @@ class ProductVariantPrice
         return $this->region;
     }
 
-    public function getPrice(): ?float
+    /**
+     * @return ?numeric-string
+     */
+    public function getPrice(): ?string
     {
         return $this->price;
     }
@@ -139,7 +143,10 @@ class ProductVariantPrice
         return $this;
     }
 
-    public function setPrice(?float $price): self
+    /**
+     * @param ?numeric-string $price
+     */
+    public function setPrice(?string $price): self
     {
         $this->price = $price;
         return $this;

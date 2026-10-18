@@ -28,6 +28,7 @@ class Product
      *
      * @var array<string, mixed>
      */
+    // phpcs:ignore PSR2.Classes.PropertyDeclaration.Underscore -- Reflection-Slot jardissupport/data
     protected array $__snapshot = [
         'id' => null,
         'identifier' => null,
@@ -92,22 +93,22 @@ class Product
     protected ?string $shortDescription = null;
 
     /**
-     * @var ?float
+     * @var ?numeric-string
      */
     #[Column(name: 'price', type: 'decimal', precision: 10, scale: 2)]
-    protected ?float $price = null;
+    protected ?string $price = null;
 
     /**
-     * @var ?float
+     * @var ?numeric-string
      */
     #[Column(name: 'compare_at_price', type: 'decimal', precision: 10, scale: 2, nullable: true)]
-    protected ?float $compareAtPrice = null;
+    protected ?string $compareAtPrice = null;
 
     /**
-     * @var ?float
+     * @var ?numeric-string
      */
     #[Column(name: 'cost_price', type: 'decimal', precision: 10, scale: 2, nullable: true)]
-    protected ?float $costPrice = null;
+    protected ?string $costPrice = null;
 
     /**
      * @var ?string
@@ -196,17 +197,26 @@ class Product
         return $this->shortDescription;
     }
 
-    public function getPrice(): ?float
+    /**
+     * @return ?numeric-string
+     */
+    public function getPrice(): ?string
     {
         return $this->price;
     }
 
-    public function getCompareAtPrice(): ?float
+    /**
+     * @return ?numeric-string
+     */
+    public function getCompareAtPrice(): ?string
     {
         return $this->compareAtPrice;
     }
 
-    public function getCostPrice(): ?float
+    /**
+     * @return ?numeric-string
+     */
+    public function getCostPrice(): ?string
     {
         return $this->costPrice;
     }
@@ -282,19 +292,28 @@ class Product
         return $this;
     }
 
-    public function setPrice(?float $price): self
+    /**
+     * @param ?numeric-string $price
+     */
+    public function setPrice(?string $price): self
     {
         $this->price = $price;
         return $this;
     }
 
-    public function setCompareAtPrice(?float $compareAtPrice): self
+    /**
+     * @param ?numeric-string $compareAtPrice
+     */
+    public function setCompareAtPrice(?string $compareAtPrice): self
     {
         $this->compareAtPrice = $compareAtPrice;
         return $this;
     }
 
-    public function setCostPrice(?float $costPrice): self
+    /**
+     * @param ?numeric-string $costPrice
+     */
+    public function setCostPrice(?string $costPrice): self
     {
         $this->costPrice = $costPrice;
         return $this;
@@ -332,7 +351,7 @@ class Product
 
     public function setCreatedAt(?DateTime $createdAt = null): self
     {
-        $this->createdAt = $createdAt ?? new DateTime();
+        $this->createdAt = $createdAt;
         return $this;
     }
 

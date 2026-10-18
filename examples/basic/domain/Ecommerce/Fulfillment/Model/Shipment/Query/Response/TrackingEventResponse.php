@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Ecommerce\Fulfillment\Model\Shipment\Query\Response;
 
-use DateTime;
-
 /**
  * Read projection for TrackingEventResponse.
  *
@@ -20,6 +18,6 @@ class TrackingEventResponse
     public ?string $location = null;
     public ?string $postalCode = null;
     public ?string $detail = null;
-    public ?DateTime $occurredAt = null;
-    public ?DateTime $reportedAt = null;
+    public ?string $occurredAt = null;
+    public ?string $reportedAt = null;
 }

@@ -20,7 +20,7 @@ readonly class ProductProductVariantAdded
      * @param string $variantName
      * @param string $optionName
      * @param string $optionValue
-     * @param float $priceModifier
+     * @param string $priceModifier
      * @param int $stockQuantity
      * @param ?int $lowStockThreshold
      * @param ?int $weightGrams
@@ -35,7 +35,7 @@ readonly class ProductProductVariantAdded
         public string $variantName,
         public string $optionName,
         public string $optionValue,
-        public float $priceModifier,
+        public string $priceModifier,
         public int $stockQuantity,
         public ?int $lowStockThreshold,
         public ?int $weightGrams,

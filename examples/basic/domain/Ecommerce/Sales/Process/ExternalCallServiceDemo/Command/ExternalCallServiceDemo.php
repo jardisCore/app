@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Ecommerce\Sales\Process\ExternalCallServiceDemo\Command;
 
+use DateTimeImmutable;
+
 /**
  * Process DTO for ExternalCallServiceDemo.
  *
@@ -12,7 +14,11 @@ namespace Ecommerce\Sales\Process\ExternalCallServiceDemo\Command;
 readonly class ExternalCallServiceDemo
 {
     public function __construct(
-        public string $note
+        public string $note,
+        public ?string $budget = null,
+        public ?string $channel = null,
+        public ?string $confirmationKey = null,
+        public ?DateTimeImmutable $requestedOn = null
     ) {
     }
 }

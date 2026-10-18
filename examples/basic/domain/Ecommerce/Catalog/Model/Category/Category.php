@@ -9,6 +9,7 @@ use Ecommerce\Catalog\Model\Category\Command\Handler\CreateCategory;
 use Ecommerce\Catalog\Model\Category\Command\Handler\RemoveCategory;
 use Ecommerce\Catalog\Model\Category\Command\Handler\RemoveCategoryTranslation;
 use Ecommerce\Catalog\Model\Category\Command\Handler\UpdateCategory;
+use Ecommerce\Catalog\Model\Category\Command\Handler\UpdateCategoryTranslation;
 use Ecommerce\Catalog\Model\Category\Event\CategoryEvents;
 use Ecommerce\EcommerceContext;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
@@ -18,6 +19,7 @@ use Ecommerce\Catalog\Model\Category\Command\Category as CommandCategory;
 use Ecommerce\Catalog\Model\Category\Command\RemoveCategory as CommandRemoveCategory;
 use Ecommerce\Catalog\Model\Category\Command\RemoveCategoryTranslation as CommandRemoveCategoryTranslation;
 use Ecommerce\Catalog\Model\Category\Command\UpdateCategory as CommandUpdateCategory;
+use Ecommerce\Catalog\Model\Category\Command\UpdateCategoryTranslation as CommandUpdateCategoryTranslation;
 
 /**
  * Category Aggregate Facade.
@@ -46,12 +48,16 @@ class Category extends EcommerceContext
      *
      * @param CommandUpdateCategory $updateCategory
      * @param string $version Optional ClassVersion override (default: caller version)
+     * @param array<string, mixed> $expected Optional read basis (CAS): outer field name => value the caller read
      * @return DomainResponseInterface
      * @throws Throwable
      */
-    public function updateCategory(CommandUpdateCategory $updateCategory, string $version = ''): DomainResponseInterface
-    {
-        return $this->context(UpdateCategory::class, $updateCategory, $version)();
+    public function updateCategory(
+        CommandUpdateCategory $updateCategory,
+        string $version = '',
+        array $expected = []
+    ): DomainResponseInterface {
+        return $this->context(UpdateCategory::class, $updateCategory, $version)($expected);
     }
 
     /**
@@ -82,6 +88,21 @@ class Category extends EcommerceContext
         string $version = ''
     ): DomainResponseInterface {
         return $this->context(RemoveCategoryTranslation::class, $removeCategoryTranslation, $version)();
+    }
+
+    /**
+     * Update CategoryTranslation operation.
+     *
+     * @param CommandUpdateCategoryTranslation $updateCategoryTranslation
+     * @param string $version Optional ClassVersion override (default: caller version)
+     * @return DomainResponseInterface
+     * @throws Throwable
+     */
+    public function updateCategoryTranslation(
+        CommandUpdateCategoryTranslation $updateCategoryTranslation,
+        string $version = ''
+    ): DomainResponseInterface {
+        return $this->context(UpdateCategoryTranslation::class, $updateCategoryTranslation, $version)();
     }
 
     /**

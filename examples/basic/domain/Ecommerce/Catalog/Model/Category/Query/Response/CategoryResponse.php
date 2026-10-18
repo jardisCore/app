@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Ecommerce\Catalog\Model\Category\Query\Response;
 
-use DateTime;
 use JardisSupport\Contract\Workflow\AggregateResponse;
 
 /**
@@ -15,7 +14,6 @@ use JardisSupport\Contract\Workflow\AggregateResponse;
  */
 class CategoryResponse implements AggregateResponse
 {
-    public int $id = 0;
     public string $identifier = '';
     public string $slug = '';
     public ?string $parentIdentifier = null;
@@ -27,8 +25,8 @@ class CategoryResponse implements AggregateResponse
     public int $isVisible = 0;
     public int $sortOrder = 0;
     public int $productCount = 0;
-    public ?DateTime $createdAt = null;
-    public ?DateTime $updatedAt = null;
+    public ?string $createdAt = null;
+    public ?string $updatedAt = null;
 
     /** @var CategoryTranslationResponse[] */
     public array $categoryTranslation = [];

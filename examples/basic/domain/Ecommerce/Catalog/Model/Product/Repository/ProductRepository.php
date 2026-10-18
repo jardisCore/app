@@ -8,9 +8,8 @@ use Ecommerce\Catalog\Model\Product\Aggregate\Entity\Product as ProductAggregate
 use Ecommerce\Catalog\Model\Product\Aggregate\Product as ProductHandler;
 use Ecommerce\Catalog\Model\Product\Query\ProductById as ProductByIdQuery;
 use Ecommerce\Catalog\Model\Product\Query\ProductByIdentifier as ProductByIdentifierQuery;
+use Ecommerce\Catalog\Model\Product\Query\ProductByIdentifiers as ProductByIdentifiersQuery;
 use Ecommerce\Catalog\Model\Product\Query\ProductByIds as ProductByIdsQuery;
-use Ecommerce\Catalog\Model\Product\Query\ProductListFilter;
-use Ecommerce\Catalog\Model\Product\Query\ProductVariantListFilter;
 use Ecommerce\EcommerceContext;
 use JardisSupport\Contract\Kernel\ContextResponseInterface;
 use JardisSupport\Data\Hydration;
@@ -50,9 +49,29 @@ class ProductRepository extends EcommerceContext
      * @throws ReflectionException
      * @throws Throwable
      */
-    public function getProductByIdentifier(ProductByIdentifierQuery $query, bool $asHandler = true): ProductHandler|array|null
-    {
+    public function getProductByIdentifier(
+        ProductByIdentifierQuery $query,
+        bool $asHandler = true
+    ): ProductHandler|array|null {
         $rootContainer = $this->handle(QueryProductByIdentifier::class)($query);
+
+        return $this->buildAggregate($rootContainer, $asHandler);
+    }
+
+    /**
+     * Get Product aggregate.
+     *
+     * @param ProductByIdentifiersQuery $query Query parameters
+     * @param bool $asHandler If true, return handler with hydrated aggregate; if false, return array
+     * @return ProductHandler|array|null Handler with aggregate, nested array, or null if not found
+     * @throws ReflectionException
+     * @throws Throwable
+     */
+    public function getProductByIdentifiers(
+        ProductByIdentifiersQuery $query,
+        bool $asHandler = true
+    ): ProductHandler|array|null {
+        $rootContainer = $this->handle(QueryProductByIdentifiers::class)($query);
 
         return $this->buildAggregate($rootContainer, $asHandler);
     }
@@ -132,39 +151,5 @@ class ProductRepository extends EcommerceContext
         $this->handle(ValidateProduct::class)($handler);
 
         return $this->handle(PersistProduct::class)($handler);
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $rows
-     * @return array{items: array<int, array<string, mixed>>, total: int, limit: int, offset: int}
-     */
-    protected function listResponse(array $rows, int $limit, int $offset): array
-    {
-        $total = (int) ($rows[0]['total_count'] ?? 0);
-
-        return [
-            'items' => array_map(fn(array $row) => array_diff_key($row, ['total_count' => true]), $rows),
-            'total' => $total,
-            'limit' => $limit,
-            'offset' => $offset,
-        ];
-    }
-
-    /**
-     * @return array{items: array<int, array<string, mixed>>, total: int, limit: int, offset: int}
-     * @throws Throwable
-     */
-    public function productList(ProductListFilter $filter): array
-    {
-        return $this->listResponse($this->handle(QueryProductList::class)($filter), $filter->limit, $filter->offset);
-    }
-
-    /**
-     * @return array{items: array<int, array<string, mixed>>, total: int, limit: int, offset: int}
-     * @throws Throwable
-     */
-    public function productVariantList(ProductVariantListFilter $filter): array
-    {
-        return $this->listResponse($this->handle(QueryProductVariantList::class)($filter), $filter->limit, $filter->offset);
     }
 }

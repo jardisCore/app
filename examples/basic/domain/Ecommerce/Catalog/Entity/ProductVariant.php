@@ -28,6 +28,7 @@ class ProductVariant
      *
      * @var array<string, mixed>
      */
+    // phpcs:ignore PSR2.Classes.PropertyDeclaration.Underscore -- Reflection-Slot jardissupport/data
     protected array $__snapshot = [
         'id' => null,
         'identifier' => null,
@@ -62,7 +63,7 @@ class ProductVariant
      * @var ?int
      */
     #[Column(name: 'product_id', type: 'int')]
-    #[ForeignKey(referencedTable: 'products', referencedColumn: 'id', onUpdate: 'NO ACTION', onDelete: 'NO ACTION')]
+    #[ForeignKey(referencedTable: 'products', referencedColumn: 'id')]
     protected ?int $productId = null;
 
     /**
@@ -90,10 +91,10 @@ class ProductVariant
     protected ?string $optionValue = null;
 
     /**
-     * @var ?float
+     * @var ?numeric-string
      */
     #[Column(name: 'price_modifier', type: 'decimal', precision: 10, scale: 2)]
-    protected ?float $priceModifier = null;
+    protected ?string $priceModifier = null;
 
     /**
      * @var ?int
@@ -176,7 +177,10 @@ class ProductVariant
         return $this->optionValue;
     }
 
-    public function getPriceModifier(): ?float
+    /**
+     * @return ?numeric-string
+     */
+    public function getPriceModifier(): ?string
     {
         return $this->priceModifier;
     }
@@ -247,7 +251,10 @@ class ProductVariant
         return $this;
     }
 
-    public function setPriceModifier(?float $priceModifier): self
+    /**
+     * @param ?numeric-string $priceModifier
+     */
+    public function setPriceModifier(?string $priceModifier): self
     {
         $this->priceModifier = $priceModifier;
         return $this;
@@ -285,7 +292,7 @@ class ProductVariant
 
     public function setCreatedAt(?DateTime $createdAt = null): self
     {
-        $this->createdAt = $createdAt ?? new DateTime();
+        $this->createdAt = $createdAt;
         return $this;
     }
 }

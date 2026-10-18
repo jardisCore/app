@@ -9,7 +9,6 @@ use Ecommerce\Catalog\Model\Product\Command\Validation\ProductImageValidator;
 use Ecommerce\EcommerceContext;
 use JardisSupport\Validation\ObjectValidator;
 use JardisSupport\Validation\ValidatorRegistry;
-use JsonException;
 use Throwable;
 use Ecommerce\Catalog\Model\Product\Command\AddProductImage as CommandAddProductImage;
 
@@ -26,7 +25,6 @@ class ValidateAddProductImage extends EcommerceContext
      *
      * @param CommandAddProductImage $dto Command DTO
      * @throws ValidationException If validation fails
-     * @throws JsonException
      * @throws Throwable
      */
     public function __invoke(CommandAddProductImage $dto): void
@@ -34,12 +32,13 @@ class ValidateAddProductImage extends EcommerceContext
         $registry = new ValidatorRegistry();
         $registry->register(AddProductImage::class, ($this->handle(ProductImageValidator::class))());
 
-        $validator = new ObjectValidator($registry);
+        $validator = new ObjectValidator($registry, indexedLists: true);
         $result = $validator->validate($dto);
         $errors = $this->filterEmptyErrors($result->getErrors());
+        $kinds = $this->filterEmptyErrors($result->getKinds());
 
         if (!empty($errors)) {
-            throw new ValidationException(json_encode($errors, JSON_THROW_ON_ERROR));
+            throw new ValidationException($errors, $kinds);
         }
     }
 

@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Ecommerce\Sales\Model\Invoice\Repository;
 
 use Ecommerce\EcommerceContext;
-use Ecommerce\Sales\Model\Invoice\Command\Validation\ValidationException;
 use Ecommerce\Sales\Entity\Validation\InvoiceLineValidator;
 use Ecommerce\Sales\Entity\Validation\InvoiceValidator;
-use JsonException;
+use Ecommerce\Sales\Model\Invoice\Command\Validation\ValidationException;
+use JardisSupport\Validation\CompositeFieldValidator;
 use Throwable;
 use Ecommerce\Sales\Model\Invoice\Aggregate\Invoice as InvoiceHandler;
 
@@ -25,7 +25,6 @@ class ValidateInvoice extends EcommerceContext
      *
      * @param InvoiceHandler $handler Aggregate handler
      * @throws ValidationException If validation fails
-     * @throws JsonException
      * @throws Throwable
      */
     public function __invoke(InvoiceHandler $handler): void
@@ -35,21 +34,28 @@ class ValidateInvoice extends EcommerceContext
         }
 
         $errors = [];
+        $kinds = [];
         $aggregate = $handler->getData();
 
         if (!empty($handler->getEntityData('invoice')['values'])) {
-            $this->validateEntity($aggregate, InvoiceValidator::class, 'invoice', $errors);
+            $this->validateEntity($aggregate, InvoiceValidator::class, 'invoice', $errors, $kinds);
         }
 
         $invoiceLineCollection = $handler->getCollectionData('invoiceLine');
         foreach ($aggregate->getInvoiceLine() as $index => $invoiceLine) {
             if (!empty($invoiceLineCollection[$index]['values'])) {
-                $this->validateEntity($invoiceLine, InvoiceLineValidator::class, "invoiceLine[{$index}]", $errors);
+                $this->validateEntity(
+                    $invoiceLine,
+                    InvoiceLineValidator::class,
+                    "invoiceLine[{$index}]",
+                    $errors,
+                    $kinds
+                );
             }
         }
 
         if (!empty($errors)) {
-            throw new ValidationException(json_encode($errors, JSON_THROW_ON_ERROR));
+            throw new ValidationException($errors, $kinds, root: 'invoice');
         }
     }
 
@@ -60,19 +66,24 @@ class ValidateInvoice extends EcommerceContext
      * @param class-string $validatorClass Validator class name
      * @param string $entityName Entity identifier for error grouping
      * @param array<string, mixed> $errors Collected errors (by reference)
+     * @param array<string, mixed> $kinds Collected validator kinds, same shape (by reference)
      * @throws Throwable
      */
     protected function validateEntity(
         object $entity,
         string $validatorClass,
         string $entityName,
-        array &$errors
+        array &$errors,
+        array &$kinds
     ): void {
-        $validator = ($this->handle($validatorClass))();
+        $validatorInstance = $this->handle($validatorClass);
+        /** @var callable(): CompositeFieldValidator $validatorInstance */
+        $validator = $validatorInstance();
         $result = $validator->validate($entity);
 
         if (!$result->isValid()) {
             $errors[$entityName] = $result->getErrors();
+            $kinds[$entityName] = $result->getKinds();
         }
     }
 }

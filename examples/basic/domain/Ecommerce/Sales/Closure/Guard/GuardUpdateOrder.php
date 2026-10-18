@@ -6,7 +6,10 @@ namespace Ecommerce\Sales\Closure\Guard;
 
 use Ecommerce\EcommerceContext;
 use Ecommerce\Sales\Closure\Data\RuleResult;
+use Ecommerce\Sales\Closure\OrderIsCancellable;
 use Ecommerce\Sales\Closure\OrderUpdateAllowed;
+use Ecommerce\Sales\Closure\OrderUpdateConsistent;
+use Ecommerce\Sales\Model\Order\Aggregate\Entity\Order;
 use Throwable;
 use Ecommerce\Sales\Model\Order\Command\UpdateOrder as CommandUpdateOrder;
 
@@ -20,13 +23,32 @@ final class GuardUpdateOrder extends EcommerceContext
 {
     /**
      * @param CommandUpdateOrder $updateOrder
+     * @param Order|null $root
+     * @throws \RuntimeException
      * @throws Throwable
      */
-    public function __invoke(CommandUpdateOrder $updateOrder): RuleResult
+    public function __invoke(CommandUpdateOrder $updateOrder, ?Order $root = null): RuleResult
     {
+        if ($root === null) {
+            throw new \RuntimeException(
+                'GuardUpdateOrder expects the CommandHandler to hand in the already-loaded Order root for its '
+                . 'aggregate-subject rule chain — it never loads it itself.'
+            );
+        }
+
+        $result = $this->handle(OrderIsCancellable::class)($root);
+        if (!$result->passed) {
+            return RuleResult::reject($result->rule, 'sales.orderAlreadyCancelled', $result->context);
+        }
+
         $result = $this->handle(OrderUpdateAllowed::class)($updateOrder);
         if (!$result->passed) {
             return $result;
+        }
+
+        $result = $this->handle(OrderUpdateConsistent::class)($updateOrder, $root);
+        if (!$result->passed) {
+            return RuleResult::reject($result->rule, 'sales.orderUpdateInconsistent', $result->context);
         }
 
         return RuleResult::pass();

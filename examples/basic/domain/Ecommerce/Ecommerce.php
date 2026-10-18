@@ -13,6 +13,8 @@ use Ecommerce\Catalog\Model\Product\Event\ProductEventRouter;
 use Ecommerce\Fulfillment\Model\Shipment\Event\ShipmentEventRouter;
 use Ecommerce\Sales\Model\Invoice\Event\InvoiceEventRouter;
 use Ecommerce\Sales\Model\Order\Event\OrderEventRouter;
+use Ecommerce\Sales\Model\PriceTier\Event\PriceTierEventRouter;
+use Ecommerce\Sales\Model\Voucher\Event\VoucherEventRouter;
 
 /**
  * Ecommerce Domain.
@@ -39,6 +41,8 @@ final class Ecommerce
             (new ShipmentEventRouter())($registry);
             (new InvoiceEventRouter())($registry);
             (new OrderEventRouter())($registry);
+            (new PriceTierEventRouter())($registry);
+            (new VoucherEventRouter())($registry);
         }
     }
 

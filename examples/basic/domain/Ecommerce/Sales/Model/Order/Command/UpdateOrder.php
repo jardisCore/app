@@ -13,7 +13,7 @@ readonly class UpdateOrder
 {
     public function __construct(
         public string $orderNumber,
-        public float $totalAmount,
+        public string $totalAmount,
         public string $status
     ) {
     }

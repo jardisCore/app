@@ -31,6 +31,7 @@ class Shipment
      *
      * @var array<string, mixed>
      */
+    // phpcs:ignore PSR2.Classes.PropertyDeclaration.Underscore -- Reflection-Slot jardissupport/data
     protected array $__snapshot = [
         'id' => null,
         'identifier' => null,
@@ -42,7 +43,7 @@ class Shipment
         'tracking_number' => null,
         'status' => null,
         'weight_grams' => null,
-        'package_count' => null,
+        'package_count' => 0,
         'insurance_value' => null,
         'estimated_delivery' => null,
         'shipped_at' => null,
@@ -80,7 +81,7 @@ class Shipment
      * @var ?int
      */
     #[Column(name: 'delivery_address_id', type: 'int')]
-    #[ForeignKey(referencedTable: 'shipment_addresses', referencedColumn: 'id', onUpdate: 'NO ACTION', onDelete: 'NO ACTION')]
+    #[ForeignKey(referencedTable: 'shipment_addresses', referencedColumn: 'id')]
     protected ?int $deliveryAddressId = null;
 
     /**
@@ -116,14 +117,14 @@ class Shipment
     /**
      * @var ?int
      */
-    #[Column(name: 'package_count', type: 'int')]
+    #[Column(name: 'package_count', type: 'int', default: 0)]
     protected ?int $packageCount = null;
 
     /**
-     * @var ?float
+     * @var ?numeric-string
      */
     #[Column(name: 'insurance_value', type: 'decimal', precision: 10, scale: 2, nullable: true)]
-    protected ?float $insuranceValue = null;
+    protected ?string $insuranceValue = null;
 
     /**
      * @var ?DateTime
@@ -220,7 +221,10 @@ class Shipment
         return $this->packageCount;
     }
 
-    public function getInsuranceValue(): ?float
+    /**
+     * @return ?numeric-string
+     */
+    public function getInsuranceValue(): ?string
     {
         return $this->insuranceValue;
     }
@@ -304,13 +308,16 @@ class Shipment
         return $this;
     }
 
-    public function setPackageCount(?int $packageCount): self
+    public function setPackageCount(?int $packageCount = 0): self
     {
         $this->packageCount = $packageCount;
         return $this;
     }
 
-    public function setInsuranceValue(?float $insuranceValue): self
+    /**
+     * @param ?numeric-string $insuranceValue
+     */
+    public function setInsuranceValue(?string $insuranceValue): self
     {
         $this->insuranceValue = $insuranceValue;
         return $this;
@@ -342,7 +349,7 @@ class Shipment
 
     public function setCreatedAt(?DateTime $createdAt = null): self
     {
-        $this->createdAt = $createdAt ?? new DateTime();
+        $this->createdAt = $createdAt;
         return $this;
     }
 }

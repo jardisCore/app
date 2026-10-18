@@ -20,8 +20,10 @@ class OrderEvents
     public const ORDER_ADDRESS_REMOVED = OrderAddressRemoved::class;
     public const ORDER_ORDER_ITEM_ADDED = OrderOrderItemAdded::class;
     public const ORDER_ORDER_ITEM_REMOVED = OrderOrderItemRemoved::class;
+    public const ORDER_ORDER_ITEM_UPDATED = OrderOrderItemUpdated::class;
     public const ORDER_ITEM_DISCOUNT_ADDED = OrderItemDiscountAdded::class;
     public const ORDER_ITEM_DISCOUNT_REMOVED = OrderItemDiscountRemoved::class;
+    public const ORDER_ITEM_DISCOUNT_UPDATED = OrderItemDiscountUpdated::class;
 
     public static function getAll(): array
     {
@@ -34,8 +36,10 @@ class OrderEvents
             'OrderAddressRemoved' => self::ORDER_ADDRESS_REMOVED,
             'OrderOrderItemAdded' => self::ORDER_ORDER_ITEM_ADDED,
             'OrderOrderItemRemoved' => self::ORDER_ORDER_ITEM_REMOVED,
+            'OrderOrderItemUpdated' => self::ORDER_ORDER_ITEM_UPDATED,
             'OrderItemDiscountAdded' => self::ORDER_ITEM_DISCOUNT_ADDED,
             'OrderItemDiscountRemoved' => self::ORDER_ITEM_DISCOUNT_REMOVED,
+            'OrderItemDiscountUpdated' => self::ORDER_ITEM_DISCOUNT_UPDATED,
         ];
     }
 }

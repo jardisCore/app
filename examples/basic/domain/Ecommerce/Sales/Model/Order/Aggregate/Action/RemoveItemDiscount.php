@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Ecommerce\Sales\Model\Order\Aggregate\Action;
 
 use Ecommerce\EcommerceContext;
-use RuntimeException;
+use JardisSupport\Contract\Kernel\ResponseStatus;
 use Ecommerce\Sales\Model\Order\Aggregate\Entity\Order as OrderAggregate;
 
 /**
@@ -18,10 +18,10 @@ class RemoveItemDiscount extends EcommerceContext
      *
      * @param OrderAggregate $aggregate
      * @param int $id
-     * @return array<array{string, object|null}> Entities to track for deletion
-     * @throws RuntimeException
+     * @return array<array{string, object|null}>|ResponseStatus Entities to track for deletion, or NotFound when a path
+     *     level is absent
      */
-    public function __invoke(OrderAggregate $aggregate, int $id): array
+    public function __invoke(OrderAggregate $aggregate, int $id): array|ResponseStatus
     {
         $removals = [];
         foreach ($aggregate->getOrderItem() as $parent) {
@@ -37,6 +37,6 @@ class RemoveItemDiscount extends EcommerceContext
                 }
             }
         }
-        throw new RuntimeException('ItemDiscount not found: ' . $id);
+        return ResponseStatus::NotFound;
     }
 }

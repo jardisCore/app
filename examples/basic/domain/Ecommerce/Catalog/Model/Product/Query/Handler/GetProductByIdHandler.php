@@ -7,10 +7,10 @@ namespace Ecommerce\Catalog\Model\Product\Query\Handler;
 use Ecommerce\Catalog\Model\Product\Query\Response\ProductResponse;
 use Ecommerce\Catalog\Model\Product\Repository\ProductRepository;
 use Ecommerce\EcommerceContext;
-use Ecommerce\Response\DomainResponseTransformer;
 use Exception;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
 use JardisSupport\Data\FieldMapper;
+use JardisSupport\Data\Handler\ProjectWire;
 use JardisSupport\Data\Hydration;
 use ReflectionException;
 use Throwable;
@@ -40,7 +40,6 @@ class GetProductByIdHandler extends EcommerceContext
         /** @var array<string, array<string, string>> $readMaps */
         $readMaps = [
             'product' => [
-                'id' => 'id',
                 'identifier' => 'identifier',
                 'sku' => 'sku',
                 'productName' => 'name',
@@ -68,6 +67,7 @@ class GetProductByIdHandler extends EcommerceContext
                 'height' => 'height',
                 'sortOrder' => 'sort_order',
                 'isPrimary' => 'is_primary',
+                'updatedAt' => 'updated_at',
             ],
             'productVariant' => [
                 'identifier' => 'identifier',
@@ -94,19 +94,46 @@ class GetProductByIdHandler extends EcommerceContext
         ];
         $mapEntity = static fn(string $entity): array => $readMaps[$entity] ?? [];
 
+        $wireTypes = [
+            'createdAt' => 'date-time',
+            'updatedAt' => 'date-time',
+            'productVariant' => [
+                'createdAt' => 'date-time',
+                'productVariantPrice' => [
+                    'validFrom' => 'date',
+                    'validUntil' => 'date',
+                ],
+            ],
+            'productImage' => [
+                'updatedAt' => 'date-time',
+            ],
+        ];
+
+        $projectWire = $this->handle(ProjectWire::class);
+        $fieldMapper = $this->handle(FieldMapper::class);
+        $hydration = $this->handle(Hydration::class);
+
         /** @var array<int, ProductResponse> $projected */
         $projected = array_map(
-            function (array $row) use ($mapEntity): ProductResponse {
-                $mapped = $this->handle(FieldMapper::class)->fromAggregate($row, $mapEntity, 'product');
+            function (array $row) use (
+                $mapEntity,
+                $fieldMapper,
+                $hydration,
+                $projectWire,
+                $wireTypes
+            ): ProductResponse {
+                $mapped = $fieldMapper->fromAggregate($row, $mapEntity, 'product');
+                $mapped = $projectWire($mapped, $wireTypes);
                 $productResponse = new ProductResponse();
-                $this->handle(Hydration::class)->hydrateAggregate($productResponse, $mapped);
+                $hydration->hydrateAggregate($productResponse, $mapped);
                 return $productResponse;
             },
             $result,
         );
 
-        $this->result()->setData(['product' => $projected[0] ?? null]);
+        $found = $projected[0] ?? null;
+        $this->result()->setData($found === null ? [] : ['@type' => 'product'] + get_object_vars($found));
 
-        return $this->handle(DomainResponseTransformer::class)->transform($this->result());
+        return ($this->transformer())($this->result());
     }
 }

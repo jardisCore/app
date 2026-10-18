@@ -19,6 +19,7 @@ class TransformOrder extends EcommerceContext
      *
      * @param array<string, array<int, mixed>> $container Query results grouped by entity
      * @return array<int, array<string, mixed>>
+     * @throws \RuntimeException
      */
     public function __invoke(array $container = []): array
     {
@@ -49,17 +50,32 @@ class TransformOrder extends EcommerceContext
      * @param array<string, mixed> $dto Data transfer object with context
      * @param array<string, array<int, mixed>> &$container Query results (by reference)
      * @return void
+     * @throws \RuntimeException
      */
     protected function transformOrderCustomer(array &$parent, array $dto, array &$container): void
     {
+        $matchCount = 0;
+        $matchedCustomer = null;
+
         foreach ($container['customer'] as $index => $customer) {
             if (is_numeric($index) && $customer['id'] == $dto['order']['customer_id']) {
-                $parent['customer'] = $dto['customer'] = $customer;
-
-                $this->transformCustomerAddress($parent['customer'], $dto, $container);
-
-                break; // ERM: one - stop after first match
+                $matchCount++;
+                $matchedCustomer = $customer;
             }
+        }
+
+        if ($matchCount > 1) {
+            throw new \RuntimeException(
+                "Integrity violation: erm:one relation 'order.customer' expects at most one row per parent, found "
+                . $matchCount
+                . " for parent id '" . (string) $dto['order']['customer_id'] . "'."
+            );
+        }
+
+        if ($matchCount === 1) {
+            $parent['customer'] = $dto['customer'] = $matchedCustomer;
+
+            $this->transformCustomerAddress($parent['customer'], $dto, $container);
         }
     }
     /**
@@ -70,15 +86,31 @@ class TransformOrder extends EcommerceContext
      * @param array<string, mixed> $dto Data transfer object with context
      * @param array<string, array<int, mixed>> &$container Query results (by reference)
      * @return void
+     * @throws \RuntimeException
      */
     protected function transformCustomerAddress(array &$parent, array $dto, array &$container): void
     {
+        $matchCount = 0;
+        $matchedAddress = null;
+
         foreach ($container['address'] as $index => $address) {
             if (is_numeric($index) && $address['id'] == $dto['customer']['billing_address_id']) {
-                $parent['address'] = $address;
-
-                break; // ERM: one - stop after first match
+                $matchCount++;
+                $matchedAddress = $address;
             }
+        }
+
+        if ($matchCount > 1) {
+            throw new \RuntimeException(
+                "Integrity violation: erm:one relation 'order.customer.address' expects at most one row per parent, "
+                . "found "
+                . $matchCount
+                . " for parent id '" . (string) $dto['customer']['billing_address_id'] . "'."
+            );
+        }
+
+        if ($matchCount === 1) {
+            $parent['address'] = $matchedAddress;
         }
     }
     /**

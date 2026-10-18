@@ -27,6 +27,7 @@ class Category
      *
      * @var array<string, mixed>
      */
+    // phpcs:ignore PSR2.Classes.PropertyDeclaration.Underscore -- Reflection-Slot jardissupport/data
     protected array $__snapshot = [
         'id' => null,
         'identifier' => null,
@@ -277,7 +278,7 @@ class Category
 
     public function setCreatedAt(?DateTime $createdAt = null): self
     {
-        $this->createdAt = $createdAt ?? new DateTime();
+        $this->createdAt = $createdAt;
         return $this;
     }
 

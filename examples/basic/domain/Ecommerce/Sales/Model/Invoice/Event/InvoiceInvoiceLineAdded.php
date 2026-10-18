@@ -18,11 +18,11 @@ readonly class InvoiceInvoiceLineAdded
      * @param string $invoiceLineIdentifier
      * @param int $position
      * @param string $description
-     * @param float $quantity
+     * @param string $quantity
      * @param string $unit
-     * @param float $unitPrice
-     * @param ?float $discountPercent
-     * @param float $lineTotal
+     * @param string $unitPrice
+     * @param ?string $discountPercent
+     * @param string $lineTotal
      * @param int $taxIncluded
      * @param DateTimeImmutable $occurredAt
      */
@@ -31,11 +31,11 @@ readonly class InvoiceInvoiceLineAdded
         public string $invoiceLineIdentifier,
         public int $position,
         public string $description,
-        public float $quantity,
+        public string $quantity,
         public string $unit,
-        public float $unitPrice,
-        public ?float $discountPercent,
-        public float $lineTotal,
+        public string $unitPrice,
+        public ?string $discountPercent,
+        public string $lineTotal,
         public int $taxIncluded,
         public DateTimeImmutable $occurredAt
     ) {

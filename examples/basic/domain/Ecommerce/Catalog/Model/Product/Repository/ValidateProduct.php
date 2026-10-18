@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Ecommerce\Catalog\Model\Product\Repository;
 
-use Ecommerce\Catalog\Model\Product\Command\Validation\ValidationException;
 use Ecommerce\Catalog\Entity\Validation\ProductImageValidator;
 use Ecommerce\Catalog\Entity\Validation\ProductValidator;
 use Ecommerce\Catalog\Entity\Validation\ProductVariantPriceValidator;
 use Ecommerce\Catalog\Entity\Validation\ProductVariantValidator;
+use Ecommerce\Catalog\Model\Product\Command\Validation\ValidationException;
 use Ecommerce\EcommerceContext;
-use JsonException;
+use JardisSupport\Validation\CompositeFieldValidator;
 use Throwable;
 use Ecommerce\Catalog\Model\Product\Aggregate\Product as ProductHandler;
 
@@ -27,7 +27,6 @@ class ValidateProduct extends EcommerceContext
      *
      * @param ProductHandler $handler Aggregate handler
      * @throws ValidationException If validation fails
-     * @throws JsonException
      * @throws Throwable
      */
     public function __invoke(ProductHandler $handler): void
@@ -37,16 +36,23 @@ class ValidateProduct extends EcommerceContext
         }
 
         $errors = [];
+        $kinds = [];
         $aggregate = $handler->getData();
 
         if (!empty($handler->getEntityData('product')['values'])) {
-            $this->validateEntity($aggregate, ProductValidator::class, 'product', $errors);
+            $this->validateEntity($aggregate, ProductValidator::class, 'product', $errors, $kinds);
         }
 
         $productImageCollection = $handler->getCollectionData('productImage');
         foreach ($aggregate->getProductImage() as $index => $productImage) {
             if (!empty($productImageCollection[$index]['values'])) {
-                $this->validateEntity($productImage, ProductImageValidator::class, "productImage[{$index}]", $errors);
+                $this->validateEntity(
+                    $productImage,
+                    ProductImageValidator::class,
+                    "productImage[{$index}]",
+                    $errors,
+                    $kinds
+                );
             }
         }
         $productVariantCollection = $handler->getCollectionData('productVariant');
@@ -56,24 +62,30 @@ class ValidateProduct extends EcommerceContext
                     $productVariant,
                     ProductVariantValidator::class,
                     "productVariant[{$index}]",
-                    $errors
+                    $errors,
+                    $kinds
                 );
             }
         }
         $productVariantPriceCollection = $handler->getCollectionData('productVariantPrice');
-        foreach (array_merge([], ...array_map(fn(object $e) => $e->getProductVariantPrice(), $aggregate->getProductVariant())) as $index => $productVariantPrice) {
-            if (!empty($productVariantPriceCollection[$index]['values'])) {
-                $this->validateEntity(
-                    $productVariantPrice,
-                    ProductVariantPriceValidator::class,
-                    "productVariantPrice[{$index}]",
-                    $errors
-                );
+        $productVariantPricePosition = 0;
+        foreach ($aggregate->getProductVariant() as $productVariantIndex => $productVariant) {
+            foreach ($productVariant->getProductVariantPrice() as $productVariantPriceIndex => $productVariantPrice) {
+                if (!empty($productVariantPriceCollection[$productVariantPricePosition]['values'])) {
+                    $this->validateEntity(
+                        $productVariantPrice,
+                        ProductVariantPriceValidator::class,
+                        "productVariant[{$productVariantIndex}].productVariantPrice[{$productVariantPriceIndex}]",
+                        $errors,
+                        $kinds
+                    );
+                }
+                $productVariantPricePosition++;
             }
         }
 
         if (!empty($errors)) {
-            throw new ValidationException(json_encode($errors, JSON_THROW_ON_ERROR));
+            throw new ValidationException($errors, $kinds, root: 'product');
         }
     }
 
@@ -84,19 +96,24 @@ class ValidateProduct extends EcommerceContext
      * @param class-string $validatorClass Validator class name
      * @param string $entityName Entity identifier for error grouping
      * @param array<string, mixed> $errors Collected errors (by reference)
+     * @param array<string, mixed> $kinds Collected validator kinds, same shape (by reference)
      * @throws Throwable
      */
     protected function validateEntity(
         object $entity,
         string $validatorClass,
         string $entityName,
-        array &$errors
+        array &$errors,
+        array &$kinds
     ): void {
-        $validator = ($this->handle($validatorClass))();
+        $validatorInstance = $this->handle($validatorClass);
+        /** @var callable(): CompositeFieldValidator $validatorInstance */
+        $validator = $validatorInstance();
         $result = $validator->validate($entity);
 
         if (!$result->isValid()) {
             $errors[$entityName] = $result->getErrors();
+            $kinds[$entityName] = $result->getKinds();
         }
     }
 }

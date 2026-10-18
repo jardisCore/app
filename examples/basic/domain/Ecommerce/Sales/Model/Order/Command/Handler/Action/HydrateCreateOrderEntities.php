@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Ecommerce\Sales\Model\Order\Command\Handler\Action;
 
 use Ecommerce\EcommerceContext;
-use Ecommerce\Sales\Model\Order\Aggregate\Order;
 use Ecommerce\Sales\FieldMap;
+use Ecommerce\Sales\Model\Order\Aggregate\Order;
 use JardisSupport\Data\FieldMapper;
 use Throwable;
 use Ecommerce\Sales\Model\Order\Command\Order as CommandOrder;
@@ -73,7 +73,12 @@ class HydrateCreateOrderEntities extends EcommerceContext
     {
         $fieldMap = $this->handle(FieldMap::class);
 
-        $handler->setAddress($this->handle(FieldMapper::class)->toColumns(get_object_vars($order->customer->address), $fieldMap->addressesColumns()));
+        $handler->setAddress(
+            $this->handle(FieldMapper::class)->toColumns(
+                get_object_vars($order->customer->address),
+                $fieldMap->addressesColumns()
+            )
+        );
     }
 
     /**
@@ -88,7 +93,10 @@ class HydrateCreateOrderEntities extends EcommerceContext
         foreach ($order->orderItem as $orderItemDto) {
             $itemDiscountDataList = [];
             foreach ($orderItemDto->itemDiscount as $itemDiscountDto) {
-                $itemDiscountDataList[] = $this->handle(FieldMapper::class)->toColumns(get_object_vars($itemDiscountDto), $fieldMap->itemDiscountsColumns());
+                $itemDiscountDataList[] = $this->handle(FieldMapper::class)->toColumns(
+                    get_object_vars($itemDiscountDto),
+                    $fieldMap->itemDiscountsColumns()
+                );
             }
             $entityData = $this->handle(FieldMapper::class)->toColumns([
                 ...array_filter(

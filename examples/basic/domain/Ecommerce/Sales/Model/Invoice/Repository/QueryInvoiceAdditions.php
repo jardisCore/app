@@ -9,7 +9,6 @@ use JardisSupport\Contract\DbConnection\ConnectionPoolInterface;
 use JardisSupport\Contract\DbQuery\DbQueryBuilderInterface;
 use JardisSupport\DbQuery\DbQuery;
 use JardisSupport\Repository\Repository;
-use RuntimeException;
 use Throwable;
 use Ecommerce\Sales\Entity\InvoiceLine as InvoiceLineEntity;
 
@@ -29,7 +28,7 @@ class QueryInvoiceAdditions extends EcommerceContext
      *
      * @param array $rootContainer Container with root entity data
      * @return array<string, array<int, object>>
-     * @throws RuntimeException
+     * @throws \RuntimeException
      * @throws Throwable
      */
     public function __invoke(array $rootContainer = []): array
@@ -50,7 +49,8 @@ class QueryInvoiceAdditions extends EcommerceContext
     {
         return $this->query(InvoiceLineEntity::class)
             ->where('invoice_id')->in($this->values('invoice', 'id'))
-            ->orderBy('position', 'ASC');
+            ->orderBy('position', 'ASC')
+            ->orderBy('id', 'ASC');
     }
 
     /**
@@ -74,7 +74,7 @@ class QueryInvoiceAdditions extends EcommerceContext
      *
      * @param DbQueryBuilderInterface|null $query Query to execute
      * @return array The query results
-     * @throws RuntimeException
+     * @throws \RuntimeException
      * @throws Throwable
      */
     protected function load(?DbQueryBuilderInterface $query): array

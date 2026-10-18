@@ -7,7 +7,7 @@ namespace Ecommerce\Fulfillment;
 /**
  * Central naming map: DTO property names <-> DB column names, per table.
  *
- * Pure naming container (Schema + FieldMap.yaml overrides + default
+ * Pure naming container (Schema + FieldMap.json overrides + default
  * ToPropertyName). One method per BC table:
  *   {table}Columns() — full DTO→column map for FieldMapper::toColumns (write path)
  *

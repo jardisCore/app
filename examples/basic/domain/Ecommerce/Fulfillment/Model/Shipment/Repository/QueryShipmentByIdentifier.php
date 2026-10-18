@@ -9,10 +9,9 @@ use JardisSupport\Contract\DbConnection\ConnectionPoolInterface;
 use JardisSupport\Contract\DbQuery\DbQueryBuilderInterface;
 use JardisSupport\DbQuery\DbQuery;
 use JardisSupport\Repository\Repository;
-use RuntimeException;
 use Throwable;
-use Ecommerce\Fulfillment\Model\Shipment\Query\ShipmentByIdentifier as ShipmentByIdentifierQuery;
 use Ecommerce\Fulfillment\Entity\Shipment as ShipmentEntity;
+use Ecommerce\Fulfillment\Model\Shipment\Query\ShipmentByIdentifier as ShipmentByIdentifierQuery;
 
 /**
  * Root query class for Shipment (ByIdentifier variant).
@@ -29,7 +28,7 @@ class QueryShipmentByIdentifier extends EcommerceContext
      *
      * @param ShipmentByIdentifierQuery $query Query parameters
      * @return array<string, array<int, object>>
-     * @throws RuntimeException
+     * @throws \RuntimeException
      * @throws Throwable
      */
     public function __invoke(ShipmentByIdentifierQuery $query): array
@@ -72,7 +71,7 @@ class QueryShipmentByIdentifier extends EcommerceContext
      *
      * @param DbQueryBuilderInterface|null $query Query to execute
      * @return array The query results
-     * @throws RuntimeException
+     * @throws \RuntimeException
      * @throws Throwable
      */
     protected function load(?DbQueryBuilderInterface $query): array
