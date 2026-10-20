@@ -20,7 +20,8 @@ instead of helpers every generated `routes.php` assembles itself.
   request, with a fallback (required) or `null` (optional/nullable) standing in; `FindUnknownKeys` (`unknown`, after the known
   findings, body order) and `RebaseFindings` (`<list>[1].<field>` for nested payloads).
 - `Handler\Request\BuildRequestFindings`: the collected findings as `InputFindings` of `jardissupport/response` (texts and keys
-  `validation.<reason>`; `missing` and the fallback from `DescribeFieldFinding`).
+  `validation.<reason>`, the whole vocabulary - `missing`, `type`, `unknown`, fallback - from `DescribeFieldFinding` of `response`;
+  the closure only chains it). Needs the `response` release that knows `type` and `unknown`.
 - `Handler\Response\AnswerInvalidRequest`: the one 400 answer of a request that does not fit (`AnswerFindings` of
   `jardissupport/response`, `TransformResponse` with a PSR-20 clock, default `SystemClock`); bytes as the 400 of the generated routes.
 - All new closures are creatable without constructor arguments (`Factory::get()` / `handle()`).

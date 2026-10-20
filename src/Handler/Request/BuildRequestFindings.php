@@ -11,28 +11,18 @@ use JardisSupport\Response\Handler\Failure\DescribeFieldFinding;
  * Turns the findings the request readers collected (`field`, `reason`) into the findings of the 400
  * answer ({@see InputFindings} of `jardissupport/response`): each gets its text and its message key.
  *
- * The vocabulary of `missing` and the fallback is that of `response` ({@see DescribeFieldFinding});
- * the two reasons only a request reader knows - `type` and `unknown` - bring their own text and the
- * key `validation.<reason>`. A text map may be handed in; the default is the standard vocabulary.
+ * The whole vocabulary - `missing`, `type`, `unknown` and the fallback - is that of `response`
+ * ({@see DescribeFieldFinding}); this closure only chains it over the findings.
  *
  * Atomic closure - one entry point.
  */
 final class BuildRequestFindings
 {
     public const string REASON_MISSING = DescribeFieldFinding::REASON_MISSING;
-    public const string REASON_TYPE = 'type';
-    public const string REASON_UNKNOWN = 'unknown';
+    public const string REASON_TYPE = DescribeFieldFinding::REASON_TYPE;
+    public const string REASON_UNKNOWN = DescribeFieldFinding::REASON_UNKNOWN;
 
-    public const array TEXTS = [
-        self::REASON_TYPE => 'Field has an invalid type.',
-        self::REASON_UNKNOWN => 'Unknown field',
-    ];
-
-    /**
-     * @param array<string, string> $texts the texts of the reasons `response` does not know
-     */
     public function __construct(
-        private readonly array $texts = self::TEXTS,
         private readonly DescribeFieldFinding $describe = new DescribeFieldFinding(),
     ) {
     }
@@ -42,16 +32,9 @@ final class BuildRequestFindings
      */
     public function __invoke(array $fields): InputFindings
     {
-        $described = [];
-        foreach ($fields as $finding) {
-            $text = $this->texts[$finding['reason']] ?? null;
-            $entry = ($this->describe)($finding + ['message' => $text ?? '']);
-            if ($text !== null) {
-                $entry['messageKey'] = DescribeFieldFinding::KEY_PREFIX . '.' . $finding['reason'];
-            }
-            $described[] = $entry;
-        }
-
-        return new InputFindings($described, []);
+        return new InputFindings(
+            array_map(fn(array $finding): array => ($this->describe)($finding + ['message' => '']), $fields),
+            []
+        );
     }
 }
