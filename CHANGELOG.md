@@ -2,6 +2,41 @@
 
 All notable changes to `jardiscore/app` are listed here. Versions only move forward (SemVer).
 
+## Unreleased
+
+The request mapper: type check of the body, query and path values and the 400 answer, as closures of this package
+instead of helpers every generated `routes.php` assembles itself.
+
+### Added
+
+- `Handler\Request\Accept\*` (15 final closures, one `__invoke(mixed): ?T` each, `null` = refused): `TransportStr|Int|Float|
+  Decimal|Bool|Date|DateTime|Time` for path/query values (a string end to end, validated first, coerced second) and
+  `BodyStr|Int|Float|Bool|Date|DateTime|Time` for the decoded JSON body (strict JSON type; the temporal ones return a
+  `DateTimeImmutable`, `BodyDateTime` normalised to UTC). The calendar forms are judged by `jardissupport/validation`
+  (`DateTime::dateOnly()` / `rfc3339()` / `H:i:s`); `TransportDecimal` takes the anchored pattern of the column as an
+  optional constructor argument.
+- `Handler\Request\{ReadRequired, ReadTransportOptional, ReadTransportList, ReadBodyNullable}`:
+  read one value through an accept closure and COLLECT the finding (`missing`, `type`) into the by-reference list of the
+  request, with a fallback (required) or `null` (optional/nullable) standing in; `FindUnknownKeys` (`unknown`, after the known
+  findings, body order) and `RebaseFindings` (`<list>[1].<field>` for nested payloads).
+- `Handler\Request\BuildRequestFindings`: the collected findings as `InputFindings` of `jardissupport/response` (texts and keys
+  `validation.<reason>`; `missing` and the fallback from `DescribeFieldFinding`).
+- `Handler\Response\AnswerInvalidRequest`: the one 400 answer of a request that does not fit (`AnswerFindings` of
+  `jardissupport/response`, `TransformResponse` with a PSR-20 clock, default `SystemClock`); bytes as the 400 of the generated routes.
+- All new closures are creatable without constructor arguments (`Factory::get()` / `handle()`).
+
+### Changed
+
+- `DispatchAndRespond` builds the `data` of the 400 for an unknown `X-Jardis-Version` with `ValidationPayload` and
+  `BuildResponseData` of `jardissupport/response` instead of an array literal; the bytes are unchanged.
+- `composer.json`: new `require` `jardissupport/response ^1.2`, `jardissupport/scheduling ^1.2` (`SystemClock`),
+  `jardissupport/validation ^1.5` (moved from `require-dev`); `jardissupport/contracts` `^2.11` -> `^2.13`.
+
+### Tests
+
+- One table over the 15 accept closures (valid, refused), the readers per type (valid, missing, invalid), and the 400 bytes
+  against `tests/Fixture/envelope/route/s2-400.json` (copy of the Builder's route wire contract T1 S2, pinned by SHA-256).
+
 ## v1.8.1
 
 The example domain follows the current generat and `jardissupport/workflow` 3.0. No change to `src/`.

@@ -10,6 +10,9 @@ use JardisCore\App\Data\Route;
 use JardisCore\App\Data\RouteMatch;
 use JardisCore\App\Data\RouteMatchStatus;
 use JardisCore\App\Handler\Request\ResolveVersion;
+use JardisSupport\Contract\Kernel\ResponseStatus;
+use JardisSupport\Response\Handler\Failure\ValidationPayload;
+use JardisSupport\Response\Handler\Response\BuildResponseData;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -57,6 +60,8 @@ final class DispatchAndRespond
         private readonly Closure $buildErrorResponse,
         private readonly Closure $resolveVersion,
         private readonly array $globalMiddleware,
+        private readonly ValidationPayload $validationPayload = new ValidationPayload(),
+        private readonly BuildResponseData $buildResponseData = new BuildResponseData(),
     ) {
     }
 
@@ -108,19 +113,23 @@ final class DispatchAndRespond
 
     /**
      * The one 400 answer for an invalid `X-Jardis-Version` header: the validation
-     * form every generated door answers with (`data = {@type: validation, fields:
-     * [{field, reason, message, messageKey}]}`, `errors` empty).
+     * form every generated door answers with (`data = {"@type":"validation","fields":
+     * [{field, reason, message, messageKey}]}`, `errors` empty), built by
+     * `jardissupport/response`; the envelope stays the bare one of this boundary
+     * (`meta` empty, no handler has run).
      */
     private function rejectVersion(): ResponseInterface
     {
-        return ($this->buildErrorResponse)(400, [
-            '@type' => 'validation',
-            'fields' => [[
-                'field' => ResolveVersion::HEADER,
-                'reason' => 'invalid',
-                'message' => 'The requested version is not known.',
-                'messageKey' => 'request.versionUnknown',
-            ]],
-        ]);
+        $form = ($this->validationPayload)('validation', [[
+            'field' => ResolveVersion::HEADER,
+            'reason' => 'invalid',
+            'message' => 'The requested version is not known.',
+            'messageKey' => 'request.versionUnknown',
+        ]]);
+
+        return ($this->buildErrorResponse)(
+            400,
+            ($this->buildResponseData)(ResponseStatus::ValidationError, $form, null, ''),
+        );
     }
 }
