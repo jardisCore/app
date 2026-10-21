@@ -114,6 +114,28 @@ minutes with a prepared environment, K6). It also covers API versioning
 (M9), the `jardissupport/validation` growth path, and the N1 deployment
 stellschrauben (body-size limits, Trusted-Proxy, `display_errors`).
 
+## Request mapper
+
+A handler (or a generated `routes.php`) checks the type of path, query and body values with closures of this package and
+answers a bad request with ONE 400 — every fault at once, the findings and the answer from `jardissupport/response`:
+
+```php
+$fields = [];
+$body = (new ParseJsonBody())($request);
+$name = (new ReadRequired())($body, 'name', new BodyStr(), '', $fields);        // missing | type
+$qty = (new ReadBodyNullable())($body, 'qty', new BodyInt(), $fields);              // absent/null -> null
+$page = (new ReadTransportOptional())($request->getQueryParams(), 'page', new TransportInt(), $fields);
+(new FindUnknownKeys())($body, ['name', 'qty'], $fields);                           // unknown, after the rest
+
+if ($fields !== []) {
+    return (new AnswerInvalidRequest())($fields, $version);   // 400 {@type: validation, fields: [...]}
+}
+```
+
+`Accept\Transport*` take path/query strings (validated first, coerced second), `Accept\Body*` take the strict JSON type of
+the decoded body. Lists: `ReadTransportList` with `TransportStr` / `TransportInt`; nested payloads: `RebaseFindings`.
+`BuildRequestFindings` turns the collected findings into the `InputFindings` of `jardissupport/response`.
+
 ## Examples
 
 - [`examples/basic/`](examples/basic/) — the recipe above wired against a
@@ -131,7 +153,8 @@ stellschrauben (body-size limits, Trusted-Proxy, `display_errors`).
 
 - PHP `>=8.3`
 - `jardiscore/kernel ^2.0`
-- `jardissupport/contracts ^2.0`
+- `jardissupport/contracts ^2.15`
+- `jardissupport/response ^1.2`, `jardissupport/validation ^1.5`, `jardissupport/scheduling ^1.2`
 
 ## Related Packages
 
@@ -139,7 +162,9 @@ stellschrauben (body-size limits, Trusted-Proxy, `display_errors`).
 |---------|---------|
 | `jardiscore/kernel` | The DomainKernel (`DomainKernel`) + ENV-Packer this package's bootstrap bridge builds on |
 | `jardissupport/contracts` | `DomainResponseInterface`, `ResponseStatus`, the response-envelope contract doc, the Auth ports and `RequestAttribute` used by `RequireSession` (`^2.11`) |
-| `jardissupport/validation` | Object-graph validation — the growth path beyond the handler's own trivial type coercion (F8) |
+| `jardissupport/response` | The 400 answer of the request mapper (`AnswerFindings`, `InputFindings`, `ValidationPayload`) |
+| `jardissupport/validation` | Calendar-strict date/time forms of the request mapper; object-graph validation beyond it |
+| `jardissupport/scheduling` | `SystemClock`, the PSR-20 clock of the 400 answer |
 
 ---
 
