@@ -8,11 +8,13 @@ use Closure;
 use JardisCore\App\Config\AppConfig;
 use JardisCore\App\Exception\InvalidJsonBody;
 use JardisCore\App\Handler\Response\BuildErrorResponse;
+use JardisSupport\Contract\Kernel\AccessDeniedExceptionInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Log\LoggerInterface;
+use stdClass;
 use Throwable;
 
 /**
@@ -23,6 +25,10 @@ use Throwable;
  *
  * - `InvalidJsonBody` -> canonical 400 envelope (F8c), the exception's own
  *   (non-sensitive, client-facing) message is included.
+ * - `AccessDeniedExceptionInterface` (marker of `jardissupport/contracts`; an exception a generated
+ *   rights check threw) -> canonical 403 envelope, `data` = `{@type: forbidden, context, messageKey}` taken
+ *   from the exception, `errors` and `meta` empty; not logged (a denial is an answer, not a failure) and
+ *   caught BEFORE the 500 branch, so it never answers 500.
  * - Any other Throwable -> 500 with a GENERIC body (no message, class
  *   name, or trace) unless `AppConfig::$debug` is true; the full error
  *   always goes to the injected PSR-3 logger at `error` level. A null
@@ -50,6 +56,12 @@ final class HandleThrowable
             return $inner($request);
         } catch (InvalidJsonBody $exception) {
             return ($this->buildEnvelope)(400, errors: ['message' => $exception->getMessage()]);
+        } catch (AccessDeniedExceptionInterface $exception) {
+            return ($this->buildEnvelope)(403, data: [
+                '@type' => 'forbidden',
+                'context' => $exception->getContext() ?: new stdClass(),
+                'messageKey' => $exception->getMessageKey(),
+            ]);
         } catch (Throwable $exception) {
             return $this->handleUnexpectedThrowable($exception);
         }

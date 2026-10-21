@@ -2,6 +2,30 @@
 
 All notable changes to `jardiscore/app` are listed here. Versions only move forward (SemVer).
 
+## [2.1.0]
+
+The rights of the session reach the request, and a denied access is answered `403`.
+
+### Added
+
+- `Handler\Session\ApplySession` (behind `Middleware\RequireSession`): the request attribute `RequestAttribute::RIGHTS` (`jardisRights`) is removed
+  first (a client value can never arrive) and set only when the result is a `RightsAwareAuthResultInterface` with a non-empty list; otherwise it is
+  absent (never `[]`, never `null`) - the pattern of `ROLE`.
+- `Handler\Request\ReadRequestAttributeList`: `__invoke(ServerRequestInterface $request, string $name): ?array` - a `list<string>`; attribute absent -> `[]`;
+  present but not a list of strings (a string, a list with a non-string element, an associative array) -> `null` ("unusable"); never an exception.
+- `Handler\Error\HandleThrowable` answers `JardisSupport\Contract\Kernel\AccessDeniedExceptionInterface` (before the 500 branch) with the canonical
+  403 envelope via `BuildErrorResponse`: `data` `{@type: "forbidden", context, messageKey}` from the exception (an empty `context` encodes as `{}`),
+  `errors` and `meta` empty; the denial is not logged. `meta` stays `{}` here - the same denial thrown inside the domain door (`response`
+  `MapThrowable`) carries the `meta` of the run.
+
+### Changed
+
+- `composer.json`: `jardissupport/contracts` `^2.15` -> `^2.16`, `jardissupport/response` `^1.4` -> `^1.5`, `jardissupport/auth` (dev) `^1.6` -> `^1.8`.
+
+### Tests
+
+- `ReadRequestAttributeListTest` (5 cases), rights cases in `SessionSignedTokenTest` (real `SessionManager` token) and `RequireSessionTest`, 403 cases in `HandleThrowableTest`.
+
 ## [2.0.0]
 
 Package cut (separation of concerns, decision Rolf 2026-10-21): `app` is the HTTP delivery. What needs no PSR-7 and no router

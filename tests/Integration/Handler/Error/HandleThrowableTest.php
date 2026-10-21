@@ -10,6 +10,7 @@ use JardisCore\App\Handler\Error\HandleThrowable;
 use JardisCore\App\Tests\Support\ErrorLogRedirect;
 use JardisCore\App\Tests\Support\LoggerSpy;
 use JardisCore\App\Tests\Support\ThrowingLogger;
+use JardisSupport\Contract\Kernel\AccessDeniedExceptionInterface;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -83,6 +84,70 @@ final class HandleThrowableTest extends TestCase
         $json = (string) $response->getBody();
         $this->assertStringContainsString('"data":{}', $json);
         $this->assertStringContainsString('"meta":{}', $json);
+    }
+
+    public function testAccessDeniedMarkerMapsToCanonical403EnvelopeWithKeyAndContext(): void
+    {
+        $factory = $this->factory();
+        $logger = new LoggerSpy();
+        $handle = new HandleThrowable($factory, $factory, $logger, new AppConfig());
+
+        $response = $handle(static function () {
+            throw self::denial('actor.rightMissing', ['right' => 'sales.process:voucherRedeemCheck']);
+        }, $factory->createServerRequest('POST', '/sales/voucherRedeemCheck'));
+
+        $this->assertSame(403, $response->getStatusCode());
+        $this->assertSame('application/json', $response->getHeaderLine('Content-Type'));
+        $this->assertSame(
+            '{"status":403,"data":{"@type":"forbidden","context":{"right":"sales.process:voucherRedeemCheck"},'
+            . '"messageKey":"actor.rightMissing"},"errors":{},"meta":{}}',
+            (string) $response->getBody(),
+        );
+        $this->assertSame([], $logger->records, 'a denial is an answer, not a failure: nothing is logged');
+    }
+
+    public function testAccessDeniedWithEmptyContextEncodesContextAsObjectAndLeaksNoMessage(): void
+    {
+        $factory = $this->factory();
+        $handle = new HandleThrowable($factory, $factory, null, new AppConfig(debug: true));
+
+        $response = $handle(static function () {
+            throw self::denial('actor.kindNotAllowed', [], 'secret internal message');
+        }, $factory->createServerRequest('GET', '/x'));
+
+        $json = (string) $response->getBody();
+        $this->assertSame(403, $response->getStatusCode());
+        $this->assertSame(
+            '{"status":403,"data":{"@type":"forbidden","context":{},"messageKey":"actor.kindNotAllowed"},"errors":{},"meta":{}}',
+            $json,
+        );
+        $this->assertStringNotContainsString('secret internal message', $json);
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     */
+    private static function denial(string $key, array $context, string $message = 'denied'): \Throwable
+    {
+        return new class ($key, $context, $message) extends \RuntimeException implements AccessDeniedExceptionInterface {
+            /**
+             * @param array<string, mixed> $context
+             */
+            public function __construct(private readonly string $key, private readonly array $context, string $message)
+            {
+                parent::__construct($message);
+            }
+
+            public function getMessageKey(): string
+            {
+                return $this->key;
+            }
+
+            public function getContext(): array
+            {
+                return $this->context;
+            }
+        };
     }
 
     public function testGenericThrowableMapsTo500WithGenericBodyByDefault(): void

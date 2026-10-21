@@ -6,6 +6,7 @@ namespace JardisCore\App\Handler\Session;
 
 use JardisSupport\Contract\Auth\AuthResultInterface;
 use JardisSupport\Contract\Auth\RequestAttribute;
+use JardisSupport\Contract\Auth\RightsAwareAuthResultInterface;
 use JardisSupport\Contract\Auth\RoleAwareAuthResultInterface;
 use JardisSupport\Contract\Auth\SessionAwareAuthResultInterface;
 use JardisSupport\Contract\Auth\TenantAwareAuthResultInterface;
@@ -13,7 +14,7 @@ use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * Binds a verified session to the request - the only writer of the attributes
- * `RequestAttribute::SUBJECT`, `TENANT`, `ROLE`, `SUBJECT_ID` and `SESSION`.
+ * `RequestAttribute::SUBJECT`, `TENANT`, `ROLE`, `RIGHTS`, `SUBJECT_ID` and `SESSION`.
  *
  * Whatever the attributes held before (a path placeholder named like them, an
  * upstream middleware) is overwritten or removed, so a client can never inject a
@@ -25,6 +26,12 @@ use Psr\Http\Message\ServerRequestInterface;
  * ROLE (the role claim of the session) is set only when the result is a
  * `RoleAwareAuthResultInterface` and `getRole()` is non-empty; otherwise the attribute is
  * absent (never null, never ''). It is a plain attribute, not a guard - core/app authorizes nothing.
+ *
+ * RIGHTS (the rights claim of the session, `list<string>`) is set only when the result is a
+ * `RightsAwareAuthResultInterface` and `getRights()` is a non-empty list; otherwise the attribute is
+ * absent (never `[]`, never null). It is removed first like the others, so a client value can never
+ * arrive. A plain attribute, not a guard - core/app authorizes nothing; the reader for a route is
+ * {@see \JardisCore\App\Handler\Request\ReadRequestAttributeList}.
  *
  * SUBJECT_ID (bare subject identifier) and SESSION (reference that revokes exactly this
  * session) are set only when the result is a `SessionAwareAuthResultInterface` and the
@@ -39,6 +46,7 @@ final class ApplySession
             ->withoutAttribute(RequestAttribute::SUBJECT)
             ->withoutAttribute(RequestAttribute::TENANT)
             ->withoutAttribute(RequestAttribute::ROLE)
+            ->withoutAttribute(RequestAttribute::RIGHTS)
             ->withoutAttribute(RequestAttribute::SUBJECT_ID)
             ->withoutAttribute(RequestAttribute::SESSION);
 
@@ -58,6 +66,12 @@ final class ApplySession
 
         if ($role !== null && $role !== '') {
             $request = $request->withAttribute(RequestAttribute::ROLE, $role);
+        }
+
+        $rights = $result instanceof RightsAwareAuthResultInterface ? $result->getRights() : [];
+
+        if ($rights !== []) {
+            $request = $request->withAttribute(RequestAttribute::RIGHTS, $rights);
         }
 
         if (!$result instanceof SessionAwareAuthResultInterface) {
