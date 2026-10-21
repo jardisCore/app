@@ -2,6 +2,52 @@
 
 All notable changes to `jardiscore/app` are listed here. Versions only move forward (SemVer).
 
+## [2.0.0]
+
+Package cut (separation of concerns, decision Rolf 2026-10-21): `app` is the HTTP delivery. What needs no PSR-7 and no router
+- the type check of values and the 400 answer of the request mapper - moved to `jardissupport/response` 1.4.0. What hangs on the
+HTTP request stays, and three small HTTP helpers arrive.
+
+### Breaking
+
+- REMOVED (moved to `jardissupport/response` ^1.4, same behaviour, new namespace - no alias left behind):
+
+| Removed in `jardiscore/app` (`JardisCore\App\...`) | Now in `jardissupport/response` (`JardisSupport\Response\...`) |
+|---|---|
+| `Handler\Request\ReadRequired` | `Handler\Request\ReadRequired` |
+| `Handler\Request\ReadBodyNullable` | `Handler\Request\ReadBodyNullable` |
+| `Handler\Request\ReadTransportOptional` | `Handler\Request\ReadTransportOptional` |
+| `Handler\Request\ReadTransportList` | `Handler\Request\ReadTransportList` |
+| `Handler\Request\FindUnknownKeys` | `Handler\Request\FindUnknownKeys` |
+| `Handler\Request\RebaseFindings` | `Handler\Request\RebaseFindings` |
+| `Handler\Request\BuildRequestFindings` | `Handler\Request\BuildRequestFindings` |
+| `Handler\Request\Accept\{TransportStr, TransportInt, TransportFloat, TransportDecimal, TransportBool, TransportDate, TransportDateTime, TransportTime, BodyStr, BodyInt, BodyFloat, BodyBool, BodyDate, BodyDateTime, BodyTime}` (15) | `Handler\Request\Accept\` (same names) |
+| `Handler\Response\AnswerInvalidRequest` | `Handler\Answer\AnswerInvalidRequest` |
+
+- The constructors changed with the move: the calendar accepts (`TransportDate|DateTime|Time`, `BodyDate|DateTime|Time`) take a
+  `ValueValidatorInterface`; `AnswerInvalidRequest` takes a PSR-20 `ClockInterface` (no `SystemClock` default any more). See the
+  `jardissupport/response` 1.4 README.
+- `composer.json`: `jardissupport/response` `^1.2` -> `^1.4`; `jardissupport/validation` and `jardissupport/scheduling` leave `require`
+  (no class in `src/` uses them any more) and stay in `require-dev` for the example domain and its tests.
+- Kept unchanged: `ParseJsonBody`, `CreateServerRequest`, `ResolveVersion`, `InvalidJsonBody`.
+
+### Added
+
+- `Handler\Request\ReadRequestAttribute`: `__invoke(ServerRequestInterface $request, string $name): string` - the request attribute
+  as a string, absent / not a string -> `''`.
+- `Handler\Request\ReadRequestAttributeStrict`: same signature - absent / not a string / empty -> `Exception\RequestAttributeMissing`
+  (extends `AppException` = `RuntimeException`, message `Request attribute <name> is not set - the scoped route needs the session middleware.`);
+  the error boundary answers it as the generic 500.
+- `Handler\Response\AnswerUnsupportedRequest`: `__invoke(list<string> $properties): DomainResponseInterface` - `DomainResponse`
+  status `InternalError` (500), `data` `[]`, `errors` `['routes' => ['Request property not buildable by the generated adapter: <a, b>']]`.
+- All three are creatable without constructor arguments. Wire behaviour equals the helpers the generated `routes.php` carried
+  (`$scopeAttr`, `$scopeAttrStrict`, `$unsupported`).
+
+### Tests
+
+- One integration test per new closure (valid, absent, not a string, empty; the 500 wire bytes through `HandleThrowable` /
+  `MapDomainResponse`); the tests, the fixture `tests/Fixture/envelope/route/s2-400.json` and the examples of the removed classes are gone.
+
 ## v1.9.0
 
 The request mapper: type check of the body, query and path values and the 400 answer, as closures of this package

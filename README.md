@@ -114,27 +114,26 @@ minutes with a prepared environment, K6). It also covers API versioning
 (M9), the `jardissupport/validation` growth path, and the N1 deployment
 stellschrauben (body-size limits, Trusted-Proxy, `display_errors`).
 
-## Request mapper
+## Request
 
-A handler (or a generated `routes.php`) checks the type of path, query and body values with closures of this package and
-answers a bad request with ONE 400 — every fault at once, the findings and the answer from `jardissupport/response`:
+What hangs on the HTTP request lives here; the type check of values and the 400 answer do not (since 2.0.0).
+
+| Closure | Does |
+|---------|------|
+| `Handler\Request\ParseJsonBody` | the one JSON body parser (`InvalidJsonBody` -> 400) |
+| `Handler\Request\ReadRequestAttribute` | a request attribute as a string; absent / not a string -> `''` (the reader behind a `RequireRequestAttribute`-guarded route) |
+| `Handler\Request\ReadRequestAttributeStrict` | the same, but absent / not a string / empty -> `Exception\RequestAttributeMissing` (a `RuntimeException`), which the error boundary answers as the generic 500 - for an attribute no middleware can guard up front |
+| `Handler\Response\AnswerUnsupportedRequest` | the 500 answer (`errors.routes`) of a route whose request the generated adapter cannot build: `__invoke(list<string> $properties)` |
 
 ```php
-$fields = [];
-$body = (new ParseJsonBody())($request);
-$name = (new ReadRequired())($body, 'name', new BodyStr(), '', $fields);        // missing | type
-$qty = (new ReadBodyNullable())($body, 'qty', new BodyInt(), $fields);              // absent/null -> null
-$page = (new ReadTransportOptional())($request->getQueryParams(), 'page', new TransportInt(), $fields);
-(new FindUnknownKeys())($body, ['name', 'qty'], $fields);                           // unknown, after the rest
-
-if ($fields !== []) {
-    return (new AnswerInvalidRequest())($fields, $version);   // 400 {@type: validation, fields: [...]}
-}
+$tenant = (new ReadRequestAttribute())($request, RequestAttribute::TENANT);
+$scope  = (new ReadRequestAttributeStrict())($request, RequestAttribute::TENANT);   // throws -> 500
+return (new AnswerUnsupportedRequest())(['lines', 'meta']);                           // 500 DomainResponse
 ```
 
-`Accept\Transport*` take path/query strings (validated first, coerced second), `Accept\Body*` take the strict JSON type of
-the decoded body. Lists: `ReadTransportList` with `TransportStr` / `TransportInt`; nested payloads: `RebaseFindings`.
-`BuildRequestFindings` turns the collected findings into the `InputFindings` of `jardissupport/response`.
+**Request mapper (type check of path, query and body values, the one 400 for a bad request)** moved to
+`jardissupport/response` ^1.4 (`JardisSupport\Response\Handler\Request\*`, `...\Request\Accept\*`,
+`JardisSupport\Response\Handler\Answer\AnswerInvalidRequest`); see its README. Mapping alt -> neu: `CHANGELOG.md` `[2.0.0]`.
 
 ## Examples
 
@@ -154,7 +153,7 @@ the decoded body. Lists: `ReadTransportList` with `TransportStr` / `TransportInt
 - PHP `>=8.3`
 - `jardiscore/kernel ^2.0`
 - `jardissupport/contracts ^2.15`
-- `jardissupport/response ^1.2`, `jardissupport/validation ^1.5`, `jardissupport/scheduling ^1.2`
+- `jardissupport/response ^1.4`
 
 ## Related Packages
 
@@ -162,9 +161,7 @@ the decoded body. Lists: `ReadTransportList` with `TransportStr` / `TransportInt
 |---------|---------|
 | `jardiscore/kernel` | The DomainKernel (`DomainKernel`) + ENV-Packer this package's bootstrap bridge builds on |
 | `jardissupport/contracts` | `DomainResponseInterface`, `ResponseStatus`, the response-envelope contract doc, the Auth ports and `RequestAttribute` used by `RequireSession` (`^2.11`) |
-| `jardissupport/response` | The 400 answer of the request mapper (`AnswerFindings`, `InputFindings`, `ValidationPayload`) |
-| `jardissupport/validation` | Calendar-strict date/time forms of the request mapper; object-graph validation beyond it |
-| `jardissupport/scheduling` | `SystemClock`, the PSR-20 clock of the 400 answer |
+| `jardissupport/response` | `BuildResponseData` / `ValidationPayload` (the 400 of an unknown `X-Jardis-Version`), `DomainResponse` (the 500 of `AnswerUnsupportedRequest`); owns the request mapper and its 400 since `response` 1.4 |
 
 ---
 
