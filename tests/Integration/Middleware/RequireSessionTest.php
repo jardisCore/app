@@ -67,6 +67,7 @@ final class RequireSessionTest extends TestCase
             $routes->get('/orders', $handler);
             $routes->get('/echo/{jardisSubject}/{jardisTenant}/{jardisAnonymousRoute}', $handler);
             $routes->get('/forge/{jardisSubjectId}/{jardisSession}', $handler);
+            $routes->get('/forge-rights/{jardisRights}', $handler);
             $routes->anonymous()->get('/login', $handler);
             $routes->get('/login-other', $handler);
             $routes->anonymous()->get('/public/info', $handler);
@@ -145,6 +146,14 @@ final class RequireSessionTest extends TestCase
         $this->get($this->app(), '/forge/mallory/stolen', 'Bearer good');
         $this->assertArrayNotHasKey(RequestAttribute::SUBJECT_ID, $this->handled[0]->getAttributes());
         $this->assertArrayNotHasKey(RequestAttribute::SESSION, $this->handled[0]->getAttributes());
+    }
+
+    public function testResultWithoutRightsInterfaceLeavesRightsAbsentAndStripsAClientValue(): void
+    {
+        $this->get($this->app(), '/forge-rights/*', 'Bearer good');
+
+        $this->assertCount(1, $this->handled);
+        $this->assertArrayNotHasKey(RequestAttribute::RIGHTS, $this->handled[0]->getAttributes());
     }
 
     public function testSessionWithoutTenantLeavesTheTenantAttributeAbsent(): void

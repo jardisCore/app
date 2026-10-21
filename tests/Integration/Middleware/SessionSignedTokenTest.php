@@ -91,6 +91,43 @@ final class SessionSignedTokenTest extends TestCase
         $this->assertSame('viewer', $this->seen->getAttribute(RequestAttribute::ROLE));
     }
 
+    public function testHandlerSeesTheRightsClaimOfTheToken(): void
+    {
+        $rights = ['sales.order:*', 'fulfillment.shipment:shipmentByOrderNumber'];
+
+        $this->app()->handle($this->request('/orders', $this->issue(['tenant' => 'acme', 'rights' => $rights])));
+
+        $this->assertNotNull($this->seen);
+        $this->assertSame($rights, $this->seen->getAttribute(RequestAttribute::RIGHTS));
+    }
+
+    public function testRightsAttributeIsAbsentWithoutRightsClaimOrWithAnEmptyList(): void
+    {
+        foreach ([[], ['rights' => []]] as $claims) {
+            $this->seen = null;
+            $this->app()->handle($this->request('/orders', $this->issue($claims)));
+
+            $this->assertNotNull($this->seen);
+            $this->assertArrayNotHasKey(RequestAttribute::RIGHTS, $this->seen->getAttributes());
+        }
+    }
+
+    public function testClientSuppliedRightsAreRemovedWhenTheTokenCarriesNone(): void
+    {
+        $this->app()->handle($this->request('/forge-rights/*', $this->issue()));
+
+        $this->assertNotNull($this->seen);
+        $this->assertArrayNotHasKey(RequestAttribute::RIGHTS, $this->seen->getAttributes());
+    }
+
+    public function testClientSuppliedRightsAreOverwrittenByTheTokenRights(): void
+    {
+        $this->app()->handle($this->request('/forge-rights/*', $this->issue(['rights' => ['sales.order:read']])));
+
+        $this->assertNotNull($this->seen);
+        $this->assertSame(['sales.order:read'], $this->seen->getAttribute(RequestAttribute::RIGHTS));
+    }
+
     public function testRequestWithoutTokenIsRejectedWith401(): void
     {
         $response = $this->app()->handle($this->request('/orders'));
@@ -156,6 +193,7 @@ final class SessionSignedTokenTest extends TestCase
         $routes->anonymous()->get('/open', $handler);
         $routes->get('/orders', $handler);
         $routes->get('/forge/{jardisRole}', $handler);
+        $routes->get('/forge-rights/{jardisRights}', $handler);
 
         return new App(
             $routes,
