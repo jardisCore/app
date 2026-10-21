@@ -14,7 +14,7 @@
     "require": {
         "php": ">=8.3",
         "jardiscore/kernel": "^2.0",
-        "jardissupport/contracts": "^2.15",
+        "jardissupport/contracts": "^2.16",
         "nikic/fast-route": "^1.3",
         "nyholm/psr7": "^1.8",
         "nyholm/psr7-server": "^1.1",
@@ -23,7 +23,7 @@
         "psr/http-server-handler": "^1",
         "psr/http-server-middleware": "^1",
         "jardissupport/factory": "^1.0",
-        "jardissupport/response": "^1.4"
+        "jardissupport/response": "^1.5"
     },
     "require-dev": {
         "phpunit/phpunit": "^11.0",
@@ -35,7 +35,7 @@
         "jardissupport/workflow": "^3.0",
         "middlewares/client-ip": "^2.1",
         "ext-pdo": "*",
-        "jardissupport/auth": "^1.6",
+        "jardissupport/auth": "^1.8",
         "jardissupport/validation": "^1.5",
         "jardissupport/scheduling": "^1.2"
     },

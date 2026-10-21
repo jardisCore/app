@@ -65,10 +65,13 @@ closes that gap with a deliberately small core:
   request to a session or answers `401` in the canonical envelope (with
   `WWW-Authenticate: Bearer`) before the handler runs; with a valid session the
   request carries the attributes `jardisSubject` and `jardisTenant`, when the result
-  is a `RoleAwareAuthResultInterface` with a role the role `jardisRole`, and, when the
+  is a `RoleAwareAuthResultInterface` with a role the role `jardisRole`, when it is a `RightsAwareAuthResultInterface` with a non-empty list the rights `jardisRights` (`list<string>`), and, when the
   authenticator's result is a `SessionAwareAuthResultInterface`, the bare subject id
   `jardisSubjectId` and the session reference `jardisSession` (revoke exactly this
   session) (`JardisSupport\Contract\Auth\RequestAttribute`). Details: [`docs/session.md`](docs/session.md).
+- **A denied access answers `403`.** `Handler\Error\HandleThrowable` catches `JardisSupport\Contract\Kernel\AccessDeniedExceptionInterface`
+  (the marker a generated rights check throws) before the 500 branch and answers the canonical envelope
+  `{status: 403, data: {@type: forbidden, context, messageKey}, errors: {}, meta: {}}` from the exception - not logged, never a 500.
 - **A required attribute at the door.** `Middleware\RequireRequestAttribute` answers `403` in the
   canonical envelope (`errors.messageKey = request.attributeMissing`, `errors.context.attribute` = the
   name) when a request attribute a route depends on, e.g. `RequestAttribute::TENANT`, is missing or empty;
@@ -122,11 +125,13 @@ What hangs on the HTTP request lives here; the type check of values and the 400 
 |---------|------|
 | `Handler\Request\ParseJsonBody` | the one JSON body parser (`InvalidJsonBody` -> 400) |
 | `Handler\Request\ReadRequestAttribute` | a request attribute as a string; absent / not a string -> `''` (the reader behind a `RequireRequestAttribute`-guarded route) |
+| `Handler\Request\ReadRequestAttributeList` | a request attribute as `list<string>` (e.g. `RequestAttribute::RIGHTS`); absent -> `[]`, present but not a list of strings -> `null` ("unusable", the caller answers 401, never 500); never throws |
 | `Handler\Request\ReadRequestAttributeStrict` | the same, but absent / not a string / empty -> `Exception\RequestAttributeMissing` (a `RuntimeException`), which the error boundary answers as the generic 500 - for an attribute no middleware can guard up front |
 | `Handler\Response\AnswerUnsupportedRequest` | the 500 answer (`errors.routes`) of a route whose request the generated adapter cannot build: `__invoke(list<string> $properties)` |
 
 ```php
 $tenant = (new ReadRequestAttribute())($request, RequestAttribute::TENANT);
+$rights = (new ReadRequestAttributeList())($request, RequestAttribute::RIGHTS);       // list<string>|null
 $scope  = (new ReadRequestAttributeStrict())($request, RequestAttribute::TENANT);   // throws -> 500
 return (new AnswerUnsupportedRequest())(['lines', 'meta']);                           // 500 DomainResponse
 ```
@@ -152,8 +157,8 @@ return (new AnswerUnsupportedRequest())(['lines', 'meta']);                     
 
 - PHP `>=8.3`
 - `jardiscore/kernel ^2.0`
-- `jardissupport/contracts ^2.15`
-- `jardissupport/response ^1.4`
+- `jardissupport/contracts ^2.16`
+- `jardissupport/response ^1.5`
 
 ## Related Packages
 
