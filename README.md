@@ -134,6 +134,7 @@ if ($fields !== []) {
 
 `Accept\Transport*` take path/query strings (validated first, coerced second), `Accept\Body*` take the strict JSON type of
 the decoded body. Lists: `ReadTransportList` with `TransportStr` / `TransportInt`; nested payloads: `RebaseFindings`.
+`BuildRequestFindings` turns the collected findings into the `InputFindings` of `jardissupport/response`.
 
 ## Examples
 
@@ -152,7 +153,7 @@ the decoded body. Lists: `ReadTransportList` with `TransportStr` / `TransportInt
 
 - PHP `>=8.3`
 - `jardiscore/kernel ^2.0`
-- `jardissupport/contracts ^2.13`
+- `jardissupport/contracts ^2.15`
 - `jardissupport/response ^1.2`, `jardissupport/validation ^1.5`, `jardissupport/scheduling ^1.2`
 
 ## Related Packages

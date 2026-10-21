@@ -2,7 +2,7 @@
 
 All notable changes to `jardiscore/app` are listed here. Versions only move forward (SemVer).
 
-## Unreleased
+## v1.9.0
 
 The request mapper: type check of the body, query and path values and the 400 answer, as closures of this package
 instead of helpers every generated `routes.php` assembles itself.
@@ -31,7 +31,7 @@ instead of helpers every generated `routes.php` assembles itself.
 - `DispatchAndRespond` builds the `data` of the 400 for an unknown `X-Jardis-Version` with `ValidationPayload` and
   `BuildResponseData` of `jardissupport/response` instead of an array literal; the bytes are unchanged.
 - `composer.json`: new `require` `jardissupport/response ^1.2`, `jardissupport/scheduling ^1.2` (`SystemClock`),
-  `jardissupport/validation ^1.5` (moved from `require-dev`); `jardissupport/contracts` `^2.11` -> `^2.13`.
+  `jardissupport/validation ^1.5` (moved from `require-dev`); `jardissupport/contracts` `^2.11` -> `^2.15`.
 
 ### Tests
 
