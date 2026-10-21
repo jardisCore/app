@@ -2,7 +2,7 @@
 
 All notable changes to `jardiscore/app` are listed here. Versions only move forward (SemVer).
 
-## [2.1.0]
+## [2.1.0] - 2026-10-21
 
 The rights of the session reach the request, and a denied access is answered `403`.
 
