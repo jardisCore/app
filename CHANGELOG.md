@@ -2,6 +2,15 @@
 
 All notable changes to `jardiscore/app` are listed here. Versions only move forward (SemVer).
 
+## [2.1.2] - 2026-10-23
+
+Two example file names get their correct case; `src/` is unchanged.
+
+### Changed
+
+- `examples/basic/domain/Ecommerce/Fulfillment/Model/Shipment`: `GetShipmentbyOrderNumberHandler.php` -> `GetShipmentByOrderNumberHandler.php` and
+  `QueryShipmentbyOrderNumber.php` -> `QueryShipmentByOrderNumber.php` (the class names inside were already spelled `...By...`; the file names now match).
+
 ## [2.1.1] - 2026-10-23
 
 The example runs on `jardissupport/workflow` 5 and `jardissupport/response` 2; `src/` is unchanged.
