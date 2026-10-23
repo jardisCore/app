@@ -17,7 +17,7 @@ use Throwable;
  * Node CheckVoucherRedeemable of the process VoucherRedeemCheck (rule).
  *
  * Rule-Knoten: prueft VoucherIsRedeemable (aggregate/Voucher) gegen die per
- * voucherCode im Mandanten tenantKey adressierte Wurzel. Unbekannte Wurzel
+ * voucherCode im Mandanten des Akteurs adressierte Wurzel. Unbekannte Wurzel
  * (auch: Wurzel eines anderen Mandanten) -> ON_FAIL notFound.
  *
  * Evaluates the rules VoucherIsRedeemable.
@@ -31,7 +31,7 @@ final class CheckVoucherRedeemable extends EcommerceContext
     public function __invoke(VoucherRedeemCheckContext $ctx): NodeResult
     {
         $identifier = $ctx->input()->voucherCode;
-        $loaded = $this->handle(LoadVoucherForRule::class)($ctx->actor()->tenantKey, $identifier);
+        $loaded = $this->handle(LoadVoucherForRule::class)($this->actor()->tenant, $identifier);
 
         if ($loaded === null) {
             return NodeResult::reject(

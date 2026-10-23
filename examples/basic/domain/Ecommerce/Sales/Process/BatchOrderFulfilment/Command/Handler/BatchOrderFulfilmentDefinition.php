@@ -23,7 +23,6 @@ final class BatchOrderFulfilmentDefinition
         return ProcessDefinition::for(BatchOrderFulfilment::class, 'BatchOrderFulfilment')
             ->context(BatchOrderFulfilmentContext::class)
             ->transactional(true)
-            ->validate(BatchOrderFulfilmentValidator::class)
             ->node(BatchOrderFulfilmentEntry::class)
             ->onTrue(RunBatch::class)
             ->node(RunBatch::class)

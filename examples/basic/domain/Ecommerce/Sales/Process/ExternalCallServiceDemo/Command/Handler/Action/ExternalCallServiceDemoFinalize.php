@@ -13,6 +13,17 @@ use JardisSupport\Workflow\Data\NodeResult;
  *
  * Platzhalter-Abschluss (onFail-Zweig) — bleibt bewusst ein Wurf-Stub
  * (kein consumedCall/externalCall) — KI-/Dev-Hoheit.
+ *
+ * Kontext-Kette (von oben nach unten):
+ * Domain: Ecommerce
+ * BC: Sales
+ * Prozess: ExternalCallServiceDemo
+ *     Externer-Call-Fixture (docs/cross-bc-process-access P4, AK2): drei
+ *     Externer-Call-Knoten, jeder mit eigenem Service; alle Stubs landen unter
+ *     {Domain}/{BC}/Service/ — CallPricingApiProcess, CallPricingApiBc,
+ *     CallPricingApiDomain. Jeder Knoten deklariert einen Service mit demselben
+ *     Namen wie der Knoten selbst (Alias-Guard-Beleg, analog CrossBcServiceDemo P3).
+ * Knoten: ExternalCallServiceDemoFinalize
  */
 final class ExternalCallServiceDemoFinalize extends EcommerceContext
 {

@@ -120,7 +120,7 @@ class InvoiceRepository extends EcommerceContext
             $aggregateArray[0]
         );
 
-        return $this->handle(InvoiceHandler::class, $aggregateEntity);
+        return $this->handle(InvoiceHandler::class, aggregate: $aggregateEntity);
     }
 
     /**
@@ -135,7 +135,7 @@ class InvoiceRepository extends EcommerceContext
     {
         $aggregateEntity = $this->handle(InvoiceAggregate::class);
 
-        return $this->handle(InvoiceHandler::class, $aggregateEntity);
+        return $this->handle(InvoiceHandler::class, aggregate: $aggregateEntity);
     }
     /**
      * Persists the Invoice aggregate.

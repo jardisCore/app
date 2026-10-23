@@ -7,7 +7,7 @@ namespace Ecommerce\Sales\Model\Voucher\Query\Handler;
 use Ecommerce\EcommerceContext;
 use Ecommerce\Sales\Model\Voucher\Query\VoucherChannelKeyListFilter;
 use Ecommerce\Sales\Model\Voucher\Repository\QueryVoucherChannelKeyList;
-use JardisSupport\Workflow\Data\ReadResult;
+use JardisSupport\Response\Data\ReadResult;
 use Throwable;
 
 /**

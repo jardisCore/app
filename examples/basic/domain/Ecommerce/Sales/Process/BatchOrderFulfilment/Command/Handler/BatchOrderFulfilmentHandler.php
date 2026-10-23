@@ -5,17 +5,21 @@ declare(strict_types=1);
 namespace Ecommerce\Sales\Process\BatchOrderFulfilment\Command\Handler;
 
 use Ecommerce\EcommerceContext;
+use Ecommerce\Sales\Process\BatchOrderFulfilment\Command\BatchOrderFulfilment;
 use Exception;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
-use JardisSupport\Contract\Kernel\EventScope;
-use JardisSupport\Validation\ObjectValidator;
-use JardisSupport\Workflow\Handler\Response\BuildResponseData;
-use JardisSupport\Workflow\Handler\Start\CheckRequires;
-use JardisSupport\Workflow\ProcessRunner;
+use JardisSupport\Response\Handler\Answer\AnswerOutcome;
+use JardisSupport\Response\Handler\Answer\AnswerThrowable;
+use JardisSupport\Response\Handler\Failure\LogFailure;
 use Throwable;
 
 /**
- * Wiring of the process BatchOrderFulfilment (hermetic): requires, runner, events, answer.
+ * Door of the process BatchOrderFulfilment (hermetic): input check, run in its bracket (RunProcess), answer.
+ *
+ * Caller-Fixture fuer R10: ruft OrderInvoiceBatch als Sub-Prozess auf.
+ * Belegt R4 (Einzel-Command-Feld primaryCommand: UpdateOrder|UpdateInvoice),
+ * R5 (Listen-Command-Feld lineCommands: array<AddOrderItem|AddInvoiceLine>)
+ * und R1 (Skalare requestedBy: string, note: string).
  */
 final class BatchOrderFulfilmentHandler extends EcommerceContext
 {
@@ -25,26 +29,33 @@ final class BatchOrderFulfilmentHandler extends EcommerceContext
      */
     public function __invoke(): DomainResponseInterface
     {
-        $definition = (new BatchOrderFulfilmentDefinition())();
-        (new CheckRequires())($this->resource(), $definition->getRequires());
-        $runner = ProcessRunner::forKernel(
-            $this->resource(),
-            new ObjectValidator(registry: (new BatchOrderFulfilmentValidator())(), fieldPaths: true)
-        );
-        $outcome = $runner->run(
-            $definition,
-            $this->payload(),
-            $this->actor(),
-            fn(string $class): object => $this->handle($class)
-        );
-        foreach ($outcome->events() as $event) {
-            $this->result()->addEvent($event, EventScope::Domain);
-        }
-        foreach ($outcome->errors() as $error) {
-            $this->result()->addError($error);
-        }
-        $this->result()->setData((new BuildResponseData())($outcome, $definition->getName()));
+        $definition = ($this->handle(BatchOrderFulfilmentDefinition::class))();
+        /** @var BatchOrderFulfilment $input */
+        $input = $this->payload();
+        $run = ($this->handle(RunProcess::class))($definition, $input, $this->depth());
+        if ($run->failure !== null) {
+            $answer = ($this->handle(AnswerThrowable::class))(
+                $this->result(),
+                $this->transformer(),
+                $run->failure,
+                $run->owner,
+                $definition->getName()
+            );
+            ($this->handle(LogFailure::class, logger: $this->resource()->logger()))(
+                $run->failure,
+                $definition->getName(),
+                $run->owner,
+                $answer
+            );
 
-        return ($this->transformer())($this->result(), $outcome->status());
+            return $answer;
+        }
+
+        return ($this->handle(AnswerOutcome::class))(
+            $this->result(),
+            $this->transformer(),
+            $run->result,
+            $definition->getName()
+        );
     }
 }

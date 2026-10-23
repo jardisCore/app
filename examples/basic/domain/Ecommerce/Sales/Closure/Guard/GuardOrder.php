@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Ecommerce\Sales\Closure\Guard;
 
 use Ecommerce\EcommerceContext;
-use Ecommerce\Sales\Closure\Data\RuleResult;
 use Ecommerce\Sales\Closure\OrderEligibleForProcessing;
 use Ecommerce\Sales\Closure\OrderWithinCreditLimit;
 use Ecommerce\Sales\Closure\StockAvailable;
+use JardisSupport\Response\Data\RuleResult;
 use Throwable;
 use Ecommerce\Sales\Model\Order\Command\Order as CommandOrder;
 

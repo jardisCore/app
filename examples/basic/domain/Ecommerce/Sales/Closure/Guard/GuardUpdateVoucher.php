@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Ecommerce\Sales\Closure\Guard;
 
 use Ecommerce\EcommerceContext;
-use Ecommerce\Sales\Closure\Data\RuleResult;
 use Ecommerce\Sales\Closure\VoucherUpdateAllowed;
+use JardisSupport\Response\Data\RuleResult;
 use Throwable;
 use Ecommerce\Sales\Model\Voucher\Command\UpdateVoucher as CommandUpdateVoucher;
 

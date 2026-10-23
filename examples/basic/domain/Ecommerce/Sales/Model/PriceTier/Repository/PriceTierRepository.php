@@ -120,7 +120,7 @@ class PriceTierRepository extends EcommerceContext
             $aggregateArray[0]
         );
 
-        return $this->handle(PriceTierHandler::class, $aggregateEntity);
+        return $this->handle(PriceTierHandler::class, aggregate: $aggregateEntity);
     }
 
     /**
@@ -135,7 +135,7 @@ class PriceTierRepository extends EcommerceContext
     {
         $aggregateEntity = $this->handle(PriceTierAggregate::class);
 
-        return $this->handle(PriceTierHandler::class, $aggregateEntity);
+        return $this->handle(PriceTierHandler::class, aggregate: $aggregateEntity);
     }
     /**
      * Persists the PriceTier aggregate.

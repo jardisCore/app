@@ -10,9 +10,11 @@ use Ecommerce\Catalog\Model\Product\Query\Handler\GetProductByIdentifiersHandler
 use Ecommerce\Catalog\Model\Product\Query\Handler\GetProductByIdsHandler;
 use Ecommerce\Catalog\Model\Product\Query\Handler\GetProductListHandler;
 use Ecommerce\Catalog\Model\Product\Query\ProductListFilter;
+use Ecommerce\EcommerceCheckAccess;
 use Ecommerce\EcommerceContext;
+use Ecommerce\EcommerceRights;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
-use JardisSupport\Workflow\Data\ReadResult;
+use JardisSupport\Response\Data\ReadResult;
 use Throwable;
 use Ecommerce\Catalog\Model\Product\Query\ProductById as QueryProductById;
 use Ecommerce\Catalog\Model\Product\Query\ProductByIdentifier as QueryProductByIdentifier;
@@ -38,6 +40,15 @@ class ProductRead extends EcommerceContext
      */
     public function getProductById(QueryProductById $productById, string $version = ''): DomainResponseInterface
     {
+        $denied = ($this->handle(EcommerceCheckAccess::class))(
+            $this->entry(),
+            $this->actor(),
+            EcommerceRights::CATALOG_PRODUCT__READ
+        );
+        if ($denied !== null) {
+            throw $denied;
+        }
+
         return $this->context(GetProductByIdHandler::class, $productById, $version)();
     }
 
@@ -53,6 +64,15 @@ class ProductRead extends EcommerceContext
         QueryProductByIdentifier $productByIdentifier,
         string $version = ''
     ): DomainResponseInterface {
+        $denied = ($this->handle(EcommerceCheckAccess::class))(
+            $this->entry(),
+            $this->actor(),
+            EcommerceRights::CATALOG_PRODUCT__READ
+        );
+        if ($denied !== null) {
+            throw $denied;
+        }
+
         return $this->context(GetProductByIdentifierHandler::class, $productByIdentifier, $version)();
     }
 
@@ -68,6 +88,15 @@ class ProductRead extends EcommerceContext
         QueryProductByIdentifiers $productByIdentifiers,
         string $version = ''
     ): DomainResponseInterface {
+        $denied = ($this->handle(EcommerceCheckAccess::class))(
+            $this->entry(),
+            $this->actor(),
+            EcommerceRights::CATALOG_PRODUCT__READ
+        );
+        if ($denied !== null) {
+            throw $denied;
+        }
+
         return $this->context(GetProductByIdentifiersHandler::class, $productByIdentifiers, $version)();
     }
 
@@ -81,6 +110,15 @@ class ProductRead extends EcommerceContext
      */
     public function getProductByIds(QueryProductByIds $productByIds, string $version = ''): DomainResponseInterface
     {
+        $denied = ($this->handle(EcommerceCheckAccess::class))(
+            $this->entry(),
+            $this->actor(),
+            EcommerceRights::CATALOG_PRODUCT__READ
+        );
+        if ($denied !== null) {
+            throw $denied;
+        }
+
         return $this->context(GetProductByIdsHandler::class, $productByIds, $version)();
     }
 
@@ -94,6 +132,15 @@ class ProductRead extends EcommerceContext
      */
     public function productList(ProductListFilter $filter, string $version = ''): ReadResult
     {
+        $denied = ($this->handle(EcommerceCheckAccess::class))(
+            $this->entry(),
+            $this->actor(),
+            EcommerceRights::CATALOG_PRODUCT__READ
+        );
+        if ($denied !== null) {
+            throw $denied;
+        }
+
         return $this->context(GetProductListHandler::class, $filter, $version)();
     }
 }

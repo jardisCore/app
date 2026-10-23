@@ -8,7 +8,7 @@ use Ecommerce\Catalog\Model\Product\Query\ProductListFilter;
 use Ecommerce\Catalog\Model\Product\Repository\QueryProductList;
 use Ecommerce\EcommerceContext;
 use JardisSupport\Data\Handler\ProjectWire;
-use JardisSupport\Workflow\Data\ReadResult;
+use JardisSupport\Response\Data\ReadResult;
 use Throwable;
 
 /**

@@ -8,7 +8,7 @@ use Ecommerce\EcommerceContext;
 use Ecommerce\Sales\Model\PriceTier\Query\PriceTierLookupFilter;
 use Ecommerce\Sales\Model\PriceTier\Repository\QueryPriceTierLookup;
 use JardisSupport\Data\Handler\ProjectWire;
-use JardisSupport\Workflow\Data\ReadResult;
+use JardisSupport\Response\Data\ReadResult;
 use Throwable;
 
 /**

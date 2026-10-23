@@ -12,6 +12,7 @@ namespace Ecommerce\Sales\Process\VoucherRedeemCheck\Command;
 readonly class VoucherRedeemCheck
 {
     public function __construct(
+        public string $sessionRef,
         public string $voucherCode
     ) {
     }

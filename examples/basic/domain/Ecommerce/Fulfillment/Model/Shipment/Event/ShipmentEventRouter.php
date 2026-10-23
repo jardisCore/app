@@ -10,7 +10,8 @@ use JardisSupport\Contract\EventListener\EventListenerRegistryInterface;
  * Event routing for the Shipment aggregate.
  *
  * Configure how domain events are transported to consumers.
- * Each event is registered with an empty listener — fill in the transport logic.
+ * Each event is registered with an empty listener; listeners and transport
+ * are wired in the App delivery layer, never in this generated file.
  *
  * Channel keys:
  *   ecommerce.fulfillment.shipment.created

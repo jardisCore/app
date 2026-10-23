@@ -24,16 +24,6 @@ final class VoucherRedeemCheckContext extends ProcessContext
         return $input;
     }
 
-    public function actor(): VoucherRedeemCheckActor
-    {
-        // The package's start check (CheckActor) answers 401 before a node runs
-        // without the declared actor, so a node always has one.
-        /** @var VoucherRedeemCheckActor $actor */
-        $actor = parent::actor();
-
-        return $actor;
-    }
-
     public function checkVoucherRedeemable(): ?NodeResult
     {
         return $this->latest(CheckVoucherRedeemable::class);

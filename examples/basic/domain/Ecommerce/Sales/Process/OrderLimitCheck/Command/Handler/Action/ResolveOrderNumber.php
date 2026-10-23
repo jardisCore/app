@@ -14,6 +14,19 @@ use JardisSupport\Workflow\Data\NodeResult;
  *
  * Handgeschriebener Vorknoten: liefert die Bestellnummer als Ergebnis-Feld
  * (`outputShape`), aus dem der Rule-Knoten die Wurzel laedt.
+ *
+ * Kontext-Kette (von oben nach unten):
+ * Domain: Ecommerce
+ * BC: Sales
+ * Prozess: OrderLimitCheck
+ *     Access L7 - Rule-Knoten belegt JEDEN Eingang der Closure (`ruleArgs`):
+ *     Knoten n1 (handgeschrieben, `outputShape` mit `orderNumber`) loest die
+ *     Bestellnummer auf; der Rule-Knoten n2 ruft OrderTotalWithinLimit(root:
+ *     aggregate Order, limit: scalar decimal) - die Wurzel wird aus dem Ergebnis
+ *     von n1 geladen (`latest`, Feld `orderNumber`), das Limit kommt aus dem
+ *     Prozess-Eingang (`input`). Existiert die Order nicht -> ON_FAIL notFound,
+ *     ueberschreitet sie das Limit -> ON_FAIL 422 `sales.orderOverLimit`.
+ * Knoten: ResolveOrderNumber
  */
 final class ResolveOrderNumber extends EcommerceContext
 {

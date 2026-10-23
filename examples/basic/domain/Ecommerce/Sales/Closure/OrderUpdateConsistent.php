@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Ecommerce\Sales\Closure;
 
 use Ecommerce\EcommerceContext;
-use Ecommerce\Sales\Closure\Data\RuleResult;
 use Ecommerce\Sales\Model\Order\Aggregate\Entity\Order;
+use JardisSupport\Response\Data\RuleResult;
 use Ecommerce\Sales\Model\Order\Command\UpdateOrder as CommandUpdateOrder;
 
 /**
@@ -22,6 +22,11 @@ use Ecommerce\Sales\Model\Order\Command\UpdateOrder as CommandUpdateOrder;
  *
  * Leitplanken: der Vertrag ist ausschließlich __invoke — kein payload() als
  * Eingang, resource() nie zum Schreiben.
+ *
+ * Kontext-Kette (von oben nach unten):
+ * Domain: Ecommerce
+ * BC: Sales
+ * Closure: OrderUpdateConsistent
  */
 final class OrderUpdateConsistent extends EcommerceContext
 {

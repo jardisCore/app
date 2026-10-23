@@ -8,7 +8,7 @@ use Ecommerce\EcommerceContext;
 use Ecommerce\Sales\Model\Invoice\Query\InvoiceListFilter;
 use Ecommerce\Sales\Model\Invoice\Repository\QueryInvoiceList;
 use JardisSupport\Data\Handler\ProjectWire;
-use JardisSupport\Workflow\Data\ReadResult;
+use JardisSupport\Response\Data\ReadResult;
 use Throwable;
 
 /**

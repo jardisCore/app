@@ -13,6 +13,16 @@ use JardisSupport\Workflow\Data\NodeResult;
  *
  * Platzhalter fuer den Input-Sub-Flow.
  * Bereitet den Command-DTO-Strom auf.
+ *
+ * Kontext-Kette (von oben nach unten):
+ * Domain: Ecommerce
+ * BC: Sales
+ * Prozess: BatchOrderFulfilment
+ *     Caller-Fixture fuer R10: ruft OrderInvoiceBatch als Sub-Prozess auf.
+ *     Belegt R4 (Einzel-Command-Feld primaryCommand: UpdateOrder|UpdateInvoice),
+ *     R5 (Listen-Command-Feld lineCommands: array<AddOrderItem|AddInvoiceLine>)
+ *     und R1 (Skalare requestedBy: string, note: string).
+ * Knoten: BatchOrderFulfilmentEntry
  */
 final class BatchOrderFulfilmentEntry extends EcommerceContext
 {

@@ -8,19 +8,21 @@ use DateTimeImmutable;
 use Ecommerce\EcommerceContext;
 use Ecommerce\Sales\Model\Order\Aggregate\Order;
 use Ecommerce\Sales\Model\Order\Command\Handler\Action\BuildAddItemDiscountData;
-use Ecommerce\Sales\Model\Order\Command\Validation\ValidateAddItemDiscount;
-use Ecommerce\Sales\Model\Order\Command\Validation\ValidationException;
+use Ecommerce\Sales\Model\Order\Command\Validation\AddItemDiscountValidatorRegistry;
 use Ecommerce\Sales\Model\Order\Event\OrderItemDiscountAdded;
-use Ecommerce\Sales\Model\Order\Repository\ConcurrencyConflictException;
 use Ecommerce\Sales\Model\Order\Repository\OrderRepository;
 use Exception;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
 use JardisSupport\Contract\Kernel\EventScope;
 use JardisSupport\Contract\Kernel\ResponseStatus;
-use JardisSupport\Contract\Repository\Exception\TransientConflictException;
-use JardisSupport\Workflow\Handler\Failure\ConcurrencyConflictPayload;
-use JardisSupport\Workflow\Handler\Failure\NotFoundPayload;
-use JardisSupport\Workflow\Handler\Failure\ValidationPayload;
+use JardisSupport\Repository\Handler\Transaction\ResolveConnection;
+use JardisSupport\Response\Handler\Door\ValidateInput;
+use JardisSupport\Response\Handler\Failure\LogCause;
+use JardisSupport\Response\Handler\Failure\MapThrowable;
+use JardisSupport\Response\Handler\Failure\NotFoundPayload;
+use JardisSupport\Response\Handler\Failure\ValidationPayload;
+use JardisSupport\Response\Handler\Response\BuildResponseData;
+use JardisSupport\Validation\ObjectValidator;
 use Throwable;
 use Ecommerce\Sales\Model\Order\Command\AddItemDiscount as CommandAddItemDiscount;
 use Ecommerce\Sales\Model\Order\Query\OrderByOrderNumber as QueryOrder;
@@ -36,30 +38,51 @@ class AddItemDiscount extends EcommerceContext
      * Adds the ItemDiscount entity.
      *
      * @return DomainResponseInterface
-     * @throws ConcurrencyConflictException
      * @throws Exception
      * @throws Throwable
-     * @throws TransientConflictException
-     * @throws ValidationException
      */
     public function __invoke(): DomainResponseInterface
     {
+        /** @var CommandAddItemDiscount $addItemDiscount */
+        $addItemDiscount = $this->payload();
+        $validator = $this->handle(
+            ObjectValidator::class,
+            registry: ($this->handle(AddItemDiscountValidatorRegistry::class))(),
+            fieldPaths: true
+        );
+        $findings = ($this->handle(ValidateInput::class, validator: $validator))($addItemDiscount);
+        if ($findings->fields !== []) {
+            foreach ($findings->errors as $error) {
+                $this->result()->addError($error);
+            }
+            $this->result()->setData(
+                ($this->handle(BuildResponseData::class))(
+                    ResponseStatus::ValidationError,
+                    ($this->handle(ValidationPayload::class))('validation', $findings->fields),
+                    null,
+                    ''
+                )
+            );
+
+            return ($this->transformer())($this->result(), ResponseStatus::ValidationError);
+        }
+        $connection = ($this->handle(ResolveConnection::class))($this->resource()->dbConnection());
+        $owner = $connection?->inTransaction() !== true;
+
         try {
-            /** @var CommandAddItemDiscount $addItemDiscount */
-            $addItemDiscount = $this->payload();
-
-            $this->handle(ValidateAddItemDiscount::class)($addItemDiscount);
-
             $query = $this->handle(QueryOrder::class, orderNumber: $addItemDiscount->orderNumber);
             /** @var Order|null $handler */
             $handler = $this->handle(OrderRepository::class)->getOrderByOrderNumber($query);
             if ($handler === null) {
                 $this->result()->setData(
-                    $this->failureData(
+                    ($this->handle(BuildResponseData::class))(
+                        ResponseStatus::NotFound,
                         ($this->handle(NotFoundPayload::class))(
                             'notFound',
                             ['orderNumber' => $addItemDiscount->orderNumber]
-                        )
+                        ),
+                        null,
+                        ''
                     )
                 );
 
@@ -74,11 +97,14 @@ class AddItemDiscount extends EcommerceContext
             $miss = $handler->addItemDiscount($addItemDiscount->orderItemIdentifier, $entityData);
             if ($miss !== null) {
                 $this->result()->setData(
-                    $this->failureData(
+                    ($this->handle(BuildResponseData::class))(
+                        ResponseStatus::NotFound,
                         ($this->handle(NotFoundPayload::class))(
                             'notFound',
                             ['orderItemIdentifier' => $addItemDiscount->orderItemIdentifier]
-                        )
+                        ),
+                        null,
+                        ''
                     )
                 );
 
@@ -104,6 +130,7 @@ class AddItemDiscount extends EcommerceContext
             }
             $this->result()->setData([
                 '@type' => 'order',
+                'id' => $handler->getData()->getId(),
                 'orderNumber' => $addItemDiscount->orderNumber,
                 'orderItemIdentifier' => $addItemDiscount->orderItemIdentifier,
                 'itemDiscountId' => $itemDiscountIdentifier,
@@ -131,42 +158,16 @@ class AddItemDiscount extends EcommerceContext
             $this->result()->addEvent($event, EventScope::Internal);
 
             return ($this->transformer())($this->result());
-        } catch (ValidationException $e) {
-            $this->result()->addError($e->getMessage());
-            $this->result()->setData(
-                $this->failureData(($this->handle(ValidationPayload::class))('validation', $e->fields))
-            );
-
-            return ($this->transformer())(
-                $this->result(),
-                ResponseStatus::ValidationError
-            );
-        } catch (ConcurrencyConflictException $e) {
-            $this->result()->setData(
-                $this->failureData(
-                    ($this->handle(ConcurrencyConflictPayload::class))(
-                        'concurrencyConflict',
-                        $e->getReason(),
-                        $e->getAggregate(),
-                        $e->getContext(),
-                        $e->getViolated()
-                    )
-                )
-            );
-
-            return ($this->transformer())(
-                $this->result(),
-                ResponseStatus::Conflict
-            );
-        } catch (TransientConflictException $transient) {
-            throw $transient;
         } catch (Throwable $e) {
-            $this->result()->addError($e->getMessage());
-
-            return ($this->transformer())(
-                $this->result(),
-                ResponseStatus::InternalError
+            $failure = ($this->handle(MapThrowable::class))($e, $owner, 'Order');
+            if ($owner && $failure->status->value >= ResponseStatus::InternalError->value) {
+                ($this->handle(LogCause::class, logger: $this->resource()->logger()))($e, 'AddItemDiscount');
+            }
+            $this->result()->setData(
+                ($this->handle(BuildResponseData::class))($failure->status, $failure->response, null, '')
             );
+
+            return ($this->transformer())($this->result(), $failure->status);
         }
     }
 }

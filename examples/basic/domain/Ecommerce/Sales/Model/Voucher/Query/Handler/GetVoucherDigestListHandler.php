@@ -8,7 +8,7 @@ use Ecommerce\EcommerceContext;
 use Ecommerce\Sales\Model\Voucher\Query\VoucherDigestListFilter;
 use Ecommerce\Sales\Model\Voucher\Repository\QueryVoucherDigestList;
 use JardisSupport\Data\Handler\ProjectWire;
-use JardisSupport\Workflow\Data\ReadResult;
+use JardisSupport\Response\Data\ReadResult;
 use Throwable;
 
 /**

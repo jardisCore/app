@@ -8,7 +8,7 @@ use Ecommerce\EcommerceContext;
 use Ecommerce\Fulfillment\Model\Shipment\Query\ShipmentListFilter;
 use Ecommerce\Fulfillment\Model\Shipment\Repository\QueryShipmentList;
 use JardisSupport\Data\Handler\ProjectWire;
-use JardisSupport\Workflow\Data\ReadResult;
+use JardisSupport\Response\Data\ReadResult;
 use Throwable;
 
 /**
