@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Ecommerce\Sales\Model\Order\Aggregate;
 
+use Ecommerce\EcommerceActor;
 use Ecommerce\EcommerceContext;
 use Ecommerce\Sales\Model\Order\Aggregate\Entity\Address;
 use Ecommerce\Sales\Model\Order\Aggregate\Entity\Customer;
@@ -59,11 +60,14 @@ class Order extends EcommerceContext
 
     public function __construct(
         DomainKernelInterface $domainKernel,
-        mixed $payload = null,
-        string $version = '',
-        ?OrderAggregate $aggregate = null
+        mixed $payload,
+        string $version,
+        EcommerceActor $actor,
+        ?OrderAggregate $aggregate = null,
+        int $depth = 0,
+        bool $entry = true
     ) {
-        parent::__construct($domainKernel, $payload, $version);
+        parent::__construct($domainKernel, $payload, $version, $actor, $depth, $entry);
         $this->aggregate = $aggregate;
     }
 

@@ -9,15 +9,14 @@ use Ecommerce\Fulfillment\Model\Shipment\Aggregate\Entity\ShipmentItem;
 use Ecommerce\Fulfillment\Model\Shipment\Aggregate\Entity\TrackingEvent;
 use Ecommerce\Fulfillment\Model\Shipment\Aggregate\Shipment as ShipmentHandler;
 use Exception;
-use JardisSupport\Contract\DbConnection\ConnectionPoolInterface;
 use JardisSupport\Contract\DbConnection\DbConnectionInterface;
-use JardisSupport\Contract\DbConnection\SavepointInterface;
 use JardisSupport\Contract\Kernel\ContextResponseInterface;
 use JardisSupport\Contract\Repository\Exception\TransientConflictException;
 use JardisSupport\Contract\Repository\Exception\UniqueViolationException;
-use JardisSupport\Repository\Adapter\PdoConnection;
+use JardisSupport\Repository\Exception\TransactionLostException;
+use JardisSupport\Repository\Handler\Transaction\ResolveConnection;
+use JardisSupport\Repository\Handler\Transaction\RunInTransaction;
 use JardisSupport\Repository\Repository;
-use PDOException;
 use Throwable;
 
 /**
@@ -27,6 +26,9 @@ use Throwable;
  */
 class PersistShipment extends EcommerceContext
 {
+    private ?RunInTransaction $transactionBracket = null;
+    private ?ResolveConnection $connectionResolver = null;
+
     /**
      * Persists the complete aggregate with transaction management.
      *
@@ -37,9 +39,9 @@ class PersistShipment extends EcommerceContext
      * @return ContextResponseInterface Response with events
      * @throws ConcurrencyConflictException
      * @throws Exception
-     * @throws PDOException
      * @throws \RuntimeException
-     * @throws \Throwable
+     * @throws Throwable
+     * @throws TransactionLostException
      * @throws TransientConflictException
      * @throws UniqueViolationException
      */
@@ -50,37 +52,27 @@ class PersistShipment extends EcommerceContext
             return $this->result();
         }
 
-        $writer = $this->resolveWriter();
-        $ownsTransaction = !$writer->inTransaction();
-        if ($ownsTransaction) {
-            $writer->beginTransaction();
-        } else {
-            $writer->savepoint('jardis_persist_shipment');
-        }
-
-        $isNew = false;
-        try {
+        $write = function () use ($handler): void {
             $this->persistShipmentAddress($handler);
-            $isNew = $this->persistShipment($handler);
+            $this->persistShipment($handler);
             $this->persistShipmentItem($handler);
             $this->persistTrackingEvent($handler);
 
             $this->deleteRemovedEntities($handler);
+        };
 
-            if ($ownsTransaction) {
-                $writer->commit();
-            } else {
-                $writer->releaseSavepoint('jardis_persist_shipment');
-            }
+        try {
+            ($this->transaction())(
+                $this->writer(),
+                'jardis_persist_shipment',
+                $write,
+                nested: false
+            );
 
             return $this->result();
+        } catch (TransactionLostException $lost) {
+            throw $lost;
         } catch (UniqueViolationException $violation) {
-            if ($ownsTransaction) {
-                $writer->rollback();
-            } else {
-                $writer->rollbackToSavepoint('jardis_persist_shipment');
-                $writer->releaseSavepoint('jardis_persist_shipment');
-            }
             throw new ConcurrencyConflictException(
                 'duplicate',
                 'Shipment',
@@ -88,31 +80,11 @@ class PersistShipment extends EcommerceContext
                 $this->violatedFields($violation)
             );
         } catch (TransientConflictException $transient) {
-            if ($ownsTransaction) {
-                if ($writer->inTransaction()) {
-                    $writer->rollback();
-                }
-            } else {
-                try {
-                    $writer->rollbackToSavepoint('jardis_persist_shipment');
-                    $writer->releaseSavepoint('jardis_persist_shipment');
-                } catch (\RuntimeException) {
-                    throw $transient;
-                }
-            }
             throw new ConcurrencyConflictException(
                 'stale_write',
                 'Shipment',
                 $this->conflictContext($handler)
             );
-        } catch (\Throwable $e) {
-            if ($ownsTransaction) {
-                $writer->rollback();
-            } else {
-                $writer->rollbackToSavepoint('jardis_persist_shipment');
-                $writer->releaseSavepoint('jardis_persist_shipment');
-            }
-            throw $e;
         }
     }
 
@@ -314,26 +286,17 @@ class PersistShipment extends EcommerceContext
      *
      * @param ShipmentHandler $handler The aggregate handler
      * @throws ConcurrencyConflictException
-     * @throws PDOException
      * @throws \RuntimeException
-     * @throws \Throwable
+     * @throws Throwable
+     * @throws TransactionLostException
      * @throws TransientConflictException
      */
     protected function deleteAggregate(ShipmentHandler $handler): void
     {
-        $writer = $this->resolveWriter();
-        $ownsTransaction = !$writer->inTransaction();
-
         $rootData = $handler->getEntityData('shipment');
         $aggregateId = $rootData['pkValue'];
 
-        if ($ownsTransaction) {
-            $writer->beginTransaction();
-        } else {
-            $writer->savepoint('jardis_persist_shipment');
-        }
-
-        try {
+        $write = function () use ($handler, $rootData, $aggregateId): void {
             $shipmentItemData = $handler->getCollectionData('shipmentItem');
             $shipmentItemIds = array_unique(array_filter(array_column($shipmentItemData, 'pkValue')));
             if (!empty($shipmentItemIds)) {
@@ -362,38 +325,23 @@ class PersistShipment extends EcommerceContext
                     );
                 }
             }
+        };
 
-            if ($ownsTransaction) {
-                $writer->commit();
-            } else {
-                $writer->releaseSavepoint('jardis_persist_shipment');
-            }
+        try {
+            ($this->transaction())(
+                $this->writer(),
+                'jardis_persist_shipment',
+                $write,
+                nested: false
+            );
+        } catch (TransactionLostException $lost) {
+            throw $lost;
         } catch (TransientConflictException $transient) {
-            if ($ownsTransaction) {
-                if ($writer->inTransaction()) {
-                    $writer->rollback();
-                }
-            } else {
-                try {
-                    $writer->rollbackToSavepoint('jardis_persist_shipment');
-                    $writer->releaseSavepoint('jardis_persist_shipment');
-                } catch (\RuntimeException) {
-                    throw $transient;
-                }
-            }
             throw new ConcurrencyConflictException(
                 'stale_delete',
                 'Shipment',
                 $this->conflictContext($handler)
             );
-        } catch (\Throwable $e) {
-            if ($ownsTransaction) {
-                $writer->rollback();
-            } else {
-                $writer->rollbackToSavepoint('jardis_persist_shipment');
-                $writer->releaseSavepoint('jardis_persist_shipment');
-            }
-            throw $e;
         }
     }
 
@@ -504,31 +452,23 @@ class PersistShipment extends EcommerceContext
     }
 
     /**
-     * Resolves the write connection as a savepoint-capable connection.
-     *
-     * Handles ConnectionPoolInterface (its writer) and plain PDO (wrapped).
-     *
-     * @throws \RuntimeException If no database connection is configured or its writer cannot hold savepoints
+     * The transaction bracket of the repository package (bound once per instance).
      */
-    protected function resolveWriter(): DbConnectionInterface&SavepointInterface
+    protected function transaction(): RunInTransaction
     {
-        $connection = $this->resource()->dbConnection();
+        return $this->transactionBracket ??= new RunInTransaction();
+    }
 
-        if ($connection instanceof \PDO) {
-            return new PdoConnection($connection);
-        }
+    /**
+     * Resolves the write connection from what the kernel holds: the writer of a
+     * connection pool, a plain PDO wrapped, null without a database (the bracket
+     * answers that with a configuration error).
+     */
+    protected function writer(): ?DbConnectionInterface
+    {
+        $this->connectionResolver ??= new ResolveConnection();
 
-        if ($connection instanceof ConnectionPoolInterface) {
-            $writer = $connection->getWriter();
-
-            if ($writer instanceof SavepointInterface) {
-                return $writer;
-            }
-
-            throw new \RuntimeException('The write connection does not support savepoints');
-        }
-
-        throw new \RuntimeException('No database connection configured');
+        return ($this->connectionResolver)($this->resource()->dbConnection());
     }
 
     /**
@@ -538,6 +478,11 @@ class PersistShipment extends EcommerceContext
      */
     protected function resolveConnection(): \PDO
     {
-        return $this->resolveWriter()->pdo();
+        $writer = $this->writer();
+        if ($writer === null) {
+            throw new \RuntimeException('No database connection configured');
+        }
+
+        return $writer->pdo();
     }
 }

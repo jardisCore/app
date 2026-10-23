@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ExampleApp;
 
 use Ecommerce\Ecommerce;
+use Ecommerce\EcommerceActor;
 use Ecommerce\Sales\Sales;
 use JardisCore\App\App;
 use JardisCore\App\Config\AppConfig;
@@ -41,7 +42,9 @@ final class ExampleAppFactory
 
     public function sales(DomainKernelInterface $kernel): Sales
     {
-        return (new Ecommerce($kernel))->sales();
+        // The generated domain carries the actor of the run (E1): this example has no session layer,
+        // so every request runs as the system entry `example-app`.
+        return (new Ecommerce($kernel))->sales(EcommerceActor::system('example-app'));
     }
 
     /**

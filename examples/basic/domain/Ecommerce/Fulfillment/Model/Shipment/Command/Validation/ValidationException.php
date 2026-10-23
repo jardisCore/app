@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Ecommerce\Fulfillment\Model\Shipment\Command\Validation;
 
+use JardisSupport\Contract\Kernel\ValidationExceptionInterface;
 use JardisSupport\Contract\Validation\ValidationResult;
 
 /**
@@ -26,8 +27,11 @@ use JardisSupport\Contract\Validation\ValidationResult;
  * validator delivers none), `messageKey` the stable
  * `validation.<reason>` key (B13). The message of the exception stays
  * the JSON of the raw validator tree for backward compatibility.
+ *
+ * It implements the contract marker ValidationExceptionInterface (`getFields()`),
+ * so a door of the response layer answers it as a 400 without knowing this class.
  */
-final class ValidationException extends \RuntimeException
+final class ValidationException extends \RuntimeException implements ValidationExceptionInterface
 {
     /** @var list<array{field: string, reason: string, message: string, messageKey: string}> */
     public readonly array $fields;
@@ -63,6 +67,14 @@ final class ValidationException extends \RuntimeException
             }
         }
         $this->fields = $fields;
+    }
+
+    /**
+     * @return list<array{field: string, reason: string, message: string, messageKey: string}>
+     */
+    public function getFields(): array
+    {
+        return $this->fields;
     }
 
     /**

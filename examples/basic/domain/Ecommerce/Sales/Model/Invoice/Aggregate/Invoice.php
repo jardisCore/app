@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Ecommerce\Sales\Model\Invoice\Aggregate;
 
+use Ecommerce\EcommerceActor;
 use Ecommerce\EcommerceContext;
 use Ecommerce\Sales\Model\Invoice\Aggregate\Entity\Invoice as InvoiceAggregate;
 use Ecommerce\Sales\Model\Invoice\Aggregate\Entity\InvoiceLine;
@@ -46,11 +47,14 @@ class Invoice extends EcommerceContext
 
     public function __construct(
         DomainKernelInterface $domainKernel,
-        mixed $payload = null,
-        string $version = '',
-        ?InvoiceAggregate $aggregate = null
+        mixed $payload,
+        string $version,
+        EcommerceActor $actor,
+        ?InvoiceAggregate $aggregate = null,
+        int $depth = 0,
+        bool $entry = true
     ) {
-        parent::__construct($domainKernel, $payload, $version);
+        parent::__construct($domainKernel, $payload, $version, $actor, $depth, $entry);
         $this->aggregate = $aggregate;
     }
 

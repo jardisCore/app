@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Ecommerce\Catalog\Model\Category\Repository;
 
+use JardisSupport\Contract\Kernel\ConcurrencyConflictExceptionInterface;
+
 /**
  * Thrown by the generated Persist class when a conditional write hits
  * 0 rows: the row's read basis ($expected / snapshot in the WHERE) no
@@ -30,8 +32,11 @@ namespace Ecommerce\Catalog\Model\Category\Repository;
  * child internals. `violated` names the outer-door fields a 'duplicate' hit
  * (root field, child `<kindProperty>.<field>`); it stays [] for 'stale_*'
  * and whenever the violated columns are unknown.
+ *
+ * It implements the contract marker ConcurrencyConflictExceptionInterface, so a
+ * door of the response layer answers it as a 409 without knowing this class.
  */
-final class ConcurrencyConflictException extends \RuntimeException
+final class ConcurrencyConflictException extends \RuntimeException implements ConcurrencyConflictExceptionInterface
 {
     /**
      * @param array<string, mixed> $context

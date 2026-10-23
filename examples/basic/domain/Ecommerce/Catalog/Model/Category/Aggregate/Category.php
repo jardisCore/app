@@ -6,6 +6,7 @@ namespace Ecommerce\Catalog\Model\Category\Aggregate;
 
 use Ecommerce\Catalog\Model\Category\Aggregate\Entity\Category as CategoryAggregate;
 use Ecommerce\Catalog\Model\Category\Aggregate\Entity\CategoryTranslation;
+use Ecommerce\EcommerceActor;
 use Ecommerce\EcommerceContext;
 use InvalidArgumentException;
 use JardisSupport\Contract\Kernel\DomainKernelInterface;
@@ -46,11 +47,14 @@ class Category extends EcommerceContext
 
     public function __construct(
         DomainKernelInterface $domainKernel,
-        mixed $payload = null,
-        string $version = '',
-        ?CategoryAggregate $aggregate = null
+        mixed $payload,
+        string $version,
+        EcommerceActor $actor,
+        ?CategoryAggregate $aggregate = null,
+        int $depth = 0,
+        bool $entry = true
     ) {
-        parent::__construct($domainKernel, $payload, $version);
+        parent::__construct($domainKernel, $payload, $version, $actor, $depth, $entry);
         $this->aggregate = $aggregate;
     }
 

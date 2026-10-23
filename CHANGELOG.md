@@ -2,6 +2,17 @@
 
 All notable changes to `jardiscore/app` are listed here. Versions only move forward (SemVer).
 
+## [2.1.1] - 2026-10-23
+
+The example runs on `jardissupport/workflow` 5 and `jardissupport/response` 2; `src/` is unchanged.
+
+### Changed
+
+- `composer.json`: `jardissupport/response` `^1.5` -> `^1.5 || ^2.0` (the package accepts response 2.0, where `CheckActor` is gone; `src/` uses neither);
+  `jardissupport/workflow` (dev) `^3.0` -> `^5.0`.
+- `examples/basic/domain/Ecommerce` re-copied from the current Builder generate: the process door no longer hands an actor to `workflow` (the actor is
+  `$this->actor()` of the domain context), and `Ecommerce::sales()` takes the actor of the run. `ExampleAppFactory` passes `EcommerceActor::system('example-app')`.
+
 ## [2.1.0] - 2026-10-21
 
 The rights of the session reach the request, and a denied access is answered `403`.

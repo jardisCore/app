@@ -17,6 +17,12 @@ use Ecommerce\Sales\Model\Order\Command\UpdateOrderItem as CommandUpdateOrderIte
 use Ecommerce\Sales\Model\Order\Command\Handler\UpdateOrderItem;
 use Ecommerce\Sales\Model\Voucher\Command\UpdateVoucher as CommandUpdateVoucher;
 use Ecommerce\Sales\Model\Voucher\Command\Handler\UpdateVoucher;
+use JardisSupport\Response\Handler\Response\ProjectAnswer;
+use Ecommerce\EcommerceCheckAccess;
+use Ecommerce\EcommerceRights;
+use JardisSupport\Response\Handler\Answer\AnswerThrowable;
+use JardisSupport\Response\Data\Response\ContextResponse;
+use JardisSupport\Response\Handler\Response\TransformResponse;
 
 /**
  * Sales Bounded Context.
@@ -90,7 +96,25 @@ class Sales extends EcommerceContext
      */
     public function updateOrder(CommandUpdateOrder $updateOrder, string $version = ''): DomainResponseInterface
     {
-        return $this->context(UpdateOrder::class, $updateOrder, $version)();
+        $denied = ($this->handle(EcommerceCheckAccess::class))(
+            $this->entry(),
+            $this->actor(),
+            EcommerceRights::SALES_ORDER__UPDATEORDER
+        );
+        if ($denied !== null) {
+            return ($this->handle(AnswerThrowable::class))(
+                new ContextResponse('UpdateOrder'),
+                new TransformResponse($this->clock(), $version !== '' ? $version : $this->version()),
+                $denied,
+                true,
+                'UpdateOrder'
+            );
+        }
+
+        return ($this->handle(ProjectAnswer::class))(
+            $this->context(UpdateOrder::class, $updateOrder, $version)(),
+            'orderNumber'
+        );
     }
 
     /**
@@ -106,7 +130,26 @@ class Sales extends EcommerceContext
         CommandUpdateOrderItem $updateOrderItem,
         string $version = ''
     ): DomainResponseInterface {
-        return $this->context(UpdateOrderItem::class, $updateOrderItem, $version)();
+        $denied = ($this->handle(EcommerceCheckAccess::class))(
+            $this->entry(),
+            $this->actor(),
+            EcommerceRights::SALES_ORDER__UPDATEORDERITEM
+        );
+        if ($denied !== null) {
+            return ($this->handle(AnswerThrowable::class))(
+                new ContextResponse('UpdateOrderItem'),
+                new TransformResponse($this->clock(), $version !== '' ? $version : $this->version()),
+                $denied,
+                true,
+                'UpdateOrderItem'
+            );
+        }
+
+        return ($this->handle(ProjectAnswer::class))(
+            $this->context(UpdateOrderItem::class, $updateOrderItem, $version)(),
+            'orderNumber',
+            'orderItemIdentifier'
+        );
     }
 
     /**
@@ -120,6 +163,24 @@ class Sales extends EcommerceContext
      */
     public function updateVoucher(CommandUpdateVoucher $updateVoucher, string $version = ''): DomainResponseInterface
     {
-        return $this->context(UpdateVoucher::class, $updateVoucher, $version)();
+        $denied = ($this->handle(EcommerceCheckAccess::class))(
+            $this->entry(),
+            $this->actor(),
+            EcommerceRights::SALES_VOUCHER__UPDATEVOUCHER
+        );
+        if ($denied !== null) {
+            return ($this->handle(AnswerThrowable::class))(
+                new ContextResponse('UpdateVoucher'),
+                new TransformResponse($this->clock(), $version !== '' ? $version : $this->version()),
+                $denied,
+                true,
+                'UpdateVoucher'
+            );
+        }
+
+        return ($this->handle(ProjectAnswer::class))(
+            $this->context(UpdateVoucher::class, $updateVoucher, $version)(),
+            'voucherCode'
+        );
     }
 }

@@ -120,7 +120,7 @@ class OrderRepository extends EcommerceContext
             $aggregateArray[0]
         );
 
-        return $this->handle(OrderHandler::class, $aggregateEntity);
+        return $this->handle(OrderHandler::class, aggregate: $aggregateEntity);
     }
 
     /**
@@ -135,7 +135,7 @@ class OrderRepository extends EcommerceContext
     {
         $aggregateEntity = $this->handle(OrderAggregate::class);
 
-        return $this->handle(OrderHandler::class, $aggregateEntity);
+        return $this->handle(OrderHandler::class, aggregate: $aggregateEntity);
     }
     /**
      * Persists the Order aggregate.

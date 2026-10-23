@@ -21,7 +21,6 @@ final class OrderCancellableCheckDefinition
         return ProcessDefinition::for(OrderCancellableCheck::class, 'OrderCancellableCheck')
             ->context(OrderCancellableCheckContext::class)
             ->transactional(true)
-            ->validate(OrderCancellableCheckValidator::class)
             ->node(CheckOrderCancellable::class)
             ->terminal(Route::OnTrue)
             ->build();

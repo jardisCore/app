@@ -6,19 +6,18 @@ namespace Ecommerce\Catalog\Model\Product\Command\Handler;
 
 use DateTimeImmutable;
 use Ecommerce\Catalog\Model\Product\Aggregate\Product;
-use Ecommerce\Catalog\Model\Product\Command\Validation\ValidationException;
 use Ecommerce\Catalog\Model\Product\Event\ProductProductVariantPriceRemoved;
-use Ecommerce\Catalog\Model\Product\Repository\ConcurrencyConflictException;
 use Ecommerce\Catalog\Model\Product\Repository\ProductRepository;
 use Ecommerce\EcommerceContext;
 use Exception;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
 use JardisSupport\Contract\Kernel\EventScope;
 use JardisSupport\Contract\Kernel\ResponseStatus;
-use JardisSupport\Contract\Repository\Exception\TransientConflictException;
-use JardisSupport\Workflow\Handler\Failure\ConcurrencyConflictPayload;
-use JardisSupport\Workflow\Handler\Failure\NotFoundPayload;
-use JardisSupport\Workflow\Handler\Failure\ValidationPayload;
+use JardisSupport\Repository\Handler\Transaction\ResolveConnection;
+use JardisSupport\Response\Handler\Failure\LogCause;
+use JardisSupport\Response\Handler\Failure\MapThrowable;
+use JardisSupport\Response\Handler\Failure\NotFoundPayload;
+use JardisSupport\Response\Handler\Response\BuildResponseData;
 use Throwable;
 use Ecommerce\Catalog\Model\Product\Command\RemoveProductVariantPrice as CommandRemoveProductVariantPrice;
 use Ecommerce\Catalog\Model\Product\Query\ProductByIdentifier as QueryProduct;
@@ -34,28 +33,30 @@ class RemoveProductVariantPrice extends EcommerceContext
      * Removes a ProductVariantPrice from the collection.
      *
      * @return DomainResponseInterface
-     * @throws ConcurrencyConflictException
      * @throws Exception
      * @throws Throwable
-     * @throws TransientConflictException
-     * @throws ValidationException
      */
     public function __invoke(): DomainResponseInterface
     {
-        try {
-            /** @var CommandRemoveProductVariantPrice $removeProductVariantPrice */
-            $removeProductVariantPrice = $this->payload();
+        /** @var CommandRemoveProductVariantPrice $removeProductVariantPrice */
+        $removeProductVariantPrice = $this->payload();
+        $connection = ($this->handle(ResolveConnection::class))($this->resource()->dbConnection());
+        $owner = $connection?->inTransaction() !== true;
 
+        try {
             $query = $this->handle(QueryProduct::class, identifier: $removeProductVariantPrice->productIdentifier);
             /** @var Product|null $handler */
             $handler = $this->handle(ProductRepository::class)->getProductByIdentifier($query);
             if ($handler === null) {
                 $this->result()->setData(
-                    $this->failureData(
+                    ($this->handle(BuildResponseData::class))(
+                        ResponseStatus::NotFound,
                         ($this->handle(NotFoundPayload::class))(
                             'notFound',
                             ['productIdentifier' => $removeProductVariantPrice->productIdentifier]
-                        )
+                        ),
+                        null,
+                        ''
                     )
                 );
 
@@ -74,11 +75,14 @@ class RemoveProductVariantPrice extends EcommerceContext
             }
             if ($parent === null) {
                 $this->result()->setData(
-                    $this->failureData(
+                    ($this->handle(BuildResponseData::class))(
+                        ResponseStatus::NotFound,
                         ($this->handle(NotFoundPayload::class))(
                             'notFound',
                             ['productVariantIdentifier' => $removeProductVariantPrice->productVariantIdentifier]
-                        )
+                        ),
+                        null,
+                        ''
                     )
                 );
 
@@ -98,11 +102,14 @@ class RemoveProductVariantPrice extends EcommerceContext
             }
             if (!$found) {
                 $this->result()->setData(
-                    $this->failureData(
+                    ($this->handle(BuildResponseData::class))(
+                        ResponseStatus::NotFound,
                         ($this->handle(NotFoundPayload::class))(
                             'notFound',
                             ['productVariantPriceId' => $removeProductVariantPrice->productVariantPriceId]
-                        )
+                        ),
+                        null,
+                        ''
                     )
                 );
 
@@ -117,6 +124,7 @@ class RemoveProductVariantPrice extends EcommerceContext
 
             $this->result()->setData([
                 '@type' => 'product',
+                'id' => $handler->getData()->getId(),
                 'productIdentifier' => $removeProductVariantPrice->productIdentifier,
             ]);
 
@@ -129,42 +137,16 @@ class RemoveProductVariantPrice extends EcommerceContext
             $this->result()->addEvent($event, EventScope::Internal);
 
             return ($this->transformer())($this->result());
-        } catch (ValidationException $e) {
-            $this->result()->addError($e->getMessage());
-            $this->result()->setData(
-                $this->failureData(($this->handle(ValidationPayload::class))('validation', $e->fields))
-            );
-
-            return ($this->transformer())(
-                $this->result(),
-                ResponseStatus::ValidationError
-            );
-        } catch (ConcurrencyConflictException $e) {
-            $this->result()->setData(
-                $this->failureData(
-                    ($this->handle(ConcurrencyConflictPayload::class))(
-                        'concurrencyConflict',
-                        $e->getReason(),
-                        $e->getAggregate(),
-                        $e->getContext(),
-                        $e->getViolated()
-                    )
-                )
-            );
-
-            return ($this->transformer())(
-                $this->result(),
-                ResponseStatus::Conflict
-            );
-        } catch (TransientConflictException $transient) {
-            throw $transient;
         } catch (Throwable $e) {
-            $this->result()->addError($e->getMessage());
-
-            return ($this->transformer())(
-                $this->result(),
-                ResponseStatus::InternalError
+            $failure = ($this->handle(MapThrowable::class))($e, $owner, 'Product');
+            if ($owner && $failure->status->value >= ResponseStatus::InternalError->value) {
+                ($this->handle(LogCause::class, logger: $this->resource()->logger()))($e, 'RemoveProductVariantPrice');
+            }
+            $this->result()->setData(
+                ($this->handle(BuildResponseData::class))($failure->status, $failure->response, null, '')
             );
+
+            return ($this->transformer())($this->result(), $failure->status);
         }
     }
 }

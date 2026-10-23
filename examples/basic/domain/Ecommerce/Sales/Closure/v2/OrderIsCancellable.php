@@ -7,7 +7,7 @@ namespace Ecommerce\Sales\Closure\v2;
 use Ecommerce\EcommerceContext;
 use Ecommerce\Sales\Data\OrderStatus;
 use Ecommerce\Sales\Entity\Order;
-use Ecommerce\Sales\Closure\Data\RuleResult;
+use JardisSupport\Response\Data\RuleResult;
 
 /**
  * v2 of OrderIsCancellable (docs/rules-layer/PLAN.md AK8, PRD §5 Frage 10 /
@@ -21,6 +21,11 @@ use Ecommerce\Sales\Closure\Data\RuleResult;
  * write path in pipeline/handler/build_rules.go) — its signature is kept in
  * lockstep with the v1 baseline by hand, here migrated to the `aggregate`
  * subject alongside it.
+ *
+ * Kontext-Kette (von oben nach unten):
+ * Domain: Ecommerce
+ * BC: Sales
+ * Closure: OrderIsCancellable
  */
 final class OrderIsCancellable extends EcommerceContext
 {

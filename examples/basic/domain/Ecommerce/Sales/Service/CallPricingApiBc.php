@@ -9,9 +9,9 @@ use JardisSupport\Workflow\Data\NodeResult;
 use JardisSupport\Workflow\Data\ProcessContext;
 
 /**
- * Ebene "bc": der Service-Stub landet unter {Domain}/{BC}/Service/.
+ * Zweiter Externer Call: auch dieser Stub landet unter {Domain}/{BC}/Service/.
  *
- * Externer-Call, Ebene: bc.
+ * Externer-Call.
  *
  * Fehlervertrag: Transportfehler (Timeout, Non-2xx-Antwort, Netzwerkfehler)
  * werden vom Dev-Koerper in die Routen Route::OnFalse/OnTimeout
@@ -26,6 +26,11 @@ use JardisSupport\Workflow\Data\ProcessContext;
  * Die Fehlerform baut das Paket aus dem Kontext: 400 'fields', 409 'reason' /
  * 'aggregate' / 'violated', 422 'rule'; weitere Schluessel bleiben Kontext der Form.
  * Ein 5xx-Fall ist eine Exception, kein reject().
+ *
+ * Kontext-Kette (von oben nach unten):
+ * Domain: Ecommerce
+ * BC: Sales
+ * Service: CallPricingApiBc
  */
 final class CallPricingApiBc extends EcommerceContext
 {

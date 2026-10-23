@@ -20,6 +20,18 @@ use Throwable;
  * DomainResponse.
  *
  * Calls the facade Ecommerce.Catalog.Product, method UpdateProduct.
+ *
+ * Kontext-Kette (von oben nach unten):
+ * Domain: Ecommerce
+ * BC: Catalog
+ * Prozess: UpdateProductInCatalog
+ *     Prozess-Ziel für Fremd-Writes auf Ecommerce.Catalog.Product
+ *     (bc-facade-layering PRD.md G7, P3): kapselt den Aggregat-Command
+ *     UpdateProduct hinter einem Prozess, damit CrossBcServiceDemo
+ *     (Ecommerce/Sales) über process() statt direkt über das fremde Aggregat
+ *     schreibt. Minimal autoriert (P3) — die echte DTO-Übersetzung im
+ *     Demo-Service (CheckStockInCatalog) folgt P4.
+ * Knoten: ApplyProductUpdate
  */
 final class ApplyProductUpdate extends EcommerceContext
 {

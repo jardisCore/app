@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Ecommerce\Sales\Model\PriceTier\Aggregate;
 
+use Ecommerce\EcommerceActor;
 use Ecommerce\EcommerceContext;
 use Ecommerce\Sales\Model\PriceTier\Aggregate\Entity\PriceTier as PriceTierAggregate;
 use InvalidArgumentException;
@@ -39,11 +40,14 @@ class PriceTier extends EcommerceContext
 
     public function __construct(
         DomainKernelInterface $domainKernel,
-        mixed $payload = null,
-        string $version = '',
-        ?PriceTierAggregate $aggregate = null
+        mixed $payload,
+        string $version,
+        EcommerceActor $actor,
+        ?PriceTierAggregate $aggregate = null,
+        int $depth = 0,
+        bool $entry = true
     ) {
-        parent::__construct($domainKernel, $payload, $version);
+        parent::__construct($domainKernel, $payload, $version, $actor, $depth, $entry);
         $this->aggregate = $aggregate;
     }
 

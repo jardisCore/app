@@ -4,15 +4,21 @@ declare(strict_types=1);
 
 namespace Ecommerce\Sales\Model\Order;
 
+use Ecommerce\EcommerceAccessDenied;
+use Ecommerce\EcommerceActorKind;
+use Ecommerce\EcommerceCheckAccess;
 use Ecommerce\EcommerceContext;
+use Ecommerce\EcommerceRights;
 use Ecommerce\Sales\Model\Order\Query\Handler\GetOrderByIdHandler;
 use Ecommerce\Sales\Model\Order\Query\Handler\GetOrderByIdsHandler;
 use Ecommerce\Sales\Model\Order\Query\Handler\GetOrderByOrderNumberHandler;
 use Ecommerce\Sales\Model\Order\Query\Handler\GetOrderByOrderNumbersHandler;
 use Ecommerce\Sales\Model\Order\Query\Handler\GetOrderListHandler;
+use Ecommerce\Sales\Model\Order\Query\Handler\GetOrdersOfActorHandler;
 use Ecommerce\Sales\Model\Order\Query\OrderListFilter;
+use Ecommerce\Sales\Model\Order\Query\OrdersOfActorFilter;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
-use JardisSupport\Workflow\Data\ReadResult;
+use JardisSupport\Response\Data\ReadResult;
 use Throwable;
 use Ecommerce\Sales\Model\Order\Query\OrderById as QueryOrderById;
 use Ecommerce\Sales\Model\Order\Query\OrderByIds as QueryOrderByIds;
@@ -38,6 +44,15 @@ class OrderRead extends EcommerceContext
      */
     public function getOrderById(QueryOrderById $orderById, string $version = ''): DomainResponseInterface
     {
+        $denied = ($this->handle(EcommerceCheckAccess::class))(
+            $this->entry(),
+            $this->actor(),
+            EcommerceRights::SALES_ORDER__READ
+        );
+        if ($denied !== null) {
+            throw $denied;
+        }
+
         return $this->context(GetOrderByIdHandler::class, $orderById, $version)();
     }
 
@@ -51,6 +66,15 @@ class OrderRead extends EcommerceContext
      */
     public function getOrderByIds(QueryOrderByIds $orderByIds, string $version = ''): DomainResponseInterface
     {
+        $denied = ($this->handle(EcommerceCheckAccess::class))(
+            $this->entry(),
+            $this->actor(),
+            EcommerceRights::SALES_ORDER__READ
+        );
+        if ($denied !== null) {
+            throw $denied;
+        }
+
         return $this->context(GetOrderByIdsHandler::class, $orderByIds, $version)();
     }
 
@@ -66,6 +90,15 @@ class OrderRead extends EcommerceContext
         QueryOrderByOrderNumber $orderByOrderNumber,
         string $version = ''
     ): DomainResponseInterface {
+        $denied = ($this->handle(EcommerceCheckAccess::class))(
+            $this->entry(),
+            $this->actor(),
+            EcommerceRights::SALES_ORDER__READ
+        );
+        if ($denied !== null) {
+            throw $denied;
+        }
+
         return $this->context(GetOrderByOrderNumberHandler::class, $orderByOrderNumber, $version)();
     }
 
@@ -81,6 +114,15 @@ class OrderRead extends EcommerceContext
         QueryOrderByOrderNumbers $orderByOrderNumbers,
         string $version = ''
     ): DomainResponseInterface {
+        $denied = ($this->handle(EcommerceCheckAccess::class))(
+            $this->entry(),
+            $this->actor(),
+            EcommerceRights::SALES_ORDER__READ
+        );
+        if ($denied !== null) {
+            throw $denied;
+        }
+
         return $this->context(GetOrderByOrderNumbersHandler::class, $orderByOrderNumbers, $version)();
     }
 
@@ -94,6 +136,46 @@ class OrderRead extends EcommerceContext
      */
     public function orderList(OrderListFilter $filter, string $version = ''): ReadResult
     {
+        $denied = ($this->handle(EcommerceCheckAccess::class))(
+            $this->entry(),
+            $this->actor(),
+            EcommerceRights::SALES_ORDER__READ
+        );
+        if ($denied !== null) {
+            throw $denied;
+        }
+
         return $this->context(GetOrderListHandler::class, $filter, $version)();
+    }
+
+    /**
+     * Declared query `ordersOfActor` (Queries.json, visibility public).
+     *
+     * @param OrdersOfActorFilter $filter Declared query parameters
+     * @param string $version Optional ClassVersion override (default: caller version)
+     * @return ReadResult<array<string, mixed>>
+     * @throws Throwable
+     * @throws EcommerceAccessDenied
+     */
+    public function ordersOfActor(OrdersOfActorFilter $filter, string $version = ''): ReadResult
+    {
+        $denied = ($this->handle(EcommerceCheckAccess::class))(
+            $this->entry(),
+            $this->actor(),
+            EcommerceRights::SALES_ORDER__ORDERSOFACTOR
+        );
+        if ($denied !== null) {
+            throw $denied;
+        }
+
+        if ($this->actor()->kind !== EcommerceActorKind::User) {
+            if ($this->entry()) {
+                throw new EcommerceAccessDenied('actor.kindNotAllowed', ['kind' => $this->actor()->kind->value]);
+            }
+
+            return ReadResult::ofList([], 0);
+        }
+
+        return $this->context(GetOrdersOfActorHandler::class, $filter, $version)();
     }
 }

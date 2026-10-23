@@ -9,19 +9,21 @@ use Ecommerce\EcommerceContext;
 use Ecommerce\Sales\Model\PriceTier\Aggregate\PriceTier;
 use Ecommerce\Sales\Model\PriceTier\Command\Handler\Action\BuildUpdatePriceTierData;
 use Ecommerce\Sales\Model\PriceTier\Command\Handler\Action\BuildUpdatePriceTierExpected;
-use Ecommerce\Sales\Model\PriceTier\Command\Validation\ValidateUpdatePriceTier;
-use Ecommerce\Sales\Model\PriceTier\Command\Validation\ValidationException;
+use Ecommerce\Sales\Model\PriceTier\Command\Validation\UpdatePriceTierValidatorRegistry;
 use Ecommerce\Sales\Model\PriceTier\Event\PriceTierUpdated;
-use Ecommerce\Sales\Model\PriceTier\Repository\ConcurrencyConflictException;
 use Ecommerce\Sales\Model\PriceTier\Repository\PriceTierRepository;
 use Exception;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
 use JardisSupport\Contract\Kernel\EventScope;
 use JardisSupport\Contract\Kernel\ResponseStatus;
-use JardisSupport\Contract\Repository\Exception\TransientConflictException;
-use JardisSupport\Workflow\Handler\Failure\ConcurrencyConflictPayload;
-use JardisSupport\Workflow\Handler\Failure\NotFoundPayload;
-use JardisSupport\Workflow\Handler\Failure\ValidationPayload;
+use JardisSupport\Repository\Handler\Transaction\ResolveConnection;
+use JardisSupport\Response\Handler\Door\ValidateInput;
+use JardisSupport\Response\Handler\Failure\LogCause;
+use JardisSupport\Response\Handler\Failure\MapThrowable;
+use JardisSupport\Response\Handler\Failure\NotFoundPayload;
+use JardisSupport\Response\Handler\Failure\ValidationPayload;
+use JardisSupport\Response\Handler\Response\BuildResponseData;
+use JardisSupport\Validation\ObjectValidator;
 use Throwable;
 use Ecommerce\Sales\Model\PriceTier\Command\UpdatePriceTier as CommandUpdatePriceTier;
 use Ecommerce\Sales\Model\PriceTier\Query\PriceTierByIdentifier as QueryPriceTier;
@@ -38,30 +40,51 @@ class UpdatePriceTier extends EcommerceContext
      *
      * @param array<string, mixed> $expected Optional read basis (CAS): outer field name => value the caller read
      * @return DomainResponseInterface
-     * @throws ConcurrencyConflictException
      * @throws Exception
      * @throws Throwable
-     * @throws TransientConflictException
-     * @throws ValidationException
      */
     public function __invoke(array $expected = []): DomainResponseInterface
     {
+        /** @var CommandUpdatePriceTier $updatePriceTier */
+        $updatePriceTier = $this->payload();
+        $validator = $this->handle(
+            ObjectValidator::class,
+            registry: ($this->handle(UpdatePriceTierValidatorRegistry::class))(),
+            fieldPaths: true
+        );
+        $findings = ($this->handle(ValidateInput::class, validator: $validator))($updatePriceTier);
+        if ($findings->fields !== []) {
+            foreach ($findings->errors as $error) {
+                $this->result()->addError($error);
+            }
+            $this->result()->setData(
+                ($this->handle(BuildResponseData::class))(
+                    ResponseStatus::ValidationError,
+                    ($this->handle(ValidationPayload::class))('validation', $findings->fields),
+                    null,
+                    ''
+                )
+            );
+
+            return ($this->transformer())($this->result(), ResponseStatus::ValidationError);
+        }
+        $connection = ($this->handle(ResolveConnection::class))($this->resource()->dbConnection());
+        $owner = $connection?->inTransaction() !== true;
+
         try {
-            /** @var CommandUpdatePriceTier $updatePriceTier */
-            $updatePriceTier = $this->payload();
-
-            $this->handle(ValidateUpdatePriceTier::class)($updatePriceTier);
-
             $query = $this->handle(QueryPriceTier::class, identifier: $updatePriceTier->priceTierIdentifier);
             /** @var PriceTier|null $handler */
             $handler = $this->handle(PriceTierRepository::class)->getPriceTierByIdentifier($query);
             if ($handler === null) {
                 $this->result()->setData(
-                    $this->failureData(
+                    ($this->handle(BuildResponseData::class))(
+                        ResponseStatus::NotFound,
                         ($this->handle(NotFoundPayload::class))(
                             'notFound',
                             ['priceTierIdentifier' => $updatePriceTier->priceTierIdentifier]
-                        )
+                        ),
+                        null,
+                        ''
                     )
                 );
 
@@ -84,6 +107,7 @@ class UpdatePriceTier extends EcommerceContext
 
             $this->result()->setData([
                 '@type' => 'priceTier',
+                'id' => $handler->getData()->getId(),
                 'priceTierIdentifier' => $updatePriceTier->priceTierIdentifier,
             ]);
 
@@ -98,42 +122,16 @@ class UpdatePriceTier extends EcommerceContext
             $this->result()->addEvent($event, EventScope::Internal);
 
             return ($this->transformer())($this->result());
-        } catch (ValidationException $e) {
-            $this->result()->addError($e->getMessage());
-            $this->result()->setData(
-                $this->failureData(($this->handle(ValidationPayload::class))('validation', $e->fields))
-            );
-
-            return ($this->transformer())(
-                $this->result(),
-                ResponseStatus::ValidationError
-            );
-        } catch (ConcurrencyConflictException $e) {
-            $this->result()->setData(
-                $this->failureData(
-                    ($this->handle(ConcurrencyConflictPayload::class))(
-                        'concurrencyConflict',
-                        $e->getReason(),
-                        $e->getAggregate(),
-                        $e->getContext(),
-                        $e->getViolated()
-                    )
-                )
-            );
-
-            return ($this->transformer())(
-                $this->result(),
-                ResponseStatus::Conflict
-            );
-        } catch (TransientConflictException $transient) {
-            throw $transient;
         } catch (Throwable $e) {
-            $this->result()->addError($e->getMessage());
-
-            return ($this->transformer())(
-                $this->result(),
-                ResponseStatus::InternalError
+            $failure = ($this->handle(MapThrowable::class))($e, $owner, 'PriceTier');
+            if ($owner && $failure->status->value >= ResponseStatus::InternalError->value) {
+                ($this->handle(LogCause::class, logger: $this->resource()->logger()))($e, 'UpdatePriceTier');
+            }
+            $this->result()->setData(
+                ($this->handle(BuildResponseData::class))($failure->status, $failure->response, null, '')
             );
+
+            return ($this->transformer())($this->result(), $failure->status);
         }
     }
 }

@@ -14,6 +14,17 @@ use JardisSupport\Workflow\Data\NodeResult;
  *
  * Bepreist die Angebotspositionen. Der Koerper ist Dev-Code; der
  * Eingang ist vor dem ersten Knoten vollstaendig geprueft.
+ *
+ * Kontext-Kette (von oben nach unten):
+ * Domain: Ecommerce
+ * BC: Sales
+ * Prozess: OrderBulkQuote
+ *     Strukturierter Prozess-Eingang (FIX3, R942): eine Skalarliste, eine
+ *     nullbare Werteliste-Liste, ein Objekt und eine Objektliste, deren Elemente
+ *     ein nullbares Objekt (Ebene 2) und eine nullbare Skalarliste tragen. Jedes
+ *     Element ist typisiert; ein falsches Element antwortet 400 mit seinem
+ *     Index-Pfad, nie 500.
+ * Knoten: PriceBulkQuote
  */
 final class PriceBulkQuote extends EcommerceContext
 {

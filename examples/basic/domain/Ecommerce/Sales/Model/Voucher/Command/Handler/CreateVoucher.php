@@ -8,18 +8,20 @@ use DateTimeImmutable;
 use Ecommerce\EcommerceContext;
 use Ecommerce\Sales\Model\Voucher\Aggregate\Voucher;
 use Ecommerce\Sales\Model\Voucher\Command\Handler\Action\HydrateCreateVoucherEntities;
-use Ecommerce\Sales\Model\Voucher\Command\Validation\ValidateCreateVoucher;
-use Ecommerce\Sales\Model\Voucher\Command\Validation\ValidationException;
+use Ecommerce\Sales\Model\Voucher\Command\Validation\CreateVoucherValidatorRegistry;
 use Ecommerce\Sales\Model\Voucher\Event\VoucherCreated;
-use Ecommerce\Sales\Model\Voucher\Repository\ConcurrencyConflictException;
 use Ecommerce\Sales\Model\Voucher\Repository\VoucherRepository;
 use Exception;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
 use JardisSupport\Contract\Kernel\EventScope;
 use JardisSupport\Contract\Kernel\ResponseStatus;
-use JardisSupport\Contract\Repository\Exception\TransientConflictException;
-use JardisSupport\Workflow\Handler\Failure\ConcurrencyConflictPayload;
-use JardisSupport\Workflow\Handler\Failure\ValidationPayload;
+use JardisSupport\Repository\Handler\Transaction\ResolveConnection;
+use JardisSupport\Response\Handler\Door\ValidateInput;
+use JardisSupport\Response\Handler\Failure\LogCause;
+use JardisSupport\Response\Handler\Failure\MapThrowable;
+use JardisSupport\Response\Handler\Failure\ValidationPayload;
+use JardisSupport\Response\Handler\Response\BuildResponseData;
+use JardisSupport\Validation\ObjectValidator;
 use Throwable;
 use Ecommerce\Sales\Model\Voucher\Command\Voucher as CommandVoucher;
 
@@ -34,21 +36,40 @@ class CreateVoucher extends EcommerceContext
      * Creates a new Voucher.
      *
      * @return DomainResponseInterface
-     * @throws ConcurrencyConflictException
      * @throws Exception
      * @throws Throwable
-     * @throws TransientConflictException
-     * @throws ValidationException
      */
     public function __invoke(): DomainResponseInterface
     {
-        try {
-            /** @var CommandVoucher $voucher */
-            $voucher = $this->payload();
+        /** @var CommandVoucher $voucher */
+        $voucher = $this->payload();
+        $validator = $this->handle(
+            ObjectValidator::class,
+            registry: ($this->handle(CreateVoucherValidatorRegistry::class))(),
+            fieldPaths: true
+        );
+        $findings = ($this->handle(ValidateInput::class, validator: $validator))($voucher);
+        if ($findings->fields !== []) {
+            foreach ($findings->errors as $error) {
+                $this->result()->addError($error);
+            }
+            $this->result()->setData(
+                ($this->handle(BuildResponseData::class))(
+                    ResponseStatus::ValidationError,
+                    ($this->handle(ValidationPayload::class))('validation', $findings->fields),
+                    null,
+                    ''
+                )
+            );
 
+            return ($this->transformer())($this->result(), ResponseStatus::ValidationError);
+        }
+        $connection = ($this->handle(ResolveConnection::class))($this->resource()->dbConnection());
+        $owner = $connection?->inTransaction() !== true;
+
+        try {
             /** @var Voucher $handler */
             $handler = $this->handle(VoucherRepository::class)->createNew();
-            $this->handle(ValidateCreateVoucher::class)($voucher);
             $this->handle(HydrateCreateVoucherEntities::class)($handler, $voucher);
 
             $persistResult = $this->handle(VoucherRepository::class)->persist($handler);
@@ -56,6 +77,7 @@ class CreateVoucher extends EcommerceContext
 
             $this->result()->setData([
                 '@type' => 'voucher',
+                'id' => $handler->getData()->getId(),
                 'voucherCode' => $handler->getData()->getVoucherCode(),
                 'voucherChannelIdentifier' => $handler->getData()->getVoucherChannel()?->getIdentifier(),
             ]);
@@ -68,42 +90,16 @@ class CreateVoucher extends EcommerceContext
             $this->result()->addEvent($event, EventScope::Internal);
 
             return ($this->transformer())($this->result(), ResponseStatus::Created);
-        } catch (ValidationException $e) {
-            $this->result()->addError($e->getMessage());
-            $this->result()->setData(
-                $this->failureData(($this->handle(ValidationPayload::class))('validation', $e->fields))
-            );
-
-            return ($this->transformer())(
-                $this->result(),
-                ResponseStatus::ValidationError
-            );
-        } catch (ConcurrencyConflictException $e) {
-            $this->result()->setData(
-                $this->failureData(
-                    ($this->handle(ConcurrencyConflictPayload::class))(
-                        'concurrencyConflict',
-                        $e->getReason(),
-                        $e->getAggregate(),
-                        $e->getContext(),
-                        $e->getViolated()
-                    )
-                )
-            );
-
-            return ($this->transformer())(
-                $this->result(),
-                ResponseStatus::Conflict
-            );
-        } catch (TransientConflictException $transient) {
-            throw $transient;
         } catch (Throwable $e) {
-            $this->result()->addError($e->getMessage());
-
-            return ($this->transformer())(
-                $this->result(),
-                ResponseStatus::InternalError
+            $failure = ($this->handle(MapThrowable::class))($e, $owner, 'Voucher');
+            if ($owner && $failure->status->value >= ResponseStatus::InternalError->value) {
+                ($this->handle(LogCause::class, logger: $this->resource()->logger()))($e, 'CreateVoucher');
+            }
+            $this->result()->setData(
+                ($this->handle(BuildResponseData::class))($failure->status, $failure->response, null, '')
             );
+
+            return ($this->transformer())($this->result(), $failure->status);
         }
     }
 }

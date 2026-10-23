@@ -23,7 +23,6 @@ final class CrossBcServiceDemoDefinition
         return ProcessDefinition::for(CrossBcServiceDemo::class, 'CrossBcServiceDemo')
             ->context(CrossBcServiceDemoContext::class)
             ->transactional(true)
-            ->validate(CrossBcServiceDemoValidator::class)
             ->node(CheckStockInCatalog::class)
             ->onFalse(CheckMeterReadingInMeterDevice::class)
             ->terminal(Route::OnTrue)

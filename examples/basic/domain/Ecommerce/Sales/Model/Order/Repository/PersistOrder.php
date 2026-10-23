@@ -9,15 +9,14 @@ use Ecommerce\Sales\Model\Order\Aggregate\Entity\ItemDiscount;
 use Ecommerce\Sales\Model\Order\Aggregate\Entity\OrderItem;
 use Ecommerce\Sales\Model\Order\Aggregate\Order as OrderHandler;
 use Exception;
-use JardisSupport\Contract\DbConnection\ConnectionPoolInterface;
 use JardisSupport\Contract\DbConnection\DbConnectionInterface;
-use JardisSupport\Contract\DbConnection\SavepointInterface;
 use JardisSupport\Contract\Kernel\ContextResponseInterface;
 use JardisSupport\Contract\Repository\Exception\TransientConflictException;
 use JardisSupport\Contract\Repository\Exception\UniqueViolationException;
-use JardisSupport\Repository\Adapter\PdoConnection;
+use JardisSupport\Repository\Exception\TransactionLostException;
+use JardisSupport\Repository\Handler\Transaction\ResolveConnection;
+use JardisSupport\Repository\Handler\Transaction\RunInTransaction;
 use JardisSupport\Repository\Repository;
-use PDOException;
 use Throwable;
 
 /**
@@ -27,6 +26,9 @@ use Throwable;
  */
 class PersistOrder extends EcommerceContext
 {
+    private ?RunInTransaction $transactionBracket = null;
+    private ?ResolveConnection $connectionResolver = null;
+
     /**
      * Persists the complete aggregate with transaction management.
      *
@@ -37,9 +39,9 @@ class PersistOrder extends EcommerceContext
      * @return ContextResponseInterface Response with events
      * @throws ConcurrencyConflictException
      * @throws Exception
-     * @throws PDOException
      * @throws \RuntimeException
-     * @throws \Throwable
+     * @throws Throwable
+     * @throws TransactionLostException
      * @throws TransientConflictException
      * @throws UniqueViolationException
      */
@@ -50,38 +52,28 @@ class PersistOrder extends EcommerceContext
             return $this->result();
         }
 
-        $writer = $this->resolveWriter();
-        $ownsTransaction = !$writer->inTransaction();
-        if ($ownsTransaction) {
-            $writer->beginTransaction();
-        } else {
-            $writer->savepoint('jardis_persist_order');
-        }
-
-        $isNew = false;
-        try {
+        $write = function () use ($handler): void {
             $this->persistAddress($handler);
             $this->persistCustomer($handler);
-            $isNew = $this->persistOrder($handler);
+            $this->persistOrder($handler);
             $this->persistOrderItem($handler);
             $this->persistItemDiscount($handler);
 
             $this->deleteRemovedEntities($handler);
+        };
 
-            if ($ownsTransaction) {
-                $writer->commit();
-            } else {
-                $writer->releaseSavepoint('jardis_persist_order');
-            }
+        try {
+            ($this->transaction())(
+                $this->writer(),
+                'jardis_persist_order',
+                $write,
+                nested: false
+            );
 
             return $this->result();
+        } catch (TransactionLostException $lost) {
+            throw $lost;
         } catch (UniqueViolationException $violation) {
-            if ($ownsTransaction) {
-                $writer->rollback();
-            } else {
-                $writer->rollbackToSavepoint('jardis_persist_order');
-                $writer->releaseSavepoint('jardis_persist_order');
-            }
             throw new ConcurrencyConflictException(
                 'duplicate',
                 'Order',
@@ -89,31 +81,11 @@ class PersistOrder extends EcommerceContext
                 $this->violatedFields($violation)
             );
         } catch (TransientConflictException $transient) {
-            if ($ownsTransaction) {
-                if ($writer->inTransaction()) {
-                    $writer->rollback();
-                }
-            } else {
-                try {
-                    $writer->rollbackToSavepoint('jardis_persist_order');
-                    $writer->releaseSavepoint('jardis_persist_order');
-                } catch (\RuntimeException) {
-                    throw $transient;
-                }
-            }
             throw new ConcurrencyConflictException(
                 'stale_write',
                 'Order',
                 $this->conflictContext($handler)
             );
-        } catch (\Throwable $e) {
-            if ($ownsTransaction) {
-                $writer->rollback();
-            } else {
-                $writer->rollbackToSavepoint('jardis_persist_order');
-                $writer->releaseSavepoint('jardis_persist_order');
-            }
-            throw $e;
         }
     }
 
@@ -350,26 +322,17 @@ class PersistOrder extends EcommerceContext
      *
      * @param OrderHandler $handler The aggregate handler
      * @throws ConcurrencyConflictException
-     * @throws PDOException
      * @throws \RuntimeException
-     * @throws \Throwable
+     * @throws Throwable
+     * @throws TransactionLostException
      * @throws TransientConflictException
      */
     protected function deleteAggregate(OrderHandler $handler): void
     {
-        $writer = $this->resolveWriter();
-        $ownsTransaction = !$writer->inTransaction();
-
         $rootData = $handler->getEntityData('order');
         $aggregateId = $rootData['pkValue'];
 
-        if ($ownsTransaction) {
-            $writer->beginTransaction();
-        } else {
-            $writer->savepoint('jardis_persist_order');
-        }
-
-        try {
+        $write = function () use ($handler, $rootData, $aggregateId): void {
             $itemDiscountData = $handler->getCollectionData('itemDiscount');
             $itemDiscountIds = array_unique(array_filter(array_column($itemDiscountData, 'pkValue')));
             if (!empty($itemDiscountIds)) {
@@ -398,38 +361,23 @@ class PersistOrder extends EcommerceContext
                     );
                 }
             }
+        };
 
-            if ($ownsTransaction) {
-                $writer->commit();
-            } else {
-                $writer->releaseSavepoint('jardis_persist_order');
-            }
+        try {
+            ($this->transaction())(
+                $this->writer(),
+                'jardis_persist_order',
+                $write,
+                nested: false
+            );
+        } catch (TransactionLostException $lost) {
+            throw $lost;
         } catch (TransientConflictException $transient) {
-            if ($ownsTransaction) {
-                if ($writer->inTransaction()) {
-                    $writer->rollback();
-                }
-            } else {
-                try {
-                    $writer->rollbackToSavepoint('jardis_persist_order');
-                    $writer->releaseSavepoint('jardis_persist_order');
-                } catch (\RuntimeException) {
-                    throw $transient;
-                }
-            }
             throw new ConcurrencyConflictException(
                 'stale_delete',
                 'Order',
                 $this->conflictContext($handler)
             );
-        } catch (\Throwable $e) {
-            if ($ownsTransaction) {
-                $writer->rollback();
-            } else {
-                $writer->rollbackToSavepoint('jardis_persist_order');
-                $writer->releaseSavepoint('jardis_persist_order');
-            }
-            throw $e;
         }
     }
 
@@ -514,31 +462,23 @@ class PersistOrder extends EcommerceContext
     }
 
     /**
-     * Resolves the write connection as a savepoint-capable connection.
-     *
-     * Handles ConnectionPoolInterface (its writer) and plain PDO (wrapped).
-     *
-     * @throws \RuntimeException If no database connection is configured or its writer cannot hold savepoints
+     * The transaction bracket of the repository package (bound once per instance).
      */
-    protected function resolveWriter(): DbConnectionInterface&SavepointInterface
+    protected function transaction(): RunInTransaction
     {
-        $connection = $this->resource()->dbConnection();
+        return $this->transactionBracket ??= new RunInTransaction();
+    }
 
-        if ($connection instanceof \PDO) {
-            return new PdoConnection($connection);
-        }
+    /**
+     * Resolves the write connection from what the kernel holds: the writer of a
+     * connection pool, a plain PDO wrapped, null without a database (the bracket
+     * answers that with a configuration error).
+     */
+    protected function writer(): ?DbConnectionInterface
+    {
+        $this->connectionResolver ??= new ResolveConnection();
 
-        if ($connection instanceof ConnectionPoolInterface) {
-            $writer = $connection->getWriter();
-
-            if ($writer instanceof SavepointInterface) {
-                return $writer;
-            }
-
-            throw new \RuntimeException('The write connection does not support savepoints');
-        }
-
-        throw new \RuntimeException('No database connection configured');
+        return ($this->connectionResolver)($this->resource()->dbConnection());
     }
 
     /**
@@ -548,6 +488,11 @@ class PersistOrder extends EcommerceContext
      */
     protected function resolveConnection(): \PDO
     {
-        return $this->resolveWriter()->pdo();
+        $writer = $this->writer();
+        if ($writer === null) {
+            throw new \RuntimeException('No database connection configured');
+        }
+
+        return $writer->pdo();
     }
 }

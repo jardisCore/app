@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Ecommerce\Sales\Closure\Guard;
 
 use Ecommerce\EcommerceContext;
-use Ecommerce\Sales\Closure\Data\RuleResult;
 use Ecommerce\Sales\Closure\OrderIsCancellable;
 use Ecommerce\Sales\Model\Order\Aggregate\Entity\Order;
+use JardisSupport\Response\Data\RuleResult;
 use Throwable;
 use Ecommerce\Sales\Model\Order\Command\UpdateOrderItem as CommandUpdateOrderItem;
 
@@ -21,19 +21,11 @@ final class GuardUpdateOrderItem extends EcommerceContext
 {
     /**
      * @param CommandUpdateOrderItem $updateOrderItem
-     * @param Order|null $root
-     * @throws \RuntimeException
+     * @param Order $root
      * @throws Throwable
      */
-    public function __invoke(CommandUpdateOrderItem $updateOrderItem, ?Order $root = null): RuleResult
+    public function __invoke(CommandUpdateOrderItem $updateOrderItem, Order $root): RuleResult
     {
-        if ($root === null) {
-            throw new \RuntimeException(
-                'GuardUpdateOrderItem expects the CommandHandler to hand in the already-loaded Order root for its '
-                . 'aggregate-subject rule chain — it never loads it itself.'
-            );
-        }
-
         $result = $this->handle(OrderIsCancellable::class)($root);
         if (!$result->passed) {
             return RuleResult::reject($result->rule, 'sales.orderAlreadyCancelled', $result->context);

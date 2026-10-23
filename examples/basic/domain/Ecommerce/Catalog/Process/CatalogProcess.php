@@ -6,8 +6,15 @@ namespace Ecommerce\Catalog\Process;
 
 use Ecommerce\Catalog\Process\UpdateProductInCatalog\Command\Handler\UpdateProductInCatalogHandler;
 use Ecommerce\Catalog\Process\UpdateProductInCatalog\Command\UpdateProductInCatalog;
-use JardisSupport\Contract\Kernel\DomainResponseInterface;
+use Ecommerce\EcommerceCheckAccess;
 use Ecommerce\EcommerceContext;
+use Ecommerce\EcommerceRights;
+use JardisSupport\Contract\Kernel\DomainResponseInterface;
+use JardisSupport\Response\Data\Response\ContextResponse;
+use JardisSupport\Response\Handler\Answer\AnswerThrowable;
+use JardisSupport\Response\Handler\Response\ProjectAnswer;
+use JardisSupport\Response\Handler\Response\TransformResponse;
+use Throwable;
 
 /**
  * CatalogProcess — bounded-context process facade.
@@ -28,9 +35,28 @@ final class CatalogProcess extends EcommerceContext
      * schreibt. Minimal autoriert (P3) — die echte DTO-Übersetzung im
      * Demo-Service (CheckStockInCatalog) folgt P4.
      *
+     * @throws Throwable
      */
     public function updateProductInCatalog(UpdateProductInCatalog $in, string $version = ''): DomainResponseInterface
     {
-        return $this->context(UpdateProductInCatalogHandler::class, $in, $version)();
+        $denied = ($this->handle(EcommerceCheckAccess::class))(
+            $this->entry(),
+            $this->actor(),
+            EcommerceRights::CATALOG_PROCESS__UPDATEPRODUCTINCATALOG
+        );
+        if ($denied !== null) {
+            return ($this->handle(AnswerThrowable::class))(
+                new ContextResponse('UpdateProductInCatalogHandler'),
+                new TransformResponse($this->clock(), $version !== '' ? $version : $this->version()),
+                $denied,
+                true,
+                'UpdateProductInCatalogHandler'
+            );
+        }
+
+        return ($this->handle(ProjectAnswer::class))(
+            $this->context(UpdateProductInCatalogHandler::class, $in, $version)(),
+            'productIdentifier'
+        );
     }
 }

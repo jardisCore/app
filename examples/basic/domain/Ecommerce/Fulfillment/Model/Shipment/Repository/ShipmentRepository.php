@@ -120,7 +120,7 @@ class ShipmentRepository extends EcommerceContext
             $aggregateArray[0]
         );
 
-        return $this->handle(ShipmentHandler::class, $aggregateEntity);
+        return $this->handle(ShipmentHandler::class, aggregate: $aggregateEntity);
     }
 
     /**
@@ -135,7 +135,7 @@ class ShipmentRepository extends EcommerceContext
     {
         $aggregateEntity = $this->handle(ShipmentAggregate::class);
 
-        return $this->handle(ShipmentHandler::class, $aggregateEntity);
+        return $this->handle(ShipmentHandler::class, aggregate: $aggregateEntity);
     }
     /**
      * Persists the Shipment aggregate.
