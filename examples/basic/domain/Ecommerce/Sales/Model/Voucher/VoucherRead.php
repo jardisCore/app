@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Ecommerce\Sales\Model\Voucher;
 
+use Ecommerce\EcommerceCheckAccess;
 use Ecommerce\EcommerceContext;
+use Ecommerce\EcommerceRights;
 use Ecommerce\Sales\Model\Voucher\Query\Handler\GetVoucherByIdHandler;
 use Ecommerce\Sales\Model\Voucher\Query\Handler\GetVoucherByIdsHandler;
 use Ecommerce\Sales\Model\Voucher\Query\Handler\GetVoucherByVoucherCodeHandler;
@@ -12,7 +14,7 @@ use Ecommerce\Sales\Model\Voucher\Query\Handler\GetVoucherByVoucherCodesHandler;
 use Ecommerce\Sales\Model\Voucher\Query\Handler\GetVoucherListHandler;
 use Ecommerce\Sales\Model\Voucher\Query\VoucherListFilter;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
-use JardisSupport\Workflow\Data\ReadResult;
+use JardisSupport\Response\Data\ReadResult;
 use Throwable;
 use Ecommerce\Sales\Model\Voucher\Query\VoucherById as QueryVoucherById;
 use Ecommerce\Sales\Model\Voucher\Query\VoucherByIds as QueryVoucherByIds;
@@ -38,6 +40,15 @@ class VoucherRead extends EcommerceContext
      */
     public function getVoucherById(QueryVoucherById $voucherById, string $version = ''): DomainResponseInterface
     {
+        $denied = ($this->handle(EcommerceCheckAccess::class))(
+            $this->entry(),
+            $this->actor(),
+            EcommerceRights::SALES_VOUCHER__READ
+        );
+        if ($denied !== null) {
+            throw $denied;
+        }
+
         return $this->context(GetVoucherByIdHandler::class, $voucherById, $version)();
     }
 
@@ -51,6 +62,15 @@ class VoucherRead extends EcommerceContext
      */
     public function getVoucherByIds(QueryVoucherByIds $voucherByIds, string $version = ''): DomainResponseInterface
     {
+        $denied = ($this->handle(EcommerceCheckAccess::class))(
+            $this->entry(),
+            $this->actor(),
+            EcommerceRights::SALES_VOUCHER__READ
+        );
+        if ($denied !== null) {
+            throw $denied;
+        }
+
         return $this->context(GetVoucherByIdsHandler::class, $voucherByIds, $version)();
     }
 
@@ -66,6 +86,15 @@ class VoucherRead extends EcommerceContext
         QueryVoucherByVoucherCode $voucherByVoucherCode,
         string $version = ''
     ): DomainResponseInterface {
+        $denied = ($this->handle(EcommerceCheckAccess::class))(
+            $this->entry(),
+            $this->actor(),
+            EcommerceRights::SALES_VOUCHER__READ
+        );
+        if ($denied !== null) {
+            throw $denied;
+        }
+
         return $this->context(GetVoucherByVoucherCodeHandler::class, $voucherByVoucherCode, $version)();
     }
 
@@ -81,6 +110,15 @@ class VoucherRead extends EcommerceContext
         QueryVoucherByVoucherCodes $voucherByVoucherCodes,
         string $version = ''
     ): DomainResponseInterface {
+        $denied = ($this->handle(EcommerceCheckAccess::class))(
+            $this->entry(),
+            $this->actor(),
+            EcommerceRights::SALES_VOUCHER__READ
+        );
+        if ($denied !== null) {
+            throw $denied;
+        }
+
         return $this->context(GetVoucherByVoucherCodesHandler::class, $voucherByVoucherCodes, $version)();
     }
 
@@ -94,6 +132,15 @@ class VoucherRead extends EcommerceContext
      */
     public function voucherList(VoucherListFilter $filter, string $version = ''): ReadResult
     {
+        $denied = ($this->handle(EcommerceCheckAccess::class))(
+            $this->entry(),
+            $this->actor(),
+            EcommerceRights::SALES_VOUCHER__READ
+        );
+        if ($denied !== null) {
+            throw $denied;
+        }
+
         return $this->context(GetVoucherListHandler::class, $filter, $version)();
     }
 }

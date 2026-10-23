@@ -6,24 +6,26 @@ namespace Ecommerce\Sales\Model\Order\Command\Handler;
 
 use DateTimeImmutable;
 use Ecommerce\EcommerceContext;
-use Ecommerce\Sales\Closure\Data\RuleResult;
 use Ecommerce\Sales\Closure\Guard\GuardUpdateOrderItem;
 use Ecommerce\Sales\Model\Order\Aggregate\Order;
 use Ecommerce\Sales\Model\Order\Command\Handler\Action\BuildUpdateOrderItemData;
-use Ecommerce\Sales\Model\Order\Command\Validation\ValidateUpdateOrderItem;
-use Ecommerce\Sales\Model\Order\Command\Validation\ValidationException;
+use Ecommerce\Sales\Model\Order\Command\Validation\UpdateOrderItemValidatorRegistry;
 use Ecommerce\Sales\Model\Order\Event\OrderOrderItemUpdated;
-use Ecommerce\Sales\Model\Order\Repository\ConcurrencyConflictException;
 use Ecommerce\Sales\Model\Order\Repository\OrderRepository;
 use Exception;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
 use JardisSupport\Contract\Kernel\EventScope;
 use JardisSupport\Contract\Kernel\ResponseStatus;
-use JardisSupport\Contract\Repository\Exception\TransientConflictException;
-use JardisSupport\Workflow\Handler\Failure\ConcurrencyConflictPayload;
-use JardisSupport\Workflow\Handler\Failure\NotFoundPayload;
-use JardisSupport\Workflow\Handler\Failure\RuleViolationPayload;
-use JardisSupport\Workflow\Handler\Failure\ValidationPayload;
+use JardisSupport\Repository\Handler\Transaction\ResolveConnection;
+use JardisSupport\Response\Data\RuleResult;
+use JardisSupport\Response\Handler\Door\ValidateInput;
+use JardisSupport\Response\Handler\Failure\LogCause;
+use JardisSupport\Response\Handler\Failure\MapThrowable;
+use JardisSupport\Response\Handler\Failure\NotFoundPayload;
+use JardisSupport\Response\Handler\Failure\RuleViolationPayload;
+use JardisSupport\Response\Handler\Failure\ValidationPayload;
+use JardisSupport\Response\Handler\Response\BuildResponseData;
+use JardisSupport\Validation\ObjectValidator;
 use Throwable;
 use Ecommerce\Sales\Model\Order\Command\UpdateOrderItem as CommandUpdateOrderItem;
 use Ecommerce\Sales\Model\Order\Query\OrderByOrderNumber as QueryOrder;
@@ -39,30 +41,51 @@ class UpdateOrderItem extends EcommerceContext
      * Updates an OrderItem in the collection.
      *
      * @return DomainResponseInterface
-     * @throws ConcurrencyConflictException
      * @throws Exception
      * @throws Throwable
-     * @throws TransientConflictException
-     * @throws ValidationException
      */
     public function __invoke(): DomainResponseInterface
     {
+        /** @var CommandUpdateOrderItem $updateOrderItem */
+        $updateOrderItem = $this->payload();
+        $validator = $this->handle(
+            ObjectValidator::class,
+            registry: ($this->handle(UpdateOrderItemValidatorRegistry::class))(),
+            fieldPaths: true
+        );
+        $findings = ($this->handle(ValidateInput::class, validator: $validator))($updateOrderItem);
+        if ($findings->fields !== []) {
+            foreach ($findings->errors as $error) {
+                $this->result()->addError($error);
+            }
+            $this->result()->setData(
+                ($this->handle(BuildResponseData::class))(
+                    ResponseStatus::ValidationError,
+                    ($this->handle(ValidationPayload::class))('validation', $findings->fields),
+                    null,
+                    ''
+                )
+            );
+
+            return ($this->transformer())($this->result(), ResponseStatus::ValidationError);
+        }
+        $connection = ($this->handle(ResolveConnection::class))($this->resource()->dbConnection());
+        $owner = $connection?->inTransaction() !== true;
+
         try {
-            /** @var CommandUpdateOrderItem $updateOrderItem */
-            $updateOrderItem = $this->payload();
-
-            $this->handle(ValidateUpdateOrderItem::class)($updateOrderItem);
-
             $query = $this->handle(QueryOrder::class, orderNumber: $updateOrderItem->orderNumber);
             /** @var Order|null $handler */
             $handler = $this->handle(OrderRepository::class)->getOrderByOrderNumber($query);
             if ($handler === null) {
                 $this->result()->setData(
-                    $this->failureData(
+                    ($this->handle(BuildResponseData::class))(
+                        ResponseStatus::NotFound,
                         ($this->handle(NotFoundPayload::class))(
                             'notFound',
                             ['orderNumber' => $updateOrderItem->orderNumber]
-                        )
+                        ),
+                        null,
+                        ''
                     )
                 );
 
@@ -76,12 +99,15 @@ class UpdateOrderItem extends EcommerceContext
             $guardResult = ($this->handle(GuardUpdateOrderItem::class))($updateOrderItem, $handler->getData());
             if (!$guardResult->passed) {
                 $this->result()->setData(
-                    $this->failureData(
+                    ($this->handle(BuildResponseData::class))(
+                        ResponseStatus::RuleViolation,
                         ($this->handle(RuleViolationPayload::class))(
                             $guardResult->rule,
                             $guardResult->messageKey,
                             $guardResult->context
-                        )
+                        ),
+                        null,
+                        ''
                     )
                 );
 
@@ -104,11 +130,14 @@ class UpdateOrderItem extends EcommerceContext
             }
             if (!$found) {
                 $this->result()->setData(
-                    $this->failureData(
+                    ($this->handle(BuildResponseData::class))(
+                        ResponseStatus::NotFound,
                         ($this->handle(NotFoundPayload::class))(
                             'notFound',
                             ['orderItemIdentifier' => $updateOrderItem->orderItemIdentifier]
-                        )
+                        ),
+                        null,
+                        ''
                     )
                 );
 
@@ -123,6 +152,7 @@ class UpdateOrderItem extends EcommerceContext
 
             $this->result()->setData([
                 '@type' => 'order',
+                'id' => $handler->getData()->getId(),
                 'orderNumber' => $updateOrderItem->orderNumber,
                 'orderItemIdentifier' => $updateOrderItem->orderItemIdentifier,
             ]);
@@ -140,42 +170,16 @@ class UpdateOrderItem extends EcommerceContext
             $this->result()->addEvent($event, EventScope::Internal);
 
             return ($this->transformer())($this->result());
-        } catch (ValidationException $e) {
-            $this->result()->addError($e->getMessage());
-            $this->result()->setData(
-                $this->failureData(($this->handle(ValidationPayload::class))('validation', $e->fields))
-            );
-
-            return ($this->transformer())(
-                $this->result(),
-                ResponseStatus::ValidationError
-            );
-        } catch (ConcurrencyConflictException $e) {
-            $this->result()->setData(
-                $this->failureData(
-                    ($this->handle(ConcurrencyConflictPayload::class))(
-                        'concurrencyConflict',
-                        $e->getReason(),
-                        $e->getAggregate(),
-                        $e->getContext(),
-                        $e->getViolated()
-                    )
-                )
-            );
-
-            return ($this->transformer())(
-                $this->result(),
-                ResponseStatus::Conflict
-            );
-        } catch (TransientConflictException $transient) {
-            throw $transient;
         } catch (Throwable $e) {
-            $this->result()->addError($e->getMessage());
-
-            return ($this->transformer())(
-                $this->result(),
-                ResponseStatus::InternalError
+            $failure = ($this->handle(MapThrowable::class))($e, $owner, 'Order');
+            if ($owner && $failure->status->value >= ResponseStatus::InternalError->value) {
+                ($this->handle(LogCause::class, logger: $this->resource()->logger()))($e, 'UpdateOrderItem');
+            }
+            $this->result()->setData(
+                ($this->handle(BuildResponseData::class))($failure->status, $failure->response, null, '')
             );
+
+            return ($this->transformer())($this->result(), $failure->status);
         }
     }
 }

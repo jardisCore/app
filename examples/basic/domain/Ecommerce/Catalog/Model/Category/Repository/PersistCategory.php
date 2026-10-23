@@ -8,15 +8,14 @@ use Ecommerce\Catalog\Model\Category\Aggregate\Category as CategoryHandler;
 use Ecommerce\Catalog\Model\Category\Aggregate\Entity\CategoryTranslation;
 use Ecommerce\EcommerceContext;
 use Exception;
-use JardisSupport\Contract\DbConnection\ConnectionPoolInterface;
 use JardisSupport\Contract\DbConnection\DbConnectionInterface;
-use JardisSupport\Contract\DbConnection\SavepointInterface;
 use JardisSupport\Contract\Kernel\ContextResponseInterface;
 use JardisSupport\Contract\Repository\Exception\TransientConflictException;
 use JardisSupport\Contract\Repository\Exception\UniqueViolationException;
-use JardisSupport\Repository\Adapter\PdoConnection;
+use JardisSupport\Repository\Exception\TransactionLostException;
+use JardisSupport\Repository\Handler\Transaction\ResolveConnection;
+use JardisSupport\Repository\Handler\Transaction\RunInTransaction;
 use JardisSupport\Repository\Repository;
-use PDOException;
 use Throwable;
 
 /**
@@ -26,6 +25,9 @@ use Throwable;
  */
 class PersistCategory extends EcommerceContext
 {
+    private ?RunInTransaction $transactionBracket = null;
+    private ?ResolveConnection $connectionResolver = null;
+
     /**
      * Persists the complete aggregate with transaction management.
      *
@@ -36,9 +38,9 @@ class PersistCategory extends EcommerceContext
      * @return ContextResponseInterface Response with events
      * @throws ConcurrencyConflictException
      * @throws Exception
-     * @throws PDOException
      * @throws \RuntimeException
-     * @throws \Throwable
+     * @throws Throwable
+     * @throws TransactionLostException
      * @throws TransientConflictException
      * @throws UniqueViolationException
      */
@@ -49,35 +51,25 @@ class PersistCategory extends EcommerceContext
             return $this->result();
         }
 
-        $writer = $this->resolveWriter();
-        $ownsTransaction = !$writer->inTransaction();
-        if ($ownsTransaction) {
-            $writer->beginTransaction();
-        } else {
-            $writer->savepoint('jardis_persist_category');
-        }
-
-        $isNew = false;
-        try {
-            $isNew = $this->persistCategory($handler);
+        $write = function () use ($handler): void {
+            $this->persistCategory($handler);
             $this->persistCategoryTranslation($handler);
 
             $this->deleteRemovedEntities($handler);
+        };
 
-            if ($ownsTransaction) {
-                $writer->commit();
-            } else {
-                $writer->releaseSavepoint('jardis_persist_category');
-            }
+        try {
+            ($this->transaction())(
+                $this->writer(),
+                'jardis_persist_category',
+                $write,
+                nested: false
+            );
 
             return $this->result();
+        } catch (TransactionLostException $lost) {
+            throw $lost;
         } catch (UniqueViolationException $violation) {
-            if ($ownsTransaction) {
-                $writer->rollback();
-            } else {
-                $writer->rollbackToSavepoint('jardis_persist_category');
-                $writer->releaseSavepoint('jardis_persist_category');
-            }
             throw new ConcurrencyConflictException(
                 'duplicate',
                 'Category',
@@ -85,31 +77,11 @@ class PersistCategory extends EcommerceContext
                 $this->violatedFields($violation)
             );
         } catch (TransientConflictException $transient) {
-            if ($ownsTransaction) {
-                if ($writer->inTransaction()) {
-                    $writer->rollback();
-                }
-            } else {
-                try {
-                    $writer->rollbackToSavepoint('jardis_persist_category');
-                    $writer->releaseSavepoint('jardis_persist_category');
-                } catch (\RuntimeException) {
-                    throw $transient;
-                }
-            }
             throw new ConcurrencyConflictException(
                 'stale_write',
                 'Category',
                 $this->conflictContext($handler)
             );
-        } catch (\Throwable $e) {
-            if ($ownsTransaction) {
-                $writer->rollback();
-            } else {
-                $writer->rollbackToSavepoint('jardis_persist_category');
-                $writer->releaseSavepoint('jardis_persist_category');
-            }
-            throw $e;
         }
     }
 
@@ -224,26 +196,17 @@ class PersistCategory extends EcommerceContext
      *
      * @param CategoryHandler $handler The aggregate handler
      * @throws ConcurrencyConflictException
-     * @throws PDOException
      * @throws \RuntimeException
-     * @throws \Throwable
+     * @throws Throwable
+     * @throws TransactionLostException
      * @throws TransientConflictException
      */
     protected function deleteAggregate(CategoryHandler $handler): void
     {
-        $writer = $this->resolveWriter();
-        $ownsTransaction = !$writer->inTransaction();
-
         $rootData = $handler->getEntityData('category');
         $aggregateId = $rootData['pkValue'];
 
-        if ($ownsTransaction) {
-            $writer->beginTransaction();
-        } else {
-            $writer->savepoint('jardis_persist_category');
-        }
-
-        try {
+        $write = function () use ($handler, $rootData, $aggregateId): void {
             $categoryTranslationData = $handler->getCollectionData('categoryTranslation');
             $categoryTranslationIds = array_unique(array_filter(array_column($categoryTranslationData, 'pkValue')));
             if (!empty($categoryTranslationIds)) {
@@ -270,38 +233,23 @@ class PersistCategory extends EcommerceContext
                     );
                 }
             }
+        };
 
-            if ($ownsTransaction) {
-                $writer->commit();
-            } else {
-                $writer->releaseSavepoint('jardis_persist_category');
-            }
+        try {
+            ($this->transaction())(
+                $this->writer(),
+                'jardis_persist_category',
+                $write,
+                nested: false
+            );
+        } catch (TransactionLostException $lost) {
+            throw $lost;
         } catch (TransientConflictException $transient) {
-            if ($ownsTransaction) {
-                if ($writer->inTransaction()) {
-                    $writer->rollback();
-                }
-            } else {
-                try {
-                    $writer->rollbackToSavepoint('jardis_persist_category');
-                    $writer->releaseSavepoint('jardis_persist_category');
-                } catch (\RuntimeException) {
-                    throw $transient;
-                }
-            }
             throw new ConcurrencyConflictException(
                 'stale_delete',
                 'Category',
                 $this->conflictContext($handler)
             );
-        } catch (\Throwable $e) {
-            if ($ownsTransaction) {
-                $writer->rollback();
-            } else {
-                $writer->rollbackToSavepoint('jardis_persist_category');
-                $writer->releaseSavepoint('jardis_persist_category');
-            }
-            throw $e;
         }
     }
 
@@ -387,31 +335,23 @@ class PersistCategory extends EcommerceContext
     }
 
     /**
-     * Resolves the write connection as a savepoint-capable connection.
-     *
-     * Handles ConnectionPoolInterface (its writer) and plain PDO (wrapped).
-     *
-     * @throws \RuntimeException If no database connection is configured or its writer cannot hold savepoints
+     * The transaction bracket of the repository package (bound once per instance).
      */
-    protected function resolveWriter(): DbConnectionInterface&SavepointInterface
+    protected function transaction(): RunInTransaction
     {
-        $connection = $this->resource()->dbConnection();
+        return $this->transactionBracket ??= new RunInTransaction();
+    }
 
-        if ($connection instanceof \PDO) {
-            return new PdoConnection($connection);
-        }
+    /**
+     * Resolves the write connection from what the kernel holds: the writer of a
+     * connection pool, a plain PDO wrapped, null without a database (the bracket
+     * answers that with a configuration error).
+     */
+    protected function writer(): ?DbConnectionInterface
+    {
+        $this->connectionResolver ??= new ResolveConnection();
 
-        if ($connection instanceof ConnectionPoolInterface) {
-            $writer = $connection->getWriter();
-
-            if ($writer instanceof SavepointInterface) {
-                return $writer;
-            }
-
-            throw new \RuntimeException('The write connection does not support savepoints');
-        }
-
-        throw new \RuntimeException('No database connection configured');
+        return ($this->connectionResolver)($this->resource()->dbConnection());
     }
 
     /**
@@ -421,6 +361,11 @@ class PersistCategory extends EcommerceContext
      */
     protected function resolveConnection(): \PDO
     {
-        return $this->resolveWriter()->pdo();
+        $writer = $this->writer();
+        if ($writer === null) {
+            throw new \RuntimeException('No database connection configured');
+        }
+
+        return $writer->pdo();
     }
 }

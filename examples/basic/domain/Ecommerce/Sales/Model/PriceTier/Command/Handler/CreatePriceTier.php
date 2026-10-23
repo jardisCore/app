@@ -8,18 +8,20 @@ use DateTimeImmutable;
 use Ecommerce\EcommerceContext;
 use Ecommerce\Sales\Model\PriceTier\Aggregate\PriceTier;
 use Ecommerce\Sales\Model\PriceTier\Command\Handler\Action\HydrateCreatePriceTierEntities;
-use Ecommerce\Sales\Model\PriceTier\Command\Validation\ValidateCreatePriceTier;
-use Ecommerce\Sales\Model\PriceTier\Command\Validation\ValidationException;
+use Ecommerce\Sales\Model\PriceTier\Command\Validation\CreatePriceTierValidatorRegistry;
 use Ecommerce\Sales\Model\PriceTier\Event\PriceTierCreated;
-use Ecommerce\Sales\Model\PriceTier\Repository\ConcurrencyConflictException;
 use Ecommerce\Sales\Model\PriceTier\Repository\PriceTierRepository;
 use Exception;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
 use JardisSupport\Contract\Kernel\EventScope;
 use JardisSupport\Contract\Kernel\ResponseStatus;
-use JardisSupport\Contract\Repository\Exception\TransientConflictException;
-use JardisSupport\Workflow\Handler\Failure\ConcurrencyConflictPayload;
-use JardisSupport\Workflow\Handler\Failure\ValidationPayload;
+use JardisSupport\Repository\Handler\Transaction\ResolveConnection;
+use JardisSupport\Response\Handler\Door\ValidateInput;
+use JardisSupport\Response\Handler\Failure\LogCause;
+use JardisSupport\Response\Handler\Failure\MapThrowable;
+use JardisSupport\Response\Handler\Failure\ValidationPayload;
+use JardisSupport\Response\Handler\Response\BuildResponseData;
+use JardisSupport\Validation\ObjectValidator;
 use Throwable;
 use Ecommerce\Sales\Model\PriceTier\Command\PriceTier as CommandPriceTier;
 
@@ -34,21 +36,40 @@ class CreatePriceTier extends EcommerceContext
      * Creates a new PriceTier.
      *
      * @return DomainResponseInterface
-     * @throws ConcurrencyConflictException
      * @throws Exception
      * @throws Throwable
-     * @throws TransientConflictException
-     * @throws ValidationException
      */
     public function __invoke(): DomainResponseInterface
     {
-        try {
-            /** @var CommandPriceTier $priceTier */
-            $priceTier = $this->payload();
+        /** @var CommandPriceTier $priceTier */
+        $priceTier = $this->payload();
+        $validator = $this->handle(
+            ObjectValidator::class,
+            registry: ($this->handle(CreatePriceTierValidatorRegistry::class))(),
+            fieldPaths: true
+        );
+        $findings = ($this->handle(ValidateInput::class, validator: $validator))($priceTier);
+        if ($findings->fields !== []) {
+            foreach ($findings->errors as $error) {
+                $this->result()->addError($error);
+            }
+            $this->result()->setData(
+                ($this->handle(BuildResponseData::class))(
+                    ResponseStatus::ValidationError,
+                    ($this->handle(ValidationPayload::class))('validation', $findings->fields),
+                    null,
+                    ''
+                )
+            );
 
+            return ($this->transformer())($this->result(), ResponseStatus::ValidationError);
+        }
+        $connection = ($this->handle(ResolveConnection::class))($this->resource()->dbConnection());
+        $owner = $connection?->inTransaction() !== true;
+
+        try {
             /** @var PriceTier $handler */
             $handler = $this->handle(PriceTierRepository::class)->createNew();
-            $this->handle(ValidateCreatePriceTier::class)($priceTier);
             $this->handle(HydrateCreatePriceTierEntities::class)($handler, $priceTier);
 
             $persistResult = $this->handle(PriceTierRepository::class)->persist($handler);
@@ -56,6 +77,7 @@ class CreatePriceTier extends EcommerceContext
 
             $this->result()->setData([
                 '@type' => 'priceTier',
+                'id' => $handler->getData()->getId(),
                 'priceTierIdentifier' => $handler->getData()->getIdentifier(),
             ]);
 
@@ -67,42 +89,16 @@ class CreatePriceTier extends EcommerceContext
             $this->result()->addEvent($event, EventScope::Internal);
 
             return ($this->transformer())($this->result(), ResponseStatus::Created);
-        } catch (ValidationException $e) {
-            $this->result()->addError($e->getMessage());
-            $this->result()->setData(
-                $this->failureData(($this->handle(ValidationPayload::class))('validation', $e->fields))
-            );
-
-            return ($this->transformer())(
-                $this->result(),
-                ResponseStatus::ValidationError
-            );
-        } catch (ConcurrencyConflictException $e) {
-            $this->result()->setData(
-                $this->failureData(
-                    ($this->handle(ConcurrencyConflictPayload::class))(
-                        'concurrencyConflict',
-                        $e->getReason(),
-                        $e->getAggregate(),
-                        $e->getContext(),
-                        $e->getViolated()
-                    )
-                )
-            );
-
-            return ($this->transformer())(
-                $this->result(),
-                ResponseStatus::Conflict
-            );
-        } catch (TransientConflictException $transient) {
-            throw $transient;
         } catch (Throwable $e) {
-            $this->result()->addError($e->getMessage());
-
-            return ($this->transformer())(
-                $this->result(),
-                ResponseStatus::InternalError
+            $failure = ($this->handle(MapThrowable::class))($e, $owner, 'PriceTier');
+            if ($owner && $failure->status->value >= ResponseStatus::InternalError->value) {
+                ($this->handle(LogCause::class, logger: $this->resource()->logger()))($e, 'CreatePriceTier');
+            }
+            $this->result()->setData(
+                ($this->handle(BuildResponseData::class))($failure->status, $failure->response, null, '')
             );
+
+            return ($this->transformer())($this->result(), $failure->status);
         }
     }
 }

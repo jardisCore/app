@@ -16,14 +16,13 @@ use JardisSupport\Contract\Kernel\GeneratedContextInterface;
 use JardisSupport\Factory\Factory;
 use LogicException;
 use Throwable;
-use JardisSupport\Workflow\Data\Response\ContextResponse;
-use JardisSupport\Workflow\Handler\Response\TransformResponse;
-use JardisSupport\Workflow\Handler\Response\BuildResponseData;
-use JardisSupport\Workflow\Data\ProcessOutcome;
-use JardisSupport\Workflow\Data\Failure\FailureForm;
+use JardisSupport\Response\Data\Response\ContextResponse;
+use JardisSupport\Response\Handler\Response\TransformResponse;
+use JardisSupport\Response\Handler\Response\BuildResponseData;
+use JardisSupport\Response\Data\Failure\FailureForm;
 use JardisSupport\Scheduling\Clock\SystemClock;
 use Psr\Clock\ClockInterface;
-use JardisSupport\Workflow\Data\ReadResult;
+use JardisSupport\Response\Data\ReadResult;
 
 /**
  * Ecommerce Domain Context.
@@ -47,25 +46,31 @@ class EcommerceContext implements GeneratedContextInterface
     private DomainKernelInterface $domainKernel;
     private mixed $payload;
     private string $version;
-    private ?object $actor;
+    private EcommerceActor $actor;
+    private int $depth;
+    private bool $entry;
     private ?ContextResponseInterface $result = null;
     private ?ClassVersionInterface $classVersionInstance = null;
 
     public function __construct(
         DomainKernelInterface $domainKernel,
-        mixed $payload = null,
-        string $version = '',
-        ?object $actor = null,
+        mixed $payload,
+        string $version,
+        EcommerceActor $actor,
+        int $depth = 0,
+        bool $entry = true,
     ) {
         $this->domainKernel = $domainKernel;
         $this->payload = $payload;
         $this->version = $version;
         $this->actor = $actor;
+        $this->depth = $depth;
+        $this->entry = $entry;
     }
 
     /**
      * Resolves and instantiates a class while inheriting the current
-     * payload+version from this Context. Family-internal only.
+     * payload+version+actor from this Context. Family-internal only.
      *
      * @template T
      * @param class-string<T> $className
@@ -75,14 +80,22 @@ class EcommerceContext implements GeneratedContextInterface
      */
     protected function handle(string $className, mixed ...$parameters): mixed
     {
-        return $this->resolve($className, $this->payload, $this->version, $parameters, requireGeneratedContext: false);
+        return $this->resolve(
+            $className,
+            $this->payload,
+            $this->version,
+            $parameters,
+            requireGeneratedContext: false,
+            entry: $this->entry
+        );
     }
 
     /**
      * Starts a fresh context for the given generated-context subclass,
-     * setting payload+version explicitly (and the actor of the request, the
-     * door's request attributes, when the process declares one); an empty
-     * version is the caller's own. The kernel is inherited.
+     * setting payload+version explicitly (and the nesting depth of a sub-process
+     * call: the savepoint name of its door); an empty version is the caller's own.
+     * The kernel and the actor of the run are inherited - the actor is the value
+     * of the run, never chosen by the caller of context().
      * Family-internal only; rejects non-GeneratedContextInterface targets.
      *
      * @template T of GeneratedContextInterface
@@ -91,13 +104,25 @@ class EcommerceContext implements GeneratedContextInterface
      * @throws Throwable
      * @throws LogicException
      */
-    protected function context(string $className, mixed $payload, string $version = '', ?object $actor = null): mixed
-    {
+    protected function context(
+        string $className,
+        mixed $payload,
+        string $version = '',
+        int $depth = 0,
+    ): mixed {
         // An absent version is the caller's own: a facade reached through the kernel seam
         // (a node calling a process or aggregate facade) keeps the class version of the run.
         $version = $version !== '' ? $version : $this->version;
 
-        return $this->resolve($className, $payload, $version, [], requireGeneratedContext: true, actor: $actor);
+        return $this->resolve(
+            $className,
+            $payload,
+            $version,
+            [],
+            requireGeneratedContext: true,
+            depth: $depth,
+            entry: false
+        );
     }
 
     /**
@@ -112,7 +137,8 @@ class EcommerceContext implements GeneratedContextInterface
         string $version,
         array $parameters,
         bool $requireGeneratedContext,
-        ?object $actor = null,
+        bool $entry,
+        int $depth = 0,
     ): mixed {
         try {
             $container = $this->resource()->container();
@@ -120,9 +146,9 @@ class EcommerceContext implements GeneratedContextInterface
 
             $resolved = $this->resolveClassName($className, $version);
 
-            // Only a run that carries an actor names it: a target class whose
-            // constructor takes no `actor` (an aggregate handler) is built as before.
-            $named = $actor === null ? [] : ['actor' => $actor];
+            // The actor of the run and the entry mark always travel on (named, so no construction
+            // can lose either); a nesting depth only where there is one.
+            $named = ['actor' => $this->actor, 'entry' => $entry] + ($depth === 0 ? [] : ['depth' => $depth]);
 
             if (is_object($resolved)) {
                 return $resolved;
@@ -218,14 +244,32 @@ class EcommerceContext implements GeneratedContextInterface
     }
 
     /**
-     * The actor of this run: the request attributes a process reads (the
-     * `{Name}Actor` DTO the door built), null for a run without one. The
-     * process handler hands it to the runner, whose start check answers 401
-     * when a declared actor is missing.
+     * The actor of this run (V1): built once per request by routes.php, or by the
+     * CLI/queue/cron entry (system), never null; inherited by every sub-run.
      */
-    protected function actor(): ?object
+    protected function actor(): EcommerceActor
     {
         return $this->actor;
+    }
+
+    /**
+     * The nesting depth of this run: 0 at the outermost door, the depth of the calling
+     * run plus one for a sub-process. The process door names its savepoint after it.
+     */
+    protected function depth(): int
+    {
+        return $this->depth;
+    }
+
+    /**
+     * Whether this run entered the domain from outside (the entry mark): true for a context built
+     * by a door (routes.php, App/, CLI), false for every context the run starts itself - a handler
+     * (context()) - and for everything those construct through the kernel seam. The access check at
+     * the doors asks it: an internal call is no entry and is not checked a second time.
+     */
+    protected function entry(): bool
+    {
+        return $this->entry;
     }
 
     protected function result(): ContextResponseInterface
@@ -276,7 +320,7 @@ class EcommerceContext implements GeneratedContextInterface
      */
     protected function failureData(FailureForm $form): array
     {
-        return $this->handle(BuildResponseData::class)(new ProcessOutcome($form->status(), $form), '');
+        return $this->handle(BuildResponseData::class)($form->status(), $form, null, '');
     }
 
     /**

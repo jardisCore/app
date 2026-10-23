@@ -120,7 +120,7 @@ class ProductRepository extends EcommerceContext
             $aggregateArray[0]
         );
 
-        return $this->handle(ProductHandler::class, $aggregateEntity);
+        return $this->handle(ProductHandler::class, aggregate: $aggregateEntity);
     }
 
     /**
@@ -135,7 +135,7 @@ class ProductRepository extends EcommerceContext
     {
         $aggregateEntity = $this->handle(ProductAggregate::class);
 
-        return $this->handle(ProductHandler::class, $aggregateEntity);
+        return $this->handle(ProductHandler::class, aggregate: $aggregateEntity);
     }
     /**
      * Persists the Product aggregate.

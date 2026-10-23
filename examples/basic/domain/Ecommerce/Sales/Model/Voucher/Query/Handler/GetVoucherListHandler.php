@@ -8,7 +8,7 @@ use Ecommerce\EcommerceContext;
 use Ecommerce\Sales\Model\Voucher\Query\VoucherListFilter;
 use Ecommerce\Sales\Model\Voucher\Repository\QueryVoucherList;
 use JardisSupport\Data\Handler\ProjectWire;
-use JardisSupport\Workflow\Data\ReadResult;
+use JardisSupport\Response\Data\ReadResult;
 use Throwable;
 
 /**

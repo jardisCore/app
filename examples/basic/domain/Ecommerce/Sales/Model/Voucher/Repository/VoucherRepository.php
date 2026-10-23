@@ -120,7 +120,7 @@ class VoucherRepository extends EcommerceContext
             $aggregateArray[0]
         );
 
-        return $this->handle(VoucherHandler::class, $aggregateEntity);
+        return $this->handle(VoucherHandler::class, aggregate: $aggregateEntity);
     }
 
     /**
@@ -135,7 +135,7 @@ class VoucherRepository extends EcommerceContext
     {
         $aggregateEntity = $this->handle(VoucherAggregate::class);
 
-        return $this->handle(VoucherHandler::class, $aggregateEntity);
+        return $this->handle(VoucherHandler::class, aggregate: $aggregateEntity);
     }
     /**
      * Persists the Voucher aggregate.

@@ -8,19 +8,21 @@ use DateTimeImmutable;
 use Ecommerce\EcommerceContext;
 use Ecommerce\Sales\Model\Invoice\Aggregate\Invoice;
 use Ecommerce\Sales\Model\Invoice\Command\Handler\Action\BuildAddInvoiceLineData;
-use Ecommerce\Sales\Model\Invoice\Command\Validation\ValidateAddInvoiceLine;
-use Ecommerce\Sales\Model\Invoice\Command\Validation\ValidationException;
+use Ecommerce\Sales\Model\Invoice\Command\Validation\AddInvoiceLineValidatorRegistry;
 use Ecommerce\Sales\Model\Invoice\Event\InvoiceInvoiceLineAdded;
-use Ecommerce\Sales\Model\Invoice\Repository\ConcurrencyConflictException;
 use Ecommerce\Sales\Model\Invoice\Repository\InvoiceRepository;
 use Exception;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
 use JardisSupport\Contract\Kernel\EventScope;
 use JardisSupport\Contract\Kernel\ResponseStatus;
-use JardisSupport\Contract\Repository\Exception\TransientConflictException;
-use JardisSupport\Workflow\Handler\Failure\ConcurrencyConflictPayload;
-use JardisSupport\Workflow\Handler\Failure\NotFoundPayload;
-use JardisSupport\Workflow\Handler\Failure\ValidationPayload;
+use JardisSupport\Repository\Handler\Transaction\ResolveConnection;
+use JardisSupport\Response\Handler\Door\ValidateInput;
+use JardisSupport\Response\Handler\Failure\LogCause;
+use JardisSupport\Response\Handler\Failure\MapThrowable;
+use JardisSupport\Response\Handler\Failure\NotFoundPayload;
+use JardisSupport\Response\Handler\Failure\ValidationPayload;
+use JardisSupport\Response\Handler\Response\BuildResponseData;
+use JardisSupport\Validation\ObjectValidator;
 use Throwable;
 use Ecommerce\Sales\Model\Invoice\Command\AddInvoiceLine as CommandAddInvoiceLine;
 use Ecommerce\Sales\Model\Invoice\Query\InvoiceByIdentifier as QueryInvoice;
@@ -36,30 +38,51 @@ class AddInvoiceLine extends EcommerceContext
      * Adds the InvoiceLine entity.
      *
      * @return DomainResponseInterface
-     * @throws ConcurrencyConflictException
      * @throws Exception
      * @throws Throwable
-     * @throws TransientConflictException
-     * @throws ValidationException
      */
     public function __invoke(): DomainResponseInterface
     {
+        /** @var CommandAddInvoiceLine $addInvoiceLine */
+        $addInvoiceLine = $this->payload();
+        $validator = $this->handle(
+            ObjectValidator::class,
+            registry: ($this->handle(AddInvoiceLineValidatorRegistry::class))(),
+            fieldPaths: true
+        );
+        $findings = ($this->handle(ValidateInput::class, validator: $validator))($addInvoiceLine);
+        if ($findings->fields !== []) {
+            foreach ($findings->errors as $error) {
+                $this->result()->addError($error);
+            }
+            $this->result()->setData(
+                ($this->handle(BuildResponseData::class))(
+                    ResponseStatus::ValidationError,
+                    ($this->handle(ValidationPayload::class))('validation', $findings->fields),
+                    null,
+                    ''
+                )
+            );
+
+            return ($this->transformer())($this->result(), ResponseStatus::ValidationError);
+        }
+        $connection = ($this->handle(ResolveConnection::class))($this->resource()->dbConnection());
+        $owner = $connection?->inTransaction() !== true;
+
         try {
-            /** @var CommandAddInvoiceLine $addInvoiceLine */
-            $addInvoiceLine = $this->payload();
-
-            $this->handle(ValidateAddInvoiceLine::class)($addInvoiceLine);
-
             $query = $this->handle(QueryInvoice::class, identifier: $addInvoiceLine->invoiceIdentifier);
             /** @var Invoice|null $handler */
             $handler = $this->handle(InvoiceRepository::class)->getInvoiceByIdentifier($query);
             if ($handler === null) {
                 $this->result()->setData(
-                    $this->failureData(
+                    ($this->handle(BuildResponseData::class))(
+                        ResponseStatus::NotFound,
                         ($this->handle(NotFoundPayload::class))(
                             'notFound',
                             ['invoiceIdentifier' => $addInvoiceLine->invoiceIdentifier]
-                        )
+                        ),
+                        null,
+                        ''
                     )
                 );
 
@@ -79,6 +102,7 @@ class AddInvoiceLine extends EcommerceContext
             $invoiceLine = $handler->getData()->getInvoiceLine();
             $this->result()->setData([
                 '@type' => 'invoice',
+                'id' => $handler->getData()->getId(),
                 'invoiceIdentifier' => $addInvoiceLine->invoiceIdentifier,
                 'invoiceLineIdentifier' => $invoiceLine[array_key_last($invoiceLine)]->getIdentifier(),
             ]);
@@ -105,42 +129,16 @@ class AddInvoiceLine extends EcommerceContext
             $this->result()->addEvent($event, EventScope::Internal);
 
             return ($this->transformer())($this->result());
-        } catch (ValidationException $e) {
-            $this->result()->addError($e->getMessage());
-            $this->result()->setData(
-                $this->failureData(($this->handle(ValidationPayload::class))('validation', $e->fields))
-            );
-
-            return ($this->transformer())(
-                $this->result(),
-                ResponseStatus::ValidationError
-            );
-        } catch (ConcurrencyConflictException $e) {
-            $this->result()->setData(
-                $this->failureData(
-                    ($this->handle(ConcurrencyConflictPayload::class))(
-                        'concurrencyConflict',
-                        $e->getReason(),
-                        $e->getAggregate(),
-                        $e->getContext(),
-                        $e->getViolated()
-                    )
-                )
-            );
-
-            return ($this->transformer())(
-                $this->result(),
-                ResponseStatus::Conflict
-            );
-        } catch (TransientConflictException $transient) {
-            throw $transient;
         } catch (Throwable $e) {
-            $this->result()->addError($e->getMessage());
-
-            return ($this->transformer())(
-                $this->result(),
-                ResponseStatus::InternalError
+            $failure = ($this->handle(MapThrowable::class))($e, $owner, 'Invoice');
+            if ($owner && $failure->status->value >= ResponseStatus::InternalError->value) {
+                ($this->handle(LogCause::class, logger: $this->resource()->logger()))($e, 'AddInvoiceLine');
+            }
+            $this->result()->setData(
+                ($this->handle(BuildResponseData::class))($failure->status, $failure->response, null, '')
             );
+
+            return ($this->transformer())($this->result(), $failure->status);
         }
     }
 }

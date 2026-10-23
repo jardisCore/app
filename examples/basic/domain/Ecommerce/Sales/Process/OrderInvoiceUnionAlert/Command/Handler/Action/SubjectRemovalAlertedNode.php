@@ -17,6 +17,19 @@ use Throwable;
 
 /**
  * Node SubjectRemovalAlertedNode of the process OrderInvoiceUnionAlert (action).
+ *
+ * Kontext-Kette (von oben nach unten):
+ * Domain: Ecommerce
+ * BC: Sales
+ * Prozess: OrderInvoiceUnionAlert
+ *     Belegt AK2 (Event-Feld-Bindung, Union-Quelle, PRD
+ *     docs/process-event-fields/PRD.md §5) am End-to-End-Golden-Pfad:
+ *     subjectRemoval referenziert Order.RemoveOrder | Invoice.RemoveInvoice —
+ *     zwei Root-Ops verschiedener Aggregate derselben BC mit gleicher
+ *     Identitaets-Kettenlaenge (Aritaet 1, V-EVT-ARITY-konform). Der
+ *     Event-Feld-Resolver loest je Zweig die eigene Root-Identitaet auf
+ *     (match(true)+instanceof, P2 Renderer + P4.5 Multi-Aggregat-Config-Fix).
+ * Knoten: SubjectRemovalAlertedNode
  */
 final class SubjectRemovalAlertedNode extends EcommerceContext
 {

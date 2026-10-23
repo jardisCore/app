@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Ecommerce\Sales\Closure;
 
 use Ecommerce\EcommerceContext;
-use Ecommerce\Sales\Closure\Data\RuleResult;
 use Ecommerce\Sales\Model\Order\Aggregate\Entity\Order;
+use JardisSupport\Response\Data\RuleResult;
 
 /**
  * Test-fixture predicate (Access L7, Rule-Knoten-Belegung je Eingang): ein
@@ -23,6 +23,11 @@ use Ecommerce\Sales\Model\Order\Aggregate\Entity\Order;
  *
  * Leitplanken: der Vertrag ist ausschließlich __invoke — kein payload() als
  * Eingang, resource() nie zum Schreiben.
+ *
+ * Kontext-Kette (von oben nach unten):
+ * Domain: Ecommerce
+ * BC: Sales
+ * Closure: OrderTotalWithinLimit
  */
 final class OrderTotalWithinLimit extends EcommerceContext
 {

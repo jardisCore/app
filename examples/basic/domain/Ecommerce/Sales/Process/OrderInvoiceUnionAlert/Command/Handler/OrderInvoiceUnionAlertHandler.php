@@ -5,17 +5,24 @@ declare(strict_types=1);
 namespace Ecommerce\Sales\Process\OrderInvoiceUnionAlert\Command\Handler;
 
 use Ecommerce\EcommerceContext;
+use Ecommerce\Sales\Process\OrderInvoiceUnionAlert\Command\OrderInvoiceUnionAlert;
 use Exception;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
-use JardisSupport\Contract\Kernel\EventScope;
-use JardisSupport\Validation\ObjectValidator;
-use JardisSupport\Workflow\Handler\Response\BuildResponseData;
-use JardisSupport\Workflow\Handler\Start\CheckRequires;
-use JardisSupport\Workflow\ProcessRunner;
+use JardisSupport\Response\Handler\Answer\AnswerOutcome;
+use JardisSupport\Response\Handler\Answer\AnswerThrowable;
+use JardisSupport\Response\Handler\Failure\LogFailure;
 use Throwable;
 
 /**
- * Wiring of the process OrderInvoiceUnionAlert (hermetic): requires, runner, events, answer.
+ * Door of the process OrderInvoiceUnionAlert (hermetic): input check, run in its bracket (RunProcess), answer.
+ *
+ * Belegt AK2 (Event-Feld-Bindung, Union-Quelle, PRD
+ * docs/process-event-fields/PRD.md §5) am End-to-End-Golden-Pfad:
+ * subjectRemoval referenziert Order.RemoveOrder | Invoice.RemoveInvoice —
+ * zwei Root-Ops verschiedener Aggregate derselben BC mit gleicher
+ * Identitaets-Kettenlaenge (Aritaet 1, V-EVT-ARITY-konform). Der
+ * Event-Feld-Resolver loest je Zweig die eigene Root-Identitaet auf
+ * (match(true)+instanceof, P2 Renderer + P4.5 Multi-Aggregat-Config-Fix).
  */
 final class OrderInvoiceUnionAlertHandler extends EcommerceContext
 {
@@ -25,26 +32,33 @@ final class OrderInvoiceUnionAlertHandler extends EcommerceContext
      */
     public function __invoke(): DomainResponseInterface
     {
-        $definition = (new OrderInvoiceUnionAlertDefinition())();
-        (new CheckRequires())($this->resource(), $definition->getRequires());
-        $runner = ProcessRunner::forKernel(
-            $this->resource(),
-            new ObjectValidator(registry: (new OrderInvoiceUnionAlertValidator())(), fieldPaths: true)
-        );
-        $outcome = $runner->run(
-            $definition,
-            $this->payload(),
-            $this->actor(),
-            fn(string $class): object => $this->handle($class)
-        );
-        foreach ($outcome->events() as $event) {
-            $this->result()->addEvent($event, EventScope::Domain);
-        }
-        foreach ($outcome->errors() as $error) {
-            $this->result()->addError($error);
-        }
-        $this->result()->setData((new BuildResponseData())($outcome, $definition->getName()));
+        $definition = ($this->handle(OrderInvoiceUnionAlertDefinition::class))();
+        /** @var OrderInvoiceUnionAlert $input */
+        $input = $this->payload();
+        $run = ($this->handle(RunProcess::class))($definition, $input, $this->depth());
+        if ($run->failure !== null) {
+            $answer = ($this->handle(AnswerThrowable::class))(
+                $this->result(),
+                $this->transformer(),
+                $run->failure,
+                $run->owner,
+                $definition->getName()
+            );
+            ($this->handle(LogFailure::class, logger: $this->resource()->logger()))(
+                $run->failure,
+                $definition->getName(),
+                $run->owner,
+                $answer
+            );
 
-        return ($this->transformer())($this->result(), $outcome->status());
+            return $answer;
+        }
+
+        return ($this->handle(AnswerOutcome::class))(
+            $this->result(),
+            $this->transformer(),
+            $run->result,
+            $definition->getName()
+        );
     }
 }

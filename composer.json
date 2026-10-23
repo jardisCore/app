@@ -23,7 +23,7 @@
         "psr/http-server-handler": "^1",
         "psr/http-server-middleware": "^1",
         "jardissupport/factory": "^1.0",
-        "jardissupport/response": "^1.5"
+        "jardissupport/response": "^1.5 || ^2.0"
     },
     "require-dev": {
         "phpunit/phpunit": "^11.0",
@@ -32,7 +32,7 @@
         "jardissupport/data": "^1.0",
         "jardissupport/dbquery": "^1.0",
         "jardissupport/repository": "^1.0",
-        "jardissupport/workflow": "^3.0",
+        "jardissupport/workflow": "^5.0",
         "middlewares/client-ip": "^2.1",
         "ext-pdo": "*",
         "jardissupport/auth": "^1.8",

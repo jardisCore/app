@@ -22,9 +22,9 @@ use Ecommerce\Sales\Model\Voucher\Event\VoucherEventRouter;
  * Provides access to bounded contexts.
  *
  * Usage:
- *   $domain->catalog()->{aggregate}()->{useCase}(...)
- *   $domain->fulfillment()->{aggregate}()->{useCase}(...)
- *   $domain->sales()->{aggregate}()->{useCase}(...)
+ *   $domain->catalog($actor)->{aggregate}()->{useCase}(...)
+ *   $domain->fulfillment($actor)->{aggregate}()->{useCase}(...)
+ *   $domain->sales($actor)->{aggregate}()->{useCase}(...)
  */
 final class Ecommerce
 {
@@ -49,30 +49,42 @@ final class Ecommerce
     /**
      * Returns the Catalog bounded context.
      *
+     *
+     * The actor is the value of the run (V1): routes.php builds it per request, a CLI, queue or cron
+     * entry passes system(name). The bounded context carries it to every class it starts.
+     *
      * @return Catalog
      */
-    public function catalog(): Catalog
+    public function catalog(EcommerceActor $actor): Catalog
     {
-        return new Catalog($this->kernel);
+        return new Catalog($this->kernel, null, '', $actor);
     }
 
     /**
      * Returns the Fulfillment bounded context.
      *
+     *
+     * The actor is the value of the run (V1): routes.php builds it per request, a CLI, queue or cron
+     * entry passes system(name). The bounded context carries it to every class it starts.
+     *
      * @return Fulfillment
      */
-    public function fulfillment(): Fulfillment
+    public function fulfillment(EcommerceActor $actor): Fulfillment
     {
-        return new Fulfillment($this->kernel);
+        return new Fulfillment($this->kernel, null, '', $actor);
     }
 
     /**
      * Returns the Sales bounded context.
      *
+     *
+     * The actor is the value of the run (V1): routes.php builds it per request, a CLI, queue or cron
+     * entry passes system(name). The bounded context carries it to every class it starts.
+     *
      * @return Sales
      */
-    public function sales(): Sales
+    public function sales(EcommerceActor $actor): Sales
     {
-        return new Sales($this->kernel);
+        return new Sales($this->kernel, null, '', $actor);
     }
 }

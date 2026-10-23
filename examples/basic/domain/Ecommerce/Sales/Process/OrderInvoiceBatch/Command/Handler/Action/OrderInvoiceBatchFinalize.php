@@ -13,6 +13,16 @@ use JardisSupport\Workflow\Data\NodeResult;
  *
  * Platzhalter fuer den Output-Sub-Flow. Reduziert die gesammelten
  * Process-Ergebnisse zur Domain-Response.
+ *
+ * Kontext-Kette (von oben nach unten):
+ * Domain: Ecommerce
+ * BC: Sales
+ * Prozess: OrderInvoiceBatch
+ *     Typisierter Batch-Eingang (R3): das Input-DTO komponiert Aggregat-Commands
+ *     seines BC als Union — ein Einzel-Command-Feld und ein Listen-Command-Feld,
+ *     beide cross-aggregat (Order + Invoice). Skalar-Felder gemischt; die
+ *     Dispatch-Schleife bleibt Dev-Code im Knoten (R7), nicht Generat.
+ * Knoten: OrderInvoiceBatchFinalize
  */
 final class OrderInvoiceBatchFinalize extends EcommerceContext
 {

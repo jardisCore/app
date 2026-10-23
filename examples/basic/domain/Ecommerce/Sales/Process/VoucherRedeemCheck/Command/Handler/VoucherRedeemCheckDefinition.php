@@ -21,8 +21,6 @@ final class VoucherRedeemCheckDefinition
         return ProcessDefinition::for(VoucherRedeemCheck::class, 'VoucherRedeemCheck')
             ->context(VoucherRedeemCheckContext::class)
             ->transactional(true)
-            ->validate(VoucherRedeemCheckValidator::class)
-            ->actor(VoucherRedeemCheckActor::class)
             ->node(CheckVoucherRedeemable::class)
             ->terminal(Route::OnTrue)
             ->build();

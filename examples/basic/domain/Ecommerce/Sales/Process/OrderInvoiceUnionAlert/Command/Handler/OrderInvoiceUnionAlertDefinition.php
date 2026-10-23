@@ -22,7 +22,6 @@ final class OrderInvoiceUnionAlertDefinition
         return ProcessDefinition::for(OrderInvoiceUnionAlert::class, 'OrderInvoiceUnionAlert')
             ->context(OrderInvoiceUnionAlertContext::class)
             ->transactional(true)
-            ->validate(OrderInvoiceUnionAlertValidator::class)
             ->node(EvaluateSubjectRemoval::class)
             ->onTrue(SubjectRemovalAlertedNode::class)
             ->node(SubjectRemovalAlertedNode::class)

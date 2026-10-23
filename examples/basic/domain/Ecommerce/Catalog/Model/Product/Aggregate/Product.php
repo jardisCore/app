@@ -8,6 +8,7 @@ use Ecommerce\Catalog\Model\Product\Aggregate\Entity\Product as ProductAggregate
 use Ecommerce\Catalog\Model\Product\Aggregate\Entity\ProductImage;
 use Ecommerce\Catalog\Model\Product\Aggregate\Entity\ProductVariant;
 use Ecommerce\Catalog\Model\Product\Aggregate\Entity\ProductVariantPrice;
+use Ecommerce\EcommerceActor;
 use Ecommerce\EcommerceContext;
 use InvalidArgumentException;
 use JardisSupport\Contract\Kernel\DomainKernelInterface;
@@ -57,11 +58,14 @@ class Product extends EcommerceContext
 
     public function __construct(
         DomainKernelInterface $domainKernel,
-        mixed $payload = null,
-        string $version = '',
-        ?ProductAggregate $aggregate = null
+        mixed $payload,
+        string $version,
+        EcommerceActor $actor,
+        ?ProductAggregate $aggregate = null,
+        int $depth = 0,
+        bool $entry = true
     ) {
-        parent::__construct($domainKernel, $payload, $version);
+        parent::__construct($domainKernel, $payload, $version, $actor, $depth, $entry);
         $this->aggregate = $aggregate;
     }
 

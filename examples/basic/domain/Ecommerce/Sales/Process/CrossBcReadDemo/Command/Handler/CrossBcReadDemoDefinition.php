@@ -21,7 +21,6 @@ final class CrossBcReadDemoDefinition
         return ProcessDefinition::for(CrossBcReadDemo::class, 'CrossBcReadDemo')
             ->context(CrossBcReadDemoContext::class)
             ->transactional(true)
-            ->validate(CrossBcReadDemoValidator::class)
             ->node(LoadCatalogProduct::class)
             ->terminal(Route::OnTrue)
             ->build();
