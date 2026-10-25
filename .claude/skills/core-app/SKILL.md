@@ -1,6 +1,6 @@
 ---
 name: core-app
-description: jardiscore/app v3 - the HTTP-Delivery layer for Jardis domains, a FastRoute router hidden behind an own RouterInterface, a PSR-15 middleware pipeline, the canonical DomainResponse-to-PSR-7 envelope mapper, and a DomainKernel bootstrap bridge. TRIGGER: ReadRequestAttribute, ReadRequestAttributeList, ReadRequestAttributeStrict, jardisRights, RequestAttribute::RIGHTS, RequireRight, access.rightMissing, HasRight, AnswerUnsupportedRequest, App, Routes, Router, RouterInterface, ParseJsonBody, X-Jardis-Version, knownVersions, jardisVersion, EmitResponse, HandleThrowable, MapDomainResponse, BuildErrorResponse, jardiscore/app, response envelope, {status,data,errors,meta}, health(), auto-HEAD, middleware: when and where, RequireSession, RequireRequestAttribute, request.attributeMissing, required request attribute, 403, per-route middleware.
+description: jardiscore/app v3 - the HTTP-Delivery layer for Jardis domains, a FastRoute router hidden behind an own RouterInterface, a PSR-15 middleware pipeline, the canonical DomainResponse-to-PSR-7 envelope mapper, and a DomainKernel bootstrap bridge. TRIGGER: ReadRequestAttribute, ReadRequestAttributeList, ReadRequestAttributeStrict, jardisRights, RequestAttribute::RIGHTS, RequireRight, access.rightMissing, HasRight, RevokeSessionOnSuccess, invalidateByReference, logout, revoke session, AnswerUnsupportedRequest, App, Routes, Router, RouterInterface, ParseJsonBody, X-Jardis-Version, knownVersions, jardisVersion, EmitResponse, HandleThrowable, MapDomainResponse, BuildErrorResponse, jardiscore/app, response envelope, {status,data,errors,meta}, health(), auto-HEAD, middleware: when and where, RequireSession, RequireRequestAttribute, request.attributeMissing, required request attribute, 403, per-route middleware.
 user-invocable: false
 zone: post-active
 persona: D
@@ -35,6 +35,7 @@ next: []
 | `Middleware\RequireSession` (`implements Contract\SessionGuardInterface`, which extends `MiddlewareInterface`) | `__construct(AuthenticatorInterface $authenticator, Closure $credentialFor, ResponseFactoryInterface, StreamFactoryInterface, string $headerName = 'Authorization', string $scheme = 'Bearer')`. Session door — see SESSION below. Closures it composes: `ReadBearerToken`, `AuthenticateToken`, `ApplySession`; anonymity is read from the route attribute `DispatchAndRespond::ANONYMOUS_ATTRIBUTE`. |
 | `Middleware\RequireRequestAttribute` (`implements MiddlewareInterface`, NOT `SessionGuardInterface`) | `__construct(ResponseFactoryInterface, StreamFactoryInterface, string ...$names)`. Per-route presence check — see REQUIRED ATTRIBUTES below. Empty list / empty name -> `InvalidArgumentException`. |
 | `Middleware\RequireRight` (`implements MiddlewareInterface`, NOT `SessionGuardInterface`, since 3.0.0) | `__construct(ResponseFactoryInterface, StreamFactoryInterface, string $right, Closure $hasRight)`, `$hasRight: Closure(list<string>, string): bool` (`JardisSupport\Auth\Handler\Authorization\HasRight`, `jardissupport/auth` - not required by this package). Per-route right check - see RIGHT OF A ROUTE below. Empty `$right` -> `InvalidArgumentException`. |
+| `Middleware\RevokeSessionOnSuccess` (`implements MiddlewareInterface`, NOT `SessionGuardInterface`, since 3.1.0) | `__construct(Closure $revoke)`, `$revoke: Closure(string): void` (`SessionManager::invalidateByReference`, `jardissupport/auth` - not required by this package). Per-route revocation after success - see REVOKE SESSION below. |
 | `Data\Route` / `Data\RouteMatch` / `Data\RouteMatchStatus` | `final readonly` VOs. `Route(string $method, string $path, Closure\|RequestHandlerInterface $handler, array $middleware = [], bool $anonymous = false)` (`anonymous` is set only by `Routes::health()` and `Routes::anonymous()`). `RouteMatch` only via named constructors `found()/notFound()/methodNotAllowed()`. `RouteMatchStatus`: `Found`/`NotFound`/`MethodNotAllowed`. |
 | `Exception\AppException` (abstract), `Exception\InvalidJsonBody`, `Exception\RequestAttributeMissing`, `Exception\UnresolvableHandlerResult` | `InvalidJsonBody` — empty/invalid/non-array JSON body (F8, mapped to 400). `RequestAttributeMissing` — thrown by `ReadRequestAttributeStrict` (generic 500). `UnresolvableHandlerResult` — handler returned neither `DomainResponseInterface` nor `ResponseInterface` (E6, propagates to generic 500). |
 
@@ -172,6 +173,19 @@ $routes->get('/orders', $handler, new RequireRight($psr17, $psr17, 'sales.order:
 - **403:** `{"status":403,"data":{},"errors":{"message":"Right \"sales.order:read\" is missing.","messageKey":"access.rightMissing" (const `MESSAGE_KEY`),"context":{"right":"sales.order:read"}},"meta":{}}`; handler not called. Superuser `*` and `resource:*` pass (via `HasRight`).
 - **Fail-closed:** RIGHTS absent, not a list of strings, or a check throwing `InvalidArgumentException` (unparsable right) -> the same 403, never 200/500.
 - **Order:** behind `RequireSession` (guest -> 401 there, not here). Not a guard: never satisfies `requireSessionGuard`. A path placeholder `{jardisRights}` cannot grant a right.
+
+## REVOKE SESSION — `RevokeSessionOnSuccess` (PSR-15, per route, since 3.1.0)
+Logout / tenant switch: the session of the request is revoked once the route answered successfully. Orchestrator: handler first -> `ReadRequestAttribute` (`RequestAttribute::SESSION`) -> injected closure -> response unchanged.
+```php
+use JardisCore\App\Middleware\RevokeSessionOnSuccess;
+
+$routes->middleware($requireSession);
+$routes->post('/logout', $logout, new RevokeSessionOnSuccess($sessionManager->invalidateByReference(...)));
+```
+- **Revokes** only for status `2xx` AND a non-empty string session reference: `$revoke($reference)` once. Not `2xx` or no reference -> nothing is revoked.
+- **No swallowing:** an exception from `$revoke` leaves the middleware (error boundary). The response is never changed.
+- **Effect:** at the next refresh (the refresh token fails); the access token already issued stays valid until its `exp`.
+- **Order:** behind `RequireSession` (sets the reference). Not a guard: never satisfies `requireSessionGuard`.
 
 ## ENVELOPE CONTRACT — `{status, data, errors, meta}`
 Reference: `jardissupport/contracts` → `docs/response-envelope.md`. `ResponseStatus` (11 cases, `jardissupport/contracts`,

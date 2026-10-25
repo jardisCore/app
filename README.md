@@ -75,6 +75,11 @@ closes that gap with a deliberately small core:
   closure (`JardisSupport\Auth\Handler\Authorization\HasRight` of `jardissupport/auth`; the superuser `*` passes). Fail-closed:
   absent or unusable rights deny. A guest gets `401` from the session door first. Details: [`docs/session.md`](docs/session.md).
   `HandleThrowable` no longer knows an access-denied exception: every unknown exception is a generic `500`.
+- **Revoke the session after success.** `Middleware\RevokeSessionOnSuccess` (since 3.1.0) calls the handler first and, when the answer is
+  `2xx` and the request carries a session reference (`RequestAttribute::SESSION`), revokes exactly that session through an injected closure
+  (`SessionManager::invalidateByReference(...)` of `jardissupport/auth`); the response is returned unchanged. Not `2xx` or no reference: nothing is
+  revoked. The access token already issued stays valid until its `exp`. Register it per route (logout, tenant switch) behind the session door.
+  Details: [`docs/session.md`](docs/session.md).
 - **A required attribute at the door.** `Middleware\RequireRequestAttribute` answers `403` in the
   canonical envelope (`errors.messageKey = request.attributeMissing`, `errors.context.attribute` = the
   name) when a request attribute a route depends on, e.g. `RequestAttribute::TENANT`, is missing or empty;
