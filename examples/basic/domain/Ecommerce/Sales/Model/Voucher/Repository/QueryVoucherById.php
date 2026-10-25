@@ -34,7 +34,7 @@ class QueryVoucherById extends EcommerceContext
     public function __invoke(VoucherByIdQuery $query): array
     {
         $this->container['voucher'] = $this->load(
-            $this->voucher($query->id)
+            $this->voucher($query->tenant, $query->id)
         );
 
         return $this->container;
@@ -44,10 +44,11 @@ class QueryVoucherById extends EcommerceContext
      * Query for voucher.
      * @throws Throwable
      */
-    protected function voucher(int $id): DbQueryBuilderInterface
+    protected function voucher(string $tenant, int $id): DbQueryBuilderInterface
     {
         return $this->query(VoucherEntity::class)
-            ->where('id')->equals($id);
+            ->where('scope_key')->equals($tenant)
+            ->and('id')->equals($id);
     }
 
     /**

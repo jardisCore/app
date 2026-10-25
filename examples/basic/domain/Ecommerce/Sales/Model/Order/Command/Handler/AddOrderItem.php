@@ -70,7 +70,11 @@ class AddOrderItem extends EcommerceContext
         $owner = $connection?->inTransaction() !== true;
 
         try {
-            $query = $this->handle(QueryOrder::class, orderNumber: $addOrderItem->orderNumber);
+            $query = $this->handle(
+                QueryOrder::class,
+                tenant: $addOrderItem->tenant,
+                orderNumber: $addOrderItem->orderNumber
+            );
             /** @var Order|null $handler */
             $handler = $this->handle(OrderRepository::class)->getOrderByOrderNumber($query);
             if ($handler === null) {
@@ -114,6 +118,7 @@ class AddOrderItem extends EcommerceContext
                 OrderOrderItemAdded::class,
                 orderNumber: $handler->getData()->getOrderNumber(),
                 orderItemIdentifier: $addedEntity?->getIdentifier(),
+                tenantKey: $addedEntity?->getTenantKey(),
                 productIdentifier: $addedEntity?->getProductIdentifier(),
                 quantity: $addedEntity?->getQuantity(),
                 unitPrice: $addedEntity?->getUnitPrice(),

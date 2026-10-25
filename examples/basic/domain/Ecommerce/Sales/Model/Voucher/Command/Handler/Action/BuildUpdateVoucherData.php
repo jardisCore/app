@@ -28,12 +28,14 @@ class BuildUpdateVoucherData extends EcommerceContext
 
         $rawData = get_object_vars($updateVoucher);
 
-        return $this->handle(FieldMapper::class)->toColumns([
+        $columns = $this->handle(FieldMapper::class)->toColumns([
             ...array_filter(
                 $rawData,
-                fn($key) => !in_array($key, ["scopeKey","voucherCode"], true),
+                fn($key) => !in_array($key, ["tenant","voucherCode","user"], true),
                 ARRAY_FILTER_USE_KEY
             ),
         ], $fieldMap->vouchersColumns(), ['secret_digest']);
+        $columns['issuer_id'] = $updateVoucher->user;
+        return $columns;
     }
 }

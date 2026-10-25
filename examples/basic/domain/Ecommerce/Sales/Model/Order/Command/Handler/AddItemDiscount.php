@@ -70,7 +70,11 @@ class AddItemDiscount extends EcommerceContext
         $owner = $connection?->inTransaction() !== true;
 
         try {
-            $query = $this->handle(QueryOrder::class, orderNumber: $addItemDiscount->orderNumber);
+            $query = $this->handle(
+                QueryOrder::class,
+                tenant: $addItemDiscount->tenant,
+                orderNumber: $addItemDiscount->orderNumber
+            );
             /** @var Order|null $handler */
             $handler = $this->handle(OrderRepository::class)->getOrderByOrderNumber($query);
             if ($handler === null) {

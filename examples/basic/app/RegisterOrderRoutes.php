@@ -17,7 +17,9 @@ use Ecommerce\Sales\Process\RuleGuardedOrderIntake\Command\RuleGuardedOrderIntak
 use Ecommerce\Sales\Sales;
 use ExampleApp\Support\StaticDomainResponse;
 use JardisCore\App\Handler\Request\ParseJsonBody;
+use JardisCore\App\Handler\Request\ReadRequestAttribute;
 use JardisCore\App\Routes;
+use JardisSupport\Contract\Auth\RequestAttribute;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
 use JardisSupport\Contract\Kernel\ResponseStatus;
 use Psr\Http\Message\ServerRequestInterface;
@@ -58,9 +60,10 @@ final class RegisterOrderRoutes
     private function getOrder(Sales $sales): Closure
     {
         return static function (ServerRequestInterface $request) use ($sales): DomainResponseInterface {
+            $tenant = (new ReadRequestAttribute())($request, RequestAttribute::TENANT);
             $id = (int) $request->getAttribute('id');
 
-            return $sales->order()->getOrderById(new OrderById($id));
+            return $sales->order()->getOrderById(new OrderById($tenant, $id));
         };
     }
 
@@ -80,15 +83,18 @@ final class RegisterOrderRoutes
     {
         return static function (ServerRequestInterface $request) use ($sales): DomainResponseInterface {
             $body = (new ParseJsonBody())($request);
-            $command = self::buildOrderCommand($body);
+            $readAttribute = new ReadRequestAttribute();
+            $tenant = $readAttribute($request, RequestAttribute::TENANT);
+            $user = $readAttribute($request, RequestAttribute::SUBJECT_ID);
+            $command = self::buildOrderCommand($tenant, $body);
 
-            $response = $sales->process()->ruleGuardedOrderIntake(new RuleGuardedOrderIntake($command));
+            $response = $sales->process()->ruleGuardedOrderIntake(new RuleGuardedOrderIntake($command, $tenant, $user));
 
             if (!$response->isSuccess()) {
                 return $response;
             }
 
-            $confirmed = $sales->order()->getOrderByOrderNumber(new OrderByOrderNumber($command->orderNumber));
+            $confirmed = $sales->order()->getOrderByOrderNumber(new OrderByOrderNumber($tenant, $command->orderNumber));
 
             if (!$confirmed->isSuccess()) {
                 return $confirmed;
@@ -115,6 +121,7 @@ final class RegisterOrderRoutes
             $body = (new ParseJsonBody())($request);
 
             $update = new CommandUpdateOrder(
+                tenant: (new ReadRequestAttribute())($request, RequestAttribute::TENANT),
                 orderNumber: $orderNumber,
                 totalAmount: (string) ($body['totalAmount'] ?? '0'),
                 status: (string) ($body['status'] ?? ''),
@@ -130,7 +137,7 @@ final class RegisterOrderRoutes
      *
      * @param array<string, mixed> $body
      */
-    private static function buildOrderCommand(array $body): CommandOrder
+    private static function buildOrderCommand(string $tenant, array $body): CommandOrder
     {
         /** @var array<string, mixed> $customer */
         $customer = (array) ($body['customer'] ?? []);
@@ -140,6 +147,7 @@ final class RegisterOrderRoutes
         $items = (array) ($body['orderItem'] ?? []);
 
         return new CommandOrder(
+            tenant: $tenant,
             orderNumber: (string) ($body['orderNumber'] ?? ''),
             totalAmount: (string) ($body['totalAmount'] ?? '0'),
             status: (string) ($body['status'] ?? 'pending'),

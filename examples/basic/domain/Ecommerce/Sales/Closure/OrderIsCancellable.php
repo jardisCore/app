@@ -57,7 +57,7 @@ final class OrderIsCancellable extends EcommerceContext
             return RuleResult::reject(
                 'OrderIsCancellable',
                 'rule.order_is_cancellable.already_cancelled',
-                ['status' => $root->getStatus()?->value],
+                ['status' => $root->getStatus()->value],
             );
         }
 

@@ -12,7 +12,9 @@ namespace Ecommerce\Sales\Process\BatchOrderFulfilment\Command;
 readonly class BatchOrderFulfilment
 {
     public function __construct(
-        public string $invoiceRef
+        public string $invoiceRef,
+        public string $tenant,
+        public string $user
     ) {
     }
 }

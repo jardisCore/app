@@ -70,7 +70,11 @@ class UpdateItemDiscount extends EcommerceContext
         $owner = $connection?->inTransaction() !== true;
 
         try {
-            $query = $this->handle(QueryOrder::class, orderNumber: $updateItemDiscount->orderNumber);
+            $query = $this->handle(
+                QueryOrder::class,
+                tenant: $updateItemDiscount->tenant,
+                orderNumber: $updateItemDiscount->orderNumber
+            );
             /** @var Order|null $handler */
             $handler = $this->handle(OrderRepository::class)->getOrderByOrderNumber($query);
             if ($handler === null) {

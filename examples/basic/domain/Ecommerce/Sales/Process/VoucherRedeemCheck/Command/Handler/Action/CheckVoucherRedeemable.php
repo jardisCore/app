@@ -31,7 +31,7 @@ final class CheckVoucherRedeemable extends EcommerceContext
     public function __invoke(VoucherRedeemCheckContext $ctx): NodeResult
     {
         $identifier = $ctx->input()->voucherCode;
-        $loaded = $this->handle(LoadVoucherForRule::class)($this->actor()->tenant, $identifier);
+        $loaded = $this->handle(LoadVoucherForRule::class)($ctx->input()->tenant, $identifier);
 
         if ($loaded === null) {
             return NodeResult::reject(

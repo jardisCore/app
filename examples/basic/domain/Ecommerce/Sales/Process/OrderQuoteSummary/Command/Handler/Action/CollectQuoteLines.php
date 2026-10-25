@@ -14,6 +14,8 @@ use JardisSupport\Workflow\Data\NodeResult;
  *
  * Erster Knoten: liefert Waehrung und eine vorlaeufige Positionszahl.
  *
+ * Mandant und Nutzer des Laufs: $ctx->input()->tenant, $ctx->input()->user (beide string).
+ *
  * Kontext-Kette (von oben nach unten):
  * Domain: Ecommerce
  * BC: Sales

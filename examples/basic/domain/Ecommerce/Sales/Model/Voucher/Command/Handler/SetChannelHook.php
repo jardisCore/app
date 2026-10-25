@@ -72,7 +72,7 @@ class SetChannelHook extends EcommerceContext
         try {
             $query = $this->handle(
                 QueryVoucher::class,
-                scopeKey: $setChannelHook->scopeKey,
+                tenant: $setChannelHook->tenant,
                 voucherCode: $setChannelHook->voucherCode
             );
             /** @var Voucher|null $handler */

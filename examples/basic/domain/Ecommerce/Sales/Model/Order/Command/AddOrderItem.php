@@ -12,6 +12,7 @@ namespace Ecommerce\Sales\Model\Order\Command;
 readonly class AddOrderItem
 {
     public function __construct(
+        public string $tenant,
         public string $orderNumber,
         public string $productIdentifier,
         public int $quantity,

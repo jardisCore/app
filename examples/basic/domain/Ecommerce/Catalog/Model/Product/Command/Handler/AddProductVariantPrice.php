@@ -70,7 +70,11 @@ class AddProductVariantPrice extends EcommerceContext
         $owner = $connection?->inTransaction() !== true;
 
         try {
-            $query = $this->handle(QueryProduct::class, identifier: $addProductVariantPrice->productIdentifier);
+            $query = $this->handle(
+                QueryProduct::class,
+                tenant: $addProductVariantPrice->tenant,
+                identifier: $addProductVariantPrice->productIdentifier
+            );
             /** @var Product|null $handler */
             $handler = $this->handle(ProductRepository::class)->getProductByIdentifier($query);
             if ($handler === null) {

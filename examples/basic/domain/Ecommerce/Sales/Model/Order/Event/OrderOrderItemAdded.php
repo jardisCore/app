@@ -16,6 +16,7 @@ readonly class OrderOrderItemAdded
     /**
      * @param string $orderNumber
      * @param string $orderItemIdentifier
+     * @param string $tenantKey
      * @param string $productIdentifier
      * @param int $quantity
      * @param string $unitPrice
@@ -25,6 +26,7 @@ readonly class OrderOrderItemAdded
     public function __construct(
         public string $orderNumber,
         public string $orderItemIdentifier,
+        public string $tenantKey,
         public string $productIdentifier,
         public int $quantity,
         public string $unitPrice,

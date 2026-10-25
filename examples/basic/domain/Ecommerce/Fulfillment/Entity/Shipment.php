@@ -34,6 +34,7 @@ class Shipment
     // phpcs:ignore PSR2.Classes.PropertyDeclaration.Underscore -- Reflection-Slot jardissupport/data
     protected array $__snapshot = [
         'id' => null,
+        'tenant_key' => null,
         'identifier' => null,
         'order_number' => null,
         'customer_identifier' => null,
@@ -58,6 +59,12 @@ class Shipment
     #[PrimaryKey(autoIncrement: true)]
     #[Column(name: 'id', type: 'int')]
     protected ?int $id = null;
+
+    /**
+     * @var ?string
+     */
+    #[Column(name: 'tenant_key', type: 'varchar', length: 36)]
+    protected ?string $tenantKey = null;
 
     /**
      * @var ?string
@@ -171,6 +178,11 @@ class Shipment
         return $this->id;
     }
 
+    public function getTenantKey(): ?string
+    {
+        return $this->tenantKey;
+    }
+
     public function getIdentifier(): ?string
     {
         return $this->identifier;
@@ -252,6 +264,12 @@ class Shipment
     public function getCreatedAt(): ?DateTime
     {
         return $this->createdAt;
+    }
+
+    public function setTenantKey(?string $tenantKey): self
+    {
+        $this->tenantKey = $tenantKey;
+        return $this;
     }
 
     public function setIdentifier(?string $identifier): self

@@ -12,7 +12,7 @@ namespace Ecommerce\Sales\Model\Voucher\Command;
 readonly class SetChannelHook
 {
     public function __construct(
-        public string $scopeKey,
+        public string $tenant,
         public string $voucherCode,
         public string $targetUrl,
         public ?string $signingKey

@@ -116,6 +116,7 @@ class QueryProductList extends EcommerceContext
         if ($hasUpdatedAtUntil) {
             $query = $query->and('product.updated_at')->lowerEquals($filter->updatedAtUntil);
         }
+        $query = $query->and('product.tenant_key')->equals($filter->tenant);
 
         $query = $query
             ->orderBy('product.created_at', 'DESC')

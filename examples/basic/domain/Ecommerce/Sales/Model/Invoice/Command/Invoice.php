@@ -14,6 +14,7 @@ use DateTimeImmutable;
 readonly class Invoice
 {
     public function __construct(
+        public string $tenant,
         public string $invoiceNumber,
         public string $orderNumber,
         public string $customerIdentifier,

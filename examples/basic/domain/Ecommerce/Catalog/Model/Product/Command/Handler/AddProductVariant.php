@@ -70,7 +70,11 @@ class AddProductVariant extends EcommerceContext
         $owner = $connection?->inTransaction() !== true;
 
         try {
-            $query = $this->handle(QueryProduct::class, identifier: $addProductVariant->productIdentifier);
+            $query = $this->handle(
+                QueryProduct::class,
+                tenant: $addProductVariant->tenant,
+                identifier: $addProductVariant->productIdentifier
+            );
             /** @var Product|null $handler */
             $handler = $this->handle(ProductRepository::class)->getProductByIdentifier($query);
             if ($handler === null) {

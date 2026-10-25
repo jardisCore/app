@@ -419,6 +419,7 @@ class PersistOrder extends EcommerceContext
                 'product_identifier' => 'orderItem.productIdentifier',
                 'quantity' => 'orderItem.quantity',
                 'subtotal' => 'orderItem.subtotal',
+                'tenant_key' => 'orderItem.tenantKey',
                 'unit_price' => 'orderItem.unitPrice',
             ],
             'orders' => ['order_number' => 'orderNumber', 'status' => 'status', 'total_amount' => 'totalAmount'],

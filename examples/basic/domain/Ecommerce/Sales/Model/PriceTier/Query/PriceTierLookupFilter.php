@@ -13,6 +13,7 @@ readonly class PriceTierLookupFilter
 {
     public function __construct(
         public string $tierCode,
+        public string $tenant,
         public int $limit = 20,
         public int $offset = 0
     ) {

@@ -42,7 +42,11 @@ class RemoveInvoice extends EcommerceContext
         $owner = $connection?->inTransaction() !== true;
 
         try {
-            $query = $this->handle(QueryInvoice::class, identifier: $removeInvoice->invoiceIdentifier);
+            $query = $this->handle(
+                QueryInvoice::class,
+                tenant: $removeInvoice->tenant,
+                identifier: $removeInvoice->invoiceIdentifier
+            );
             /** @var Invoice|null $handler */
             $handler = $this->handle(InvoiceRepository::class)->getInvoiceByIdentifier($query);
             if ($handler === null) {

@@ -77,7 +77,7 @@ class UpdateVoucher extends EcommerceContext
         try {
             $query = $this->handle(
                 QueryVoucher::class,
-                scopeKey: $updateVoucher->scopeKey,
+                tenant: $updateVoucher->tenant,
                 voucherCode: $updateVoucher->voucherCode
             );
             /** @var Voucher|null $handler */

@@ -12,6 +12,7 @@ namespace Ecommerce\Catalog\Model\Product\Command;
 readonly class AddProductImage
 {
     public function __construct(
+        public string $tenant,
         public string $productIdentifier,
         public string $url,
         public ?string $altText,

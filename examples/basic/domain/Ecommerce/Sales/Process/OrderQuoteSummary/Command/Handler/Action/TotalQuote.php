@@ -15,6 +15,8 @@ use JardisSupport\Workflow\Data\NodeResult;
  * Zweiter Knoten: liefert die endgueltige Positionszahl (ueberschreibt n1)
  * und die Summe.
  *
+ * Mandant und Nutzer des Laufs: $ctx->input()->tenant, $ctx->input()->user (beide string).
+ *
  * Kontext-Kette (von oben nach unten):
  * Domain: Ecommerce
  * BC: Sales

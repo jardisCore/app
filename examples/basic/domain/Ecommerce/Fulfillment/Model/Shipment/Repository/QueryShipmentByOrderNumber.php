@@ -41,6 +41,7 @@ class QueryShipmentByOrderNumber extends EcommerceContext
             );
 
         $query = $query->and('shipment.order_number')->equals($filter->orderNumber);
+        $query = $query->and('shipment.tenant_key')->equals($filter->tenant);
 
         $query = $query
             ->orderBy('shipment.id', 'ASC')

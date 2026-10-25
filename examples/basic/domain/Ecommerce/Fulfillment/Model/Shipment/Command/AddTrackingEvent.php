@@ -14,6 +14,7 @@ use DateTimeImmutable;
 readonly class AddTrackingEvent
 {
     public function __construct(
+        public string $tenant,
         public string $shipmentIdentifier,
         public string $eventCode,
         public string $status,

@@ -21,9 +21,9 @@ final class LoadOrderForRule extends EcommerceContext
     /**
      * @throws Throwable
      */
-    public function __invoke(string $orderNumber): ?Order
+    public function __invoke(string $tenant, string $orderNumber): ?Order
     {
-        $query = $this->handle(QueryOrder::class, orderNumber: $orderNumber);
+        $query = $this->handle(QueryOrder::class, tenant: $tenant, orderNumber: $orderNumber);
         /** @var OrderHandler|null $handler */
         $handler = $this->handle(OrderRepository::class)->getOrderByOrderNumber($query);
 

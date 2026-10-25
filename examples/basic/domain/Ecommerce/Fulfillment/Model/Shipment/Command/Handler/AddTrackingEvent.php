@@ -72,7 +72,11 @@ class AddTrackingEvent extends EcommerceContext
         $owner = $connection?->inTransaction() !== true;
 
         try {
-            $query = $this->handle(QueryShipment::class, identifier: $addTrackingEvent->shipmentIdentifier);
+            $query = $this->handle(
+                QueryShipment::class,
+                tenant: $addTrackingEvent->tenant,
+                identifier: $addTrackingEvent->shipmentIdentifier
+            );
             /** @var Shipment|null $handler */
             $handler = $this->handle(ShipmentRepository::class)->getShipmentByIdentifier($query);
             if ($handler === null) {

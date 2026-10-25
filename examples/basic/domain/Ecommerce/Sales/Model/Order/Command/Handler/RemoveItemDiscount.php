@@ -44,7 +44,11 @@ class RemoveItemDiscount extends EcommerceContext
         $owner = $connection?->inTransaction() !== true;
 
         try {
-            $query = $this->handle(QueryOrder::class, orderNumber: $removeItemDiscount->orderNumber);
+            $query = $this->handle(
+                QueryOrder::class,
+                tenant: $removeItemDiscount->tenant,
+                orderNumber: $removeItemDiscount->orderNumber
+            );
             /** @var Order|null $handler */
             $handler = $this->handle(OrderRepository::class)->getOrderByOrderNumber($query);
             if ($handler === null) {

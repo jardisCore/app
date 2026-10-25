@@ -12,7 +12,9 @@ namespace Ecommerce\Sales\Process\OrderQuoteSummary\Command;
 readonly class OrderQuoteSummary
 {
     public function __construct(
-        public string $quoteNumber
+        public string $quoteNumber,
+        public string $tenant,
+        public string $user
     ) {
     }
 }

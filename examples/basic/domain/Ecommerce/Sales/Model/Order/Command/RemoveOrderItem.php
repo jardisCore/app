@@ -12,6 +12,7 @@ namespace Ecommerce\Sales\Model\Order\Command;
 readonly class RemoveOrderItem
 {
     public function __construct(
+        public string $tenant,
         public string $orderNumber,
         public string $orderItemIdentifier
     ) {

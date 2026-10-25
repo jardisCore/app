@@ -12,6 +12,7 @@ namespace Ecommerce\Sales\Model\Order\Query;
 readonly class OrderByIds
 {
     public function __construct(
+        public string $tenant,
         public array $ids
     ) {
     }

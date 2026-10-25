@@ -14,6 +14,7 @@ use DateTimeImmutable;
 readonly class UpdateProductVariantPrice
 {
     public function __construct(
+        public string $tenant,
         public string $productIdentifier,
         public string $productVariantIdentifier,
         public int $productVariantPriceId,

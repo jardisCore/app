@@ -198,7 +198,7 @@ without affecting which route matches; `+` stays `+`. Do not decode again in the
 ## Validation Note
 
 Typed coercion of path/query/body parameters (string → int, …) and the 400 for a bad request
-is the request mapper of `jardissupport/response` ^1.4 (not part of this package since 2.0.0).
+is the request mapper of `jardissupport/response` ^3.0 (not part of this package since 2.0.0).
 For anything beyond trivial casts, reach for `jardissupport/validation`
 instead of ad-hoc checks - it is the dedicated Jardis package for object-graph
 validation and composes cleanly with a thin handler.

@@ -70,7 +70,11 @@ class SetAddress extends EcommerceContext
         $owner = $connection?->inTransaction() !== true;
 
         try {
-            $query = $this->handle(QueryOrder::class, orderNumber: $setAddress->orderNumber);
+            $query = $this->handle(
+                QueryOrder::class,
+                tenant: $setAddress->tenant,
+                orderNumber: $setAddress->orderNumber
+            );
             /** @var Order|null $handler */
             $handler = $this->handle(OrderRepository::class)->getOrderByOrderNumber($query);
             if ($handler === null) {

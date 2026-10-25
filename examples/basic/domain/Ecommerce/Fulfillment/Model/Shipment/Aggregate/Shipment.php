@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Ecommerce\Fulfillment\Model\Shipment\Aggregate;
 
-use Ecommerce\EcommerceActor;
 use Ecommerce\EcommerceContext;
 use Ecommerce\Fulfillment\Model\Shipment\Aggregate\Entity\Shipment as ShipmentAggregate;
 use Ecommerce\Fulfillment\Model\Shipment\Aggregate\Entity\ShipmentAddress;
@@ -57,12 +56,11 @@ class Shipment extends EcommerceContext
         DomainKernelInterface $domainKernel,
         mixed $payload,
         string $version,
-        EcommerceActor $actor,
         ?ShipmentAggregate $aggregate = null,
         int $depth = 0,
         bool $entry = true
     ) {
-        parent::__construct($domainKernel, $payload, $version, $actor, $depth, $entry);
+        parent::__construct($domainKernel, $payload, $version, $depth, $entry);
         $this->aggregate = $aggregate;
     }
 

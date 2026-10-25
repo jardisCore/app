@@ -13,7 +13,9 @@ readonly class OrderLimitCheck
 {
     public function __construct(
         public string $limit,
-        public string $orderNumberToCheck
+        public string $orderNumberToCheck,
+        public string $tenant,
+        public string $user
     ) {
     }
 }

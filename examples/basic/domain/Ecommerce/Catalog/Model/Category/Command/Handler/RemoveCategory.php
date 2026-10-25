@@ -42,7 +42,11 @@ class RemoveCategory extends EcommerceContext
         $owner = $connection?->inTransaction() !== true;
 
         try {
-            $query = $this->handle(QueryCategory::class, identifier: $removeCategory->categoryIdentifier);
+            $query = $this->handle(
+                QueryCategory::class,
+                tenant: $removeCategory->tenant,
+                identifier: $removeCategory->categoryIdentifier
+            );
             /** @var Category|null $handler */
             $handler = $this->handle(CategoryRepository::class)->getCategoryByIdentifier($query);
             if ($handler === null) {

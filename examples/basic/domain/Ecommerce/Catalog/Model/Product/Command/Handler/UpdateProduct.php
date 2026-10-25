@@ -74,7 +74,11 @@ class UpdateProduct extends EcommerceContext
         $owner = $connection?->inTransaction() !== true;
 
         try {
-            $query = $this->handle(QueryProduct::class, identifier: $updateProduct->productIdentifier);
+            $query = $this->handle(
+                QueryProduct::class,
+                tenant: $updateProduct->tenant,
+                identifier: $updateProduct->productIdentifier
+            );
             /** @var Product|null $handler */
             $handler = $this->handle(ProductRepository::class)->getProductByIdentifier($query);
             if ($handler === null) {
@@ -116,6 +120,7 @@ class UpdateProduct extends EcommerceContext
             $event = $this->handle(
                 ProductUpdated::class,
                 productIdentifier: $handler->getData()->getIdentifier(),
+                tenantKey: $handler->getData()->getTenantKey(),
                 sku: $handler->getData()->getSku(),
                 productName: $handler->getData()->getName(),
                 slug: $handler->getData()->getSlug(),

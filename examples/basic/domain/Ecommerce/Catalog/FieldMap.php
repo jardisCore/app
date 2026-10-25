@@ -23,6 +23,7 @@ class FieldMap
     {
         return [
             'id' => 'id',
+            'tenantKey' => 'tenant_key',
             'identifier' => 'identifier',
             'slug' => 'slug',
             'parentIdentifier' => 'parent_identifier',
@@ -111,6 +112,7 @@ class FieldMap
     {
         return [
             'id' => 'id',
+            'tenantKey' => 'tenant_key',
             'identifier' => 'identifier',
             'sku' => 'sku',
             'productName' => 'name',

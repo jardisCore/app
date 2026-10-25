@@ -12,13 +12,12 @@ namespace Ecommerce\Sales\Model\Voucher\Command;
 readonly class Voucher
 {
     public function __construct(
-        public string $scopeKey,
+        public string $tenant,
         public string $voucherCode,
         public string $amount,
         public ?string $note,
         public string $secretDigest,
-        public string $issuedBy,
-        public string $issuerId,
+        public string $user,
         public VoucherChannel $voucherChannel
     ) {
     }

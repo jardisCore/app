@@ -28,6 +28,9 @@ use Throwable;
  * ACL-Hinweis: Antwort in eigenes Vokabular uebersetzen, fremdes DTO
  * nicht unveraendert durchreichen.
  *
+ * Mandant und Nutzer des Laufs: $context->input()->tenant, $context->input()->user
+ * (beide string); wer fremde Lese- oder Schreibtueren ruft, reicht sie dort durch.
+ *
  * Antwort: ein NodeResult (jardissupport/workflow). NodeResult::ok() bei Erfolg,
  * NodeResult::route(Route::OnFalse|OnTimeout|OnSkip, ...) fuer einen Zweig,
  * NodeResult::reject(<4xx-Status>, <messageKey>, <context>) fuer eine Ablehnung.

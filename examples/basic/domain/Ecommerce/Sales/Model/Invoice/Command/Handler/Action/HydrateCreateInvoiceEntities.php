@@ -39,11 +39,13 @@ class HydrateCreateInvoiceEntities extends EcommerceContext
 
         $rawData = get_object_vars($invoice);
 
-        $handler->setInvoice($this->handle(FieldMapper::class)->toColumns(array_filter(
+        $columns = $this->handle(FieldMapper::class)->toColumns(array_filter(
             $rawData,
-            fn($key) => !in_array($key, ["invoiceLine"], true),
+            fn($key) => !in_array($key, ["invoiceLine","tenant"], true),
             ARRAY_FILTER_USE_KEY
-        ), $fieldMap->invoicesColumns()));
+        ), $fieldMap->invoicesColumns());
+        $columns['tenant_key'] = $invoice->tenant;
+        $handler->setInvoice($columns);
     }
 
     /**

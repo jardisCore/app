@@ -82,6 +82,7 @@ class QueryOrderAdditions extends EcommerceContext
     {
         return $this->query(OrderItemEntity::class)
             ->where('order_id')->in($this->values('order', 'id'))
+            ->and('tenant_key')->in($this->values('order', 'tenant_key'))
             ->orderBy('id', 'ASC');
     }
 

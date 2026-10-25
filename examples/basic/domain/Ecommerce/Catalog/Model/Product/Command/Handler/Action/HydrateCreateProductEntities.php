@@ -40,11 +40,13 @@ class HydrateCreateProductEntities extends EcommerceContext
 
         $rawData = get_object_vars($product);
 
-        $handler->setProduct($this->handle(FieldMapper::class)->toColumns(array_filter(
+        $columns = $this->handle(FieldMapper::class)->toColumns(array_filter(
             $rawData,
-            fn($key) => !in_array($key, ["productImage","productVariant"], true),
+            fn($key) => !in_array($key, ["productImage","productVariant","tenant"], true),
             ARRAY_FILTER_USE_KEY
-        ), $fieldMap->productsColumns()));
+        ), $fieldMap->productsColumns());
+        $columns['tenant_key'] = $product->tenant;
+        $handler->setProduct($columns);
     }
 
     /**

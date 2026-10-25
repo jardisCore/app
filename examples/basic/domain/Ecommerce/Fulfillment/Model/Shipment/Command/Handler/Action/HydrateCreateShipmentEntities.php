@@ -41,11 +41,13 @@ class HydrateCreateShipmentEntities extends EcommerceContext
 
         $rawData = get_object_vars($shipment);
 
-        $handler->setShipment($this->handle(FieldMapper::class)->toColumns(array_filter(
+        $columns = $this->handle(FieldMapper::class)->toColumns(array_filter(
             $rawData,
-            fn($key) => !in_array($key, ["shipmentAddress","shipmentItem","trackingEvent"], true),
+            fn($key) => !in_array($key, ["shipmentAddress","shipmentItem","trackingEvent","tenant"], true),
             ARRAY_FILTER_USE_KEY
-        ), $fieldMap->shipmentsColumns()));
+        ), $fieldMap->shipmentsColumns());
+        $columns['tenant_key'] = $shipment->tenant;
+        $handler->setShipment($columns);
     }
 
     /**

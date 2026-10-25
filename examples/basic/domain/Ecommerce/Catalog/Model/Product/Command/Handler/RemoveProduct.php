@@ -42,7 +42,11 @@ class RemoveProduct extends EcommerceContext
         $owner = $connection?->inTransaction() !== true;
 
         try {
-            $query = $this->handle(QueryProduct::class, identifier: $removeProduct->productIdentifier);
+            $query = $this->handle(
+                QueryProduct::class,
+                tenant: $removeProduct->tenant,
+                identifier: $removeProduct->productIdentifier
+            );
             /** @var Product|null $handler */
             $handler = $this->handle(ProductRepository::class)->getProductByIdentifier($query);
             if ($handler === null) {

@@ -36,8 +36,14 @@ class HydrateCreatePriceTierEntities extends EcommerceContext
     {
         $fieldMap = $this->handle(FieldMap::class);
 
-        $handler->setPriceTier(
-            $this->handle(FieldMapper::class)->toColumns(get_object_vars($priceTier), $fieldMap->priceTiersColumns())
-        );
+        $rawData = get_object_vars($priceTier);
+
+        $columns = $this->handle(FieldMapper::class)->toColumns(array_filter(
+            $rawData,
+            fn($key) => !in_array($key, ["tenant"], true),
+            ARRAY_FILTER_USE_KEY
+        ), $fieldMap->priceTiersColumns());
+        $columns['tenant_key'] = $priceTier->tenant;
+        $handler->setPriceTier($columns);
     }
 }

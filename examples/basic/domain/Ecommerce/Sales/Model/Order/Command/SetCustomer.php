@@ -12,6 +12,7 @@ namespace Ecommerce\Sales\Model\Order\Command;
 readonly class SetCustomer
 {
     public function __construct(
+        public string $tenant,
         public string $orderNumber,
         public string $email,
         public string $customerName,

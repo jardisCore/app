@@ -12,6 +12,7 @@ namespace Ecommerce\Catalog\Model\Product\Query;
 readonly class ProductListFilter
 {
     public function __construct(
+        public string $tenant,
         public ?int $id = null,
         public ?string $identifier = null,
         public ?string $sku = null,

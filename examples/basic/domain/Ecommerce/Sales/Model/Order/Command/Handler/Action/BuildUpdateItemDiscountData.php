@@ -31,7 +31,7 @@ class BuildUpdateItemDiscountData extends EcommerceContext
         return $this->handle(FieldMapper::class)->toColumns([
             ...array_filter(
                 $rawData,
-                fn($key) => !in_array($key, ["orderNumber","orderItemIdentifier","itemDiscountId"], true),
+                fn($key) => !in_array($key, ["tenant","orderNumber","orderItemIdentifier","itemDiscountId"], true),
                 ARRAY_FILTER_USE_KEY
             ),
         ], $fieldMap->itemDiscountsColumns());
