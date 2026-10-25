@@ -2,6 +2,28 @@
 
 All notable changes to `jardiscore/app` are listed here. Versions only move forward (SemVer).
 
+## [3.3.0] - 2026-10-25
+
+A system run reads the access token by name, not by probe.
+
+### Added
+
+- `Handler\System\ReadAccessToken` (closure, one public entry point `__invoke(ResponseInterface): ?string`): reads `data.access_token` of the answer
+  (RFC 6749 section 5.1; constant `ReadAccessToken::FIELD`). The value must be a non-empty string AND accepted by the authenticate closure
+  (`AuthenticateToken`, the same check as `RequireSession`); otherwise `null` (fail-closed: no JSON object, no object `data`, field missing / not a
+  string / empty / not accepted). Other fields of `data` (e.g. `refresh_token`) are never looked at.
+
+### Changed
+
+- `SignedInRun` reads the token of the sign-in and switch-tenant answers through `ReadAccessToken`. Constructor and `handle()` are unchanged.
+  The session doors have to answer in the access token response form (`access_token`, `token_type`, `expires_in`, `refresh_token`); an answer without
+  `data.access_token` is refused (`SystemRunRefused`).
+- `composer.json`: `jardissupport/response` `^3.0 || ^4.0` (4.0.0 only changes the wire-contract carrier; gates green with both majors).
+
+### Deprecated
+
+- `Handler\System\ReadSessionToken` (the probe over the answer structure) - use `ReadAccessToken`; removed in 4.0. It keeps working unchanged.
+
 ## [3.2.0] - 2026-10-25
 
 A system run (CLI, job) gets its rights like any user.

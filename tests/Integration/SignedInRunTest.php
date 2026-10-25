@@ -44,8 +44,13 @@ final class SignedInRunTest extends TestCase
     /** @var list<string> */
     private array $switchBodies = [];
     private int $signInCalls = 0;
-    /** sign-in answer shape: 'plain' | 'nested' | 'none' | 'two' | 'twice' */
+    /** sign-in answer shape: 'plain' | 'missing' | 'empty' | 'notString' | 'rejected' | 'otherAccepted' */
     private string $signInShape = 'plain';
+    /** switch answer shape: 'plain' | 'missing' */
+    private string $switchShape = 'plain';
+    private string $signInToken = '';
+    /** @var list<string> Authorization headers the switch door received */
+    private array $switchBearers = [];
     /** @var array<string, list<string>> tenant => rights of the system user */
     private array $grants = ['acme' => ['sales.order:read']];
     private ?int $switchFails = null;
@@ -59,6 +64,9 @@ final class SignedInRunTest extends TestCase
         $this->switchBodies = [];
         $this->signInCalls = 0;
         $this->signInShape = 'plain';
+        $this->switchShape = 'plain';
+        $this->signInToken = '';
+        $this->switchBearers = [];
         $this->grants = ['acme' => ['sales.order:read']];
         $this->switchFails = null;
     }
@@ -133,40 +141,74 @@ final class SignedInRunTest extends TestCase
         $this->assertSame([], $this->targetCalls);
     }
 
-    public function testAnswerWithoutAnyAcceptedTokenIsRefused(): void
+    public function testAccessTokenOfTheSignInAnswerIsTheBearerOfTheSwitchAndTheRunReachesTheTarget(): void
     {
-        $this->signInShape = 'none';
+        $response = $this->systemRun()->handle('acme', $this->credentials(), 'GET', '/orders');
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertNotSame('', $this->signInToken);
+        $this->assertSame(['Bearer ' . $this->signInToken], $this->switchBearers);
+        $this->assertCount(1, $this->targetCalls);
+        $this->assertNotSame(
+            'Bearer ' . $this->signInToken,
+            $this->targetCalls[0]->getHeaderLine('Authorization'),
+            'the target gets the token of the switch answer, not the sign-in token',
+        );
+    }
+
+    public function testAnswerWithoutTheAccessTokenFieldIsRefused(): void
+    {
+        $this->signInShape = 'missing';
 
         $this->assertRefused(200);
         $this->assertSame([], $this->switchBodies);
         $this->assertSame([], $this->targetCalls);
     }
 
-    public function testAnswerWithTwoDifferentAcceptedTokensIsRefused(): void
+    public function testAnswerWithAnEmptyAccessTokenIsRefused(): void
     {
-        $this->signInShape = 'two';
+        $this->signInShape = 'empty';
 
         $this->assertRefused(200);
         $this->assertSame([], $this->switchBodies);
         $this->assertSame([], $this->targetCalls);
     }
 
-    public function testTheSameTokenFoundTwiceCountsOnce(): void
+    public function testAnswerWithAnAccessTokenThatIsNoStringIsRefused(): void
     {
-        $this->signInShape = 'twice';
+        $this->signInShape = 'notString';
 
-        $response = $this->systemRun()->handle('acme', $this->credentials(), 'GET', '/orders');
-
-        $this->assertSame(200, $response->getStatusCode());
+        $this->assertRefused(200);
+        $this->assertSame([], $this->switchBodies);
+        $this->assertSame([], $this->targetCalls);
     }
 
-    public function testTokenIsFoundInANestedDataValue(): void
+    public function testAccessTokenTheAuthenticatorRejectsIsRefused(): void
     {
-        $this->signInShape = 'nested';
+        $this->signInShape = 'rejected';
+
+        $this->assertRefused(200);
+        $this->assertSame([], $this->switchBodies);
+        $this->assertSame([], $this->targetCalls);
+    }
+
+    public function testAnotherAcceptedStringInAnotherFieldDoesNotDisturb(): void
+    {
+        $this->signInShape = 'otherAccepted';
 
         $response = $this->systemRun()->handle('acme', $this->credentials(), 'GET', '/orders');
 
         $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('user:sys', $this->targetCalls[0]->getAttribute(RequestAttribute::SUBJECT));
+    }
+
+    public function testSwitchAnswerWithoutTheAccessTokenFieldIsRefusedBeforeTheTarget(): void
+    {
+        $this->switchShape = 'missing';
+
+        $this->assertRefused(200);
+        $this->assertSame(['{"tenantSlug":"acme"}'], $this->switchBodies);
+        $this->assertSame([], $this->targetCalls);
     }
 
     public function testSwitchThatAnswers422IsRefusedWithItsStatus(): void
@@ -253,12 +295,23 @@ final class SignedInRunTest extends TestCase
 
         $session = $this->manager->create(Subject::from('sys'));
         $other = $this->manager->create(Subject::from('other'));
+        $this->signInToken = $session->accessToken;
         $data = match ($this->signInShape) {
-            'nested' => ['session' => ['tokens' => ['access' => $session->accessToken]], 'note' => 'ok'],
-            'none' => ['refreshToken' => $session->refreshToken, 'note' => 'ok'],
-            'two' => ['accessToken' => $session->accessToken, 'again' => $other->accessToken],
-            'twice' => ['accessToken' => $session->accessToken, 'copy' => $session->accessToken],
-            default => ['accessToken' => $session->accessToken, 'refreshToken' => $session->refreshToken],
+            'missing' => ['token_type' => 'Bearer', 'refresh_token' => $session->refreshToken],
+            'empty' => ['access_token' => '', 'refresh_token' => $session->refreshToken],
+            'notString' => ['access_token' => 12345, 'refresh_token' => $session->refreshToken],
+            'rejected' => ['access_token' => 'not-a-valid-token', 'refresh_token' => $session->refreshToken],
+            'otherAccepted' => [
+                'access_token' => $session->accessToken,
+                'token_type' => 'Bearer',
+                'refresh_token' => $other->accessToken,
+            ],
+            default => [
+                'access_token' => $session->accessToken,
+                'token_type' => 'Bearer',
+                'expires_in' => 900,
+                'refresh_token' => $session->refreshToken,
+            ],
         };
 
         return $this->envelope(200, [], $data);
@@ -268,6 +321,7 @@ final class SignedInRunTest extends TestCase
     {
         $body = (string) $request->getBody();
         $this->switchBodies[] = $body;
+        $this->switchBearers[] = $request->getHeaderLine('Authorization');
         if ($this->switchFails !== null) {
             return $this->envelope($this->switchFails, ['message' => 'Unavailable.'], []);
         }
@@ -283,9 +337,15 @@ final class SignedInRunTest extends TestCase
             [SessionClaim::TENANT => $tenant, SessionClaim::RIGHTS => $this->grants[$tenant]],
         );
 
+        if ($this->switchShape === 'missing') {
+            return $this->envelope(200, [], ['refresh_token' => $session->refreshToken]);
+        }
+
         return $this->envelope(200, [], [
-            'accessToken' => $session->accessToken,
-            'refreshToken' => $session->refreshToken,
+            'access_token' => $session->accessToken,
+            'token_type' => 'Bearer',
+            'expires_in' => 900,
+            'refresh_token' => $session->refreshToken,
         ]);
     }
 

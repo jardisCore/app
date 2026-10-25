@@ -10,6 +10,9 @@ use Psr\Http\Message\ResponseInterface;
 /**
  * Reads the session token out of the answer of a session door (sign in, switch tenant).
  *
+ * DEPRECATED since 3.3.0: use {@see ReadAccessToken}; removed in 4.0 (the methods carry the `@deprecated` tag, the
+ * class comment may not).
+ *
  * This is a PROBE over the answer structure, a deliberate compromise (the route table names no output field as the
  * token): all string values of the envelope's `data` (recursively) are offered to the authenticate closure
  * ({@see \JardisCore\App\Handler\Session\AuthenticateToken}, the same check `RequireSession` runs); the token is the
@@ -19,12 +22,17 @@ use Psr\Http\Message\ResponseInterface;
 final class ReadSessionToken
 {
     /**
+     * @deprecated since 3.3.0, use ReadAccessToken; removed in 4.0
+     *
      * @param Closure(string): ?\JardisSupport\Contract\Auth\AuthResultInterface $authenticate
      */
     public function __construct(private readonly Closure $authenticate)
     {
     }
 
+    /**
+     * @deprecated since 3.3.0, use ReadAccessToken; removed in 4.0
+     */
     public function __invoke(ResponseInterface $response): ?string
     {
         $decoded = json_decode((string) $response->getBody(), true);

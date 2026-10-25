@@ -10,7 +10,7 @@ use JardisCore\App\Exception\SystemRunRefused;
 use JardisCore\App\Handler\Session\AuthenticateToken;
 use JardisCore\App\Handler\System\BuildSwitchBody;
 use JardisCore\App\Handler\System\BuildSystemRequest;
-use JardisCore\App\Handler\System\ReadSessionToken;
+use JardisCore\App\Handler\System\ReadAccessToken;
 use JardisSupport\Contract\Auth\AuthenticatorInterface;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Psr\Http\Message\ResponseInterface;
@@ -24,13 +24,13 @@ use Psr\Http\Message\StreamFactoryInterface;
  * No special value, no second check.
  *
  * Orchestrator: builds the requests, hands them to the app, reads the token, routes on the status - the work lives in
- * closures under `Handler/System/` (request, switch body, token). The one public entry point is `handle()`.
+ * closures under `Handler/System/` (request, switch body, access token). The one public entry point is `handle()`.
  *
  * Refusals ({@see SystemRunRefused}): empty tenant (before any request), a session door that did not answer 2xx,
- * no single token in the answer. The answer of the target door is returned unchanged, also 4xx. The session is not
- * signed out afterwards; it lives until it expires.
+ * no usable access token in the answer. The answer of the target door is returned unchanged, also 4xx. The session
+ * is not signed out afterwards; it lives until it expires.
  *
- * The token is found by a probe over the answer structure, see {@see ReadSessionToken}.
+ * The token is the field `data.access_token` of the answer (RFC 6749 section 5.1), see {@see ReadAccessToken}.
  */
 final class SignedInRun
 {
@@ -60,7 +60,7 @@ final class SignedInRun
             $streamFactory ?? $psr17,
         ))->__invoke(...);
         $this->buildSwitchBody = (new BuildSwitchBody())->__invoke(...);
-        $this->readToken = (new ReadSessionToken(
+        $this->readToken = (new ReadAccessToken(
             (new AuthenticateToken($authenticator, $credentialFor))->__invoke(...),
         ))->__invoke(...);
     }
@@ -102,6 +102,6 @@ final class SignedInRun
         }
 
         return ($this->readToken)($response)
-            ?? throw new SystemRunRefused('no single session token in the answer of the ' . $stage . ' door', $status);
+            ?? throw new SystemRunRefused('no access token in the answer of the ' . $stage . ' door', $status);
     }
 }
