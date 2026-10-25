@@ -80,6 +80,10 @@ closes that gap with a deliberately small core:
   (`SessionManager::invalidateByReference(...)` of `jardissupport/auth`); the response is returned unchanged. Not `2xx` or no reference: nothing is
   revoked. The access token already issued stays valid until its `exp`. Register it per route (logout, tenant switch) behind the session door.
   Details: [`docs/session.md`](docs/session.md).
+- **A system run through the same doors.** `SignedInRun` (since 3.2.0) signs in, switches the tenant and calls the target door with the Bearer token,
+  every stage through `App::handle()` (so `RequireSession` and `RequireRight` judge it like a user request). `handle($tenant, $signInBody, $method, $path, $body)`
+  returns the target's answer unchanged (also 4xx); an empty tenant, a session door that does not answer 2xx or no single token in its answer throws
+  `Exception\SystemRunRefused`. The token is read by a probe: the one string in `data` the authenticator accepts. Details: [`docs/session.md`](docs/session.md).
 - **A required attribute at the door.** `Middleware\RequireRequestAttribute` answers `403` in the
   canonical envelope (`errors.messageKey = request.attributeMissing`, `errors.context.attribute` = the
   name) when a request attribute a route depends on, e.g. `RequestAttribute::TENANT`, is missing or empty;

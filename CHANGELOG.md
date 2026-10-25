@@ -2,6 +2,25 @@
 
 All notable changes to `jardiscore/app` are listed here. Versions only move forward (SemVer).
 
+## [3.2.0] - 2026-10-25
+
+A system run (CLI, job) gets its rights like any user.
+
+### Added
+
+- `SignedInRun` (orchestrator, one public entry point): `handle(string $tenant, string $signInBody, string $method, string $path, string $body = ''): ResponseInterface`.
+  Constructor `(App $app, AuthenticatorInterface $authenticator, Closure $credentialFor, SessionDoor $signIn, SessionDoor $switchTenant, string $tenantField,
+  ?ServerRequestFactoryInterface = null, ?StreamFactoryInterface = null)`. Signs in through the sign-in door, switches the tenant through the switch-tenant
+  door (`{"<tenantField>": "<tenant>"}`, `Authorization: Bearer` of the sign-in token), then calls the target door with the token of the switch - every
+  stage through `App::handle()`, so the target runs through `RequireSession` and `RequireRight`. No special value, no second check. The answer of the target
+  door is returned unchanged (also 4xx). No sign-out afterwards.
+- `Data\SessionDoor(string $method, string $path)` (`final readonly`).
+- `Exception\SystemRunRefused` (`reason`, `?int $status`): empty tenant (before any request), a session door that did not answer 2xx, no single token in the
+  answer. It never carries an answer body.
+- Closures under `Handler\System\`: `BuildSystemRequest`, `BuildSwitchBody`, `ReadSessionToken`. `ReadSessionToken` is a probe over the answer structure
+  (a deliberate compromise): the token is the ONE distinct string in `data` (recursively) that the injected authenticator accepts (`AuthenticateToken`);
+  none or several -> refusal.
+
 ## [3.1.0] - 2026-10-25
 
 The session is revoked after a successful logout or tenant switch.

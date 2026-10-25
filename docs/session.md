@@ -159,3 +159,33 @@ Signature: `__construct(Closure $revoke)` with `$revoke: Closure(string $session
 | Failure | An exception from `$revoke` is not swallowed; it leaves the middleware and reaches the error boundary. |
 | Effect | Takes effect at the next refresh: the access token already issued stays valid until its `exp`. |
 | Guard | It does NOT implement `SessionGuardInterface`, so it never satisfies `AppConfig::$requireSessionGuard`. |
+
+## System run - `SignedInRun`
+
+`JardisCore\App\SignedInRun` (since 3.2.0) lets a system run (CLI, job) get its rights like any user: sign in -> token -> switch tenant -> token -> target
+request with `Authorization: Bearer`. Every stage goes through `App::handle()`, so the target passes `RequireSession` and `RequireRight`; there is no special
+value and no second check. It is an orchestrator (one public entry point) over the closures `Handler\System\BuildSystemRequest`, `BuildSwitchBody`,
+`ReadSessionToken` and the existing `AuthenticateToken`.
+
+```php
+use JardisCore\App\Data\SessionDoor;
+use JardisCore\App\SignedInRun;
+
+$run = new SignedInRun(
+    $app,                                  // the App with RequireSession + RequireRight
+    $authenticator,                        // the same AuthenticatorInterface as RequireSession
+    Credential::token(...),                // $credentialFor, as for RequireSession
+    new SessionDoor('POST', '/sign-in'),
+    new SessionDoor('POST', '/switch-tenant'),
+    'tenantSlug',                          // the body property of the switch door that carries the tenant
+);
+$response = $run->handle('acme', '{"secret":"..."}', 'GET', '/orders');
+```
+
+| Aspect | Behaviour |
+|---|---|
+| Switch body | `{"<tenantField>": "<tenant>"}` with `Authorization: Bearer <sign-in token>`. |
+| Target | `method`, `path` (query string allowed) and `body` as given, with `Authorization: Bearer <switch token>`; its answer comes back unchanged, also 4xx (e.g. `403 access.rightMissing`). |
+| Token | A probe over the answer structure (compromise, the route table names no token field): all strings of the envelope's `data` (recursively) are offered to the authenticator; the token is the ONE distinct string it accepts. The refresh token is unsigned and not accepted. |
+| Refusal | `Exception\SystemRunRefused` (`reason`, `?int status`): empty tenant (before any request, nothing is called), sign-in or switch not `2xx` (status of that stage), no token or more than one distinct token. Never carries a body. |
+| Sign-out | None after the run; the session lives until it expires. |
