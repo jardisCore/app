@@ -2,6 +2,19 @@
 
 All notable changes to `jardiscore/app` are listed here. Versions only move forward (SemVer).
 
+## [3.1.0] - 2026-10-25
+
+The session is revoked after a successful logout or tenant switch.
+
+### Added
+
+- `Middleware\RevokeSessionOnSuccess` (PSR-15, per route, behind the global `RequireSession`): `__construct(Closure $revoke)`,
+  `$revoke: Closure(string): void`. An orchestrator over a closure (`ReadRequestAttribute`, the injected revocation): the handler runs first;
+  when the answer is `2xx` and the session reference (`RequestAttribute::SESSION`) is a non-empty string, `$revoke($reference)` is called and the
+  response is returned unchanged. Not `2xx` -> nothing is revoked; no reference -> nothing to revoke; an exception from `$revoke` is not swallowed.
+  The revocation is `JardisSupport\Auth\SessionManager::invalidateByReference()` of `jardissupport/auth`, which this package does not require.
+  It takes effect at the next refresh: the access token already issued stays valid until its `exp`. It does not implement `SessionGuardInterface`.
+
 ## [3.0.0] - 2026-10-25
 
 The right of a route is asked at the door; the access-denied marker is gone. **Breaking.**
