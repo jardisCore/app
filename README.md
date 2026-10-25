@@ -82,8 +82,8 @@ closes that gap with a deliberately small core:
   Details: [`docs/session.md`](docs/session.md).
 - **A system run through the same doors.** `SignedInRun` (since 3.2.0) signs in, switches the tenant and calls the target door with the Bearer token,
   every stage through `App::handle()` (so `RequireSession` and `RequireRight` judge it like a user request). `handle($tenant, $signInBody, $method, $path, $body)`
-  returns the target's answer unchanged (also 4xx); an empty tenant, a session door that does not answer 2xx or no single token in its answer throws
-  `Exception\SystemRunRefused`. The token is read by a probe: the one string in `data` the authenticator accepts. Details: [`docs/session.md`](docs/session.md).
+  returns the target's answer unchanged (also 4xx); an empty tenant, a session door that does not answer 2xx or no usable access token in its answer throws
+  `Exception\SystemRunRefused`. The token is `data.access_token` of the session door's answer (RFC 6749 section 5.1), accepted by the authenticator (`ReadAccessToken`; the probe `ReadSessionToken` is deprecated since 3.3.0). Details: [`docs/session.md`](docs/session.md).
 - **A required attribute at the door.** `Middleware\RequireRequestAttribute` answers `403` in the
   canonical envelope (`errors.messageKey = request.attributeMissing`, `errors.context.attribute` = the
   name) when a request attribute a route depends on, e.g. `RequestAttribute::TENANT`, is missing or empty;
@@ -149,7 +149,7 @@ return (new AnswerUnsupportedRequest())(['lines', 'meta']);                     
 ```
 
 **Request mapper (type check of path, query and body values, the one 400 for a bad request)** moved to
-`jardissupport/response` ^3.0 (`JardisSupport\Response\Handler\Request\*`, `...\Request\Accept\*`,
+`jardissupport/response` ^3.0 || ^4.0 (`JardisSupport\Response\Handler\Request\*`, `...\Request\Accept\*`,
 `JardisSupport\Response\Handler\Answer\AnswerInvalidRequest`); see its README. Mapping alt -> neu: `CHANGELOG.md` `[2.0.0]`.
 
 ## Examples
@@ -170,7 +170,7 @@ return (new AnswerUnsupportedRequest())(['lines', 'meta']);                     
 - PHP `>=8.3`
 - `jardiscore/kernel ^2.0`
 - `jardissupport/contracts ^2.17`
-- `jardissupport/response ^3.0`
+- `jardissupport/response ^3.0 || ^4.0`
 
 ## Related Packages
 
