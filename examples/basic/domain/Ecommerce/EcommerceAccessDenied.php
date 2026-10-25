@@ -4,16 +4,14 @@ declare(strict_types=1);
 
 namespace Ecommerce;
 
-use JardisSupport\Contract\Kernel\AccessDeniedExceptionInterface;
-
 /**
  * EcommerceAccessDenied: the denial of an access to an endpoint of the Ecommerce domain.
  *
- * Returned by EcommerceCheckAccess and thrown by the door that asked. It implements the
- * contract marker AccessDeniedExceptionInterface, so a door of the response layer answers it as
- * a 403 with the message key and the context. Hermetic - data only.
+ * Returned by EcommerceCheckAccess and thrown by the door that asked. It carries no contract marker:
+ * the right of an outer door is checked by the route (RequireRight of jardiscore/app answers 403
+ * `access.rightMissing`), no exception type is answered 403 anymore. Hermetic - data only.
  */
-final class EcommerceAccessDenied extends \RuntimeException implements AccessDeniedExceptionInterface
+final class EcommerceAccessDenied extends \RuntimeException
 {
     /**
      * @param array<string, mixed> $context

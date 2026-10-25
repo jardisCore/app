@@ -2,6 +2,34 @@
 
 All notable changes to `jardiscore/app` are listed here. Versions only move forward (SemVer).
 
+## [3.0.0] - 2026-10-25
+
+The right of a route is asked at the door; the access-denied marker is gone. **Breaking.**
+
+### Added
+
+- `Middleware\RequireRight` (PSR-15, per route, behind the global `RequireSession`):
+  `__construct(ResponseFactoryInterface, StreamFactoryInterface, string $right, Closure $hasRight)`, `$hasRight: Closure(list<string>, string): bool`
+  (the rights test is `JardisSupport\Auth\Handler\Authorization\HasRight` of `jardissupport/auth`, which this package does not require).
+  An orchestrator over closures (`ReadRequestAttributeList`, the injected check, `BuildErrorResponse`): when the rights of the session
+  (`RequestAttribute::RIGHTS`) do not hold the right the request ends with `403` in the canonical envelope,
+  `errors = {message, messageKey: "access.rightMissing", context: {right}}`, `data` and `meta` empty; the handler is not called. The superuser `*`
+  and `resource:*` pass through `HasRight`. Fail-closed: RIGHTS absent, not a list of strings, or a check that throws `InvalidArgumentException`
+  all answer the same `403`. It does not implement `SessionGuardInterface`. A guest never gets here: the session door answers `401`.
+
+### Removed (breaking)
+
+- `Handler\Error\HandleThrowable` no longer catches `JardisSupport\Contract\Kernel\AccessDeniedExceptionInterface`: an exception of that type
+  (or any exception carrying a message key and a context) is an unknown exception and answers the generic `500` like every other, logged at `error`.
+  The `403` of a denied right comes from `RequireRight` (route); neither this boundary nor `jardissupport/response` 3.0.0 produces a 403 any more.
+
+### Changed
+
+- `composer.json`: `jardissupport/contracts` `^2.16` -> `^2.17`; `jardissupport/response` `^1.5 || ^2.0` -> `^3.0` (`src/` uses only `DomainResponse`, `ValidationPayload`, `BuildResponseData`, none of the parts removed in
+  response 3.0.0: `Forbidden`, `ForbiddenPayload`, `AnswerUnauthorized`).
+- `examples/basic`: `EcommerceAccessDenied` no longer implements the marker; the synthetic route `/test/right-guarded` carries a `RequireRight`
+  (acceptance: 200 with the right / `*`, 403 bytes without, 403 without RIGHTS).
+
 ## [2.1.2] - 2026-10-23
 
 Two example file names get their correct case; `src/` is unchanged.

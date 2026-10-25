@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace JardisCore\App\Tests\Acceptance;
 
+use JardisSupport\Contract\Auth\RequestAttribute;
 use Nyholm\Psr7\Factory\Psr17Factory;
 
 /**
@@ -46,6 +47,42 @@ final class BoundaryStatusAcceptanceTest extends EcommerceAcceptanceTestCase
 
         $this->assertSame(403, $response->getStatusCode());
         $this->assertSame(403, $this->decode($response)['status']);
+    }
+
+    public function testRightGuardedRoutePassesTheRightOfTheSessionAndTheSuperuser(): void
+    {
+        $app = $this->buildAppWithSyntheticRoutes();
+        $guarded = fn (array $rights) => $app->handle(
+            $this->request('GET', '/test/right-guarded')->withAttribute(RequestAttribute::RIGHTS, $rights),
+        );
+
+        $this->assertSame(200, $guarded(['sales.order:read'])->getStatusCode());
+        $this->assertSame(200, $guarded(['sales.order:*'])->getStatusCode());
+        $this->assertSame(200, $guarded(['*'])->getStatusCode());
+    }
+
+    public function testRightGuardedRouteWithoutTheRightIsForbiddenWithTheRightInTheContext(): void
+    {
+        $app = $this->buildAppWithSyntheticRoutes();
+
+        $response = $app->handle(
+            $this->request('GET', '/test/right-guarded')->withAttribute(RequestAttribute::RIGHTS, ['sales.invoice:read']),
+        );
+
+        $this->assertSame(403, $response->getStatusCode());
+        $this->assertSame(
+            '{"status":403,"data":{},"errors":{"message":"Right \"sales.order:read\" is missing.",'
+            . '"messageKey":"access.rightMissing","context":{"right":"sales.order:read"}},"meta":{}}',
+            (string) $response->getBody(),
+        );
+    }
+
+    public function testRightGuardedRouteWithoutAnyRightsIsForbiddenFailClosed(): void
+    {
+        $response = $this->buildAppWithSyntheticRoutes()->handle($this->request('GET', '/test/right-guarded'));
+
+        $this->assertSame(403, $response->getStatusCode());
+        $this->assertSame('access.rightMissing', $this->decode($response)['errors']['messageKey']);
     }
 
     public function testConflictFourOhNine(): void

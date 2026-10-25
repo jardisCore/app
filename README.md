@@ -69,9 +69,12 @@ closes that gap with a deliberately small core:
   authenticator's result is a `SessionAwareAuthResultInterface`, the bare subject id
   `jardisSubjectId` and the session reference `jardisSession` (revoke exactly this
   session) (`JardisSupport\Contract\Auth\RequestAttribute`). Details: [`docs/session.md`](docs/session.md).
-- **A denied access answers `403`.** `Handler\Error\HandleThrowable` catches `JardisSupport\Contract\Kernel\AccessDeniedExceptionInterface`
-  (the marker a generated rights check throws) before the 500 branch and answers the canonical envelope
-  `{status: 403, data: {@type: forbidden, context, messageKey}, errors: {}, meta: {}}` from the exception - not logged, never a 500.
+- **The right of a route at the door.** `Middleware\RequireRight` (since 3.0.0) answers `403` in the canonical envelope
+  (`errors.messageKey = access.rightMissing`, `errors.context.right` = the right of the route) when the rights of the session
+  (`RequestAttribute::RIGHTS`) do not hold the right; register it per route behind the session door, with the rights test as a
+  closure (`JardisSupport\Auth\Handler\Authorization\HasRight` of `jardissupport/auth`; the superuser `*` passes). Fail-closed:
+  absent or unusable rights deny. A guest gets `401` from the session door first. Details: [`docs/session.md`](docs/session.md).
+  `HandleThrowable` no longer knows an access-denied exception: every unknown exception is a generic `500`.
 - **A required attribute at the door.** `Middleware\RequireRequestAttribute` answers `403` in the
   canonical envelope (`errors.messageKey = request.attributeMissing`, `errors.context.attribute` = the
   name) when a request attribute a route depends on, e.g. `RequestAttribute::TENANT`, is missing or empty;
@@ -137,7 +140,7 @@ return (new AnswerUnsupportedRequest())(['lines', 'meta']);                     
 ```
 
 **Request mapper (type check of path, query and body values, the one 400 for a bad request)** moved to
-`jardissupport/response` ^1.4 (`JardisSupport\Response\Handler\Request\*`, `...\Request\Accept\*`,
+`jardissupport/response` ^3.0 (`JardisSupport\Response\Handler\Request\*`, `...\Request\Accept\*`,
 `JardisSupport\Response\Handler\Answer\AnswerInvalidRequest`); see its README. Mapping alt -> neu: `CHANGELOG.md` `[2.0.0]`.
 
 ## Examples
@@ -157,8 +160,8 @@ return (new AnswerUnsupportedRequest())(['lines', 'meta']);                     
 
 - PHP `>=8.3`
 - `jardiscore/kernel ^2.0`
-- `jardissupport/contracts ^2.16`
-- `jardissupport/response ^1.5`
+- `jardissupport/contracts ^2.17`
+- `jardissupport/response ^3.0`
 
 ## Related Packages
 
