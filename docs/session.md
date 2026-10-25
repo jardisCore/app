@@ -134,3 +134,28 @@ Signature: `__construct(ResponseFactoryInterface, StreamFactoryInterface, string
 | Guest | A request without a session never reaches it: the session door answers `401` first. Wired without `RequireSession`, the missing RIGHTS still denies. |
 | Forgery | A path placeholder `{jardisRights}` cannot grant a right: `ApplySession` removes the attribute first. |
 | Guard | It does NOT implement `SessionGuardInterface`, so it never satisfies `AppConfig::$requireSessionGuard`. |
+
+## Revoke the session after success - `RevokeSessionOnSuccess`
+
+`JardisCore\App\Middleware\RevokeSessionOnSuccess` (since 3.1.0) is the fourth per-route PSR-15 middleware. It calls the handler first and
+decides on the answer: status `2xx` and a non-empty session reference (`RequestAttribute::SESSION`, set by `ApplySession`) -> the injected closure
+revokes the session; the response is returned unchanged. It is an orchestrator (`Handler\Request\ReadRequestAttribute`, the closure, routing) and
+has no session logic of its own.
+
+```php
+use JardisCore\App\Middleware\RevokeSessionOnSuccess;
+
+$routes->middleware($requireSession);   // global: 401 for a guest, sets jardisSession
+$routes->post('/logout', $logout, new RevokeSessionOnSuccess($sessionManager->invalidateByReference(...)));   // jardissupport/auth
+```
+
+Signature: `__construct(Closure $revoke)` with `$revoke: Closure(string $sessionReference): void`.
+
+| Aspect | Behaviour |
+|---|---|
+| Revoke | Only for `2xx` AND a non-empty string reference: `$revoke($reference)`, exactly once. |
+| Not `2xx` | Nothing is revoked (a failed logout leaves the session as it was); the response passes through. |
+| No reference | Nothing to revoke (no session, or a result that carries no reference); the response passes through. |
+| Failure | An exception from `$revoke` is not swallowed; it leaves the middleware and reaches the error boundary. |
+| Effect | Takes effect at the next refresh: the access token already issued stays valid until its `exp`. |
+| Guard | It does NOT implement `SessionGuardInterface`, so it never satisfies `AppConfig::$requireSessionGuard`. |
