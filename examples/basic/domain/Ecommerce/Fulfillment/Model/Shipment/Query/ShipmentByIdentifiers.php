@@ -12,6 +12,7 @@ namespace Ecommerce\Fulfillment\Model\Shipment\Query;
 readonly class ShipmentByIdentifiers
 {
     public function __construct(
+        public string $tenant,
         public array $identifiers
     ) {
     }

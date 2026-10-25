@@ -13,6 +13,8 @@ use JardisSupport\Workflow\Data\NodeResult;
  *
  * Platzhalter fuer die Entfernungs-Pruefung.
  *
+ * Mandant und Nutzer des Laufs: $ctx->input()->tenant, $ctx->input()->user (beide string).
+ *
  * Kontext-Kette (von oben nach unten):
  * Domain: Ecommerce
  * BC: Sales

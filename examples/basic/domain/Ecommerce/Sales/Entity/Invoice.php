@@ -32,6 +32,7 @@ class Invoice
     // phpcs:ignore PSR2.Classes.PropertyDeclaration.Underscore -- Reflection-Slot jardissupport/data
     protected array $__snapshot = [
         'id' => null,
+        'tenant_key' => null,
         'identifier' => null,
         'invoice_number' => null,
         'order_number' => null,
@@ -55,6 +56,12 @@ class Invoice
     #[PrimaryKey(autoIncrement: true)]
     #[Column(name: 'id', type: 'int')]
     protected ?int $id = null;
+
+    /**
+     * @var ?string
+     */
+    #[Column(name: 'tenant_key', type: 'varchar', length: 36)]
+    protected ?string $tenantKey = null;
 
     /**
      * @var ?string
@@ -161,6 +168,11 @@ class Invoice
         return $this->id;
     }
 
+    public function getTenantKey(): ?string
+    {
+        return $this->tenantKey;
+    }
+
     public function getIdentifier(): ?string
     {
         return $this->identifier;
@@ -243,6 +255,12 @@ class Invoice
     public function getCreatedAt(): ?DateTime
     {
         return $this->createdAt;
+    }
+
+    public function setTenantKey(?string $tenantKey): self
+    {
+        $this->tenantKey = $tenantKey;
+        return $this;
     }
 
     public function setIdentifier(?string $identifier): self

@@ -12,6 +12,7 @@ namespace Ecommerce\Catalog\Model\Product\Command;
 readonly class UpdateProductVariant
 {
     public function __construct(
+        public string $tenant,
         public string $productIdentifier,
         public string $productVariantIdentifier,
         public string $sku,

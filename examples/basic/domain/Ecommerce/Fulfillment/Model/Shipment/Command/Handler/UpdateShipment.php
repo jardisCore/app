@@ -74,7 +74,11 @@ class UpdateShipment extends EcommerceContext
         $owner = $connection?->inTransaction() !== true;
 
         try {
-            $query = $this->handle(QueryShipment::class, identifier: $updateShipment->shipmentIdentifier);
+            $query = $this->handle(
+                QueryShipment::class,
+                tenant: $updateShipment->tenant,
+                identifier: $updateShipment->shipmentIdentifier
+            );
             /** @var Shipment|null $handler */
             $handler = $this->handle(ShipmentRepository::class)->getShipmentByIdentifier($query);
             if ($handler === null) {
@@ -116,6 +120,7 @@ class UpdateShipment extends EcommerceContext
             $event = $this->handle(
                 ShipmentUpdated::class,
                 shipmentIdentifier: $handler->getData()->getIdentifier(),
+                tenantKey: $handler->getData()->getTenantKey(),
                 orderNumber: $handler->getData()->getOrderNumber(),
                 customerIdentifier: $handler->getData()->getCustomerIdentifier(),
                 carrier: $handler->getData()->getCarrier()?->value ?? throw new RuntimeException('carrier is required'),

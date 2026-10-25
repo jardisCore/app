@@ -14,6 +14,7 @@ namespace Ecommerce\Sales\Process\VoucherOverview\Response;
 final readonly class ListVouchersResponse
 {
     public function __construct(
+        /** @var array<int, array<string, mixed>> */
         public array $vouchers,
     ) {
     }

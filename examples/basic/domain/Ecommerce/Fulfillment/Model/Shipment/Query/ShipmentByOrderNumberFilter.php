@@ -13,6 +13,7 @@ readonly class ShipmentByOrderNumberFilter
 {
     public function __construct(
         public string $orderNumber,
+        public string $tenant,
         public int $limit = 50,
         public int $offset = 0
     ) {

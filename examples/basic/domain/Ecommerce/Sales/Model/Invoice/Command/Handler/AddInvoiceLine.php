@@ -70,7 +70,11 @@ class AddInvoiceLine extends EcommerceContext
         $owner = $connection?->inTransaction() !== true;
 
         try {
-            $query = $this->handle(QueryInvoice::class, identifier: $addInvoiceLine->invoiceIdentifier);
+            $query = $this->handle(
+                QueryInvoice::class,
+                tenant: $addInvoiceLine->tenant,
+                identifier: $addInvoiceLine->invoiceIdentifier
+            );
             /** @var Invoice|null $handler */
             $handler = $this->handle(InvoiceRepository::class)->getInvoiceByIdentifier($query);
             if ($handler === null) {

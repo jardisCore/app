@@ -104,6 +104,7 @@ class QueryCategoryList extends EcommerceContext
         if ($hasUpdatedAtUntil) {
             $query = $query->and('category.updated_at')->lowerEquals($filter->updatedAtUntil);
         }
+        $query = $query->and('category.tenant_key')->equals($filter->tenant);
 
         $query = $query
             ->orderBy('category.created_at', 'DESC')

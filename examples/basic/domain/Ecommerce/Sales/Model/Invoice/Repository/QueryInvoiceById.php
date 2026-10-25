@@ -34,7 +34,7 @@ class QueryInvoiceById extends EcommerceContext
     public function __invoke(InvoiceByIdQuery $query): array
     {
         $this->container['invoice'] = $this->load(
-            $this->invoice($query->id)
+            $this->invoice($query->tenant, $query->id)
         );
 
         return $this->container;
@@ -44,10 +44,11 @@ class QueryInvoiceById extends EcommerceContext
      * Query for invoice.
      * @throws Throwable
      */
-    protected function invoice(int $id): DbQueryBuilderInterface
+    protected function invoice(string $tenant, int $id): DbQueryBuilderInterface
     {
         return $this->query(InvoiceEntity::class)
-            ->where('id')->equals($id);
+            ->where('tenant_key')->equals($tenant)
+            ->and('id')->equals($id);
     }
 
     /**

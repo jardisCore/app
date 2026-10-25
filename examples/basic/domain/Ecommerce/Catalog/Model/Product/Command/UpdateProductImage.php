@@ -12,6 +12,7 @@ namespace Ecommerce\Catalog\Model\Product\Command;
 readonly class UpdateProductImage
 {
     public function __construct(
+        public string $tenant,
         public string $productIdentifier,
         public int $productImageId,
         public string $url,

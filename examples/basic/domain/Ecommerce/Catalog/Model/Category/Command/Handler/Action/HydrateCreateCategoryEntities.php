@@ -39,11 +39,13 @@ class HydrateCreateCategoryEntities extends EcommerceContext
 
         $rawData = get_object_vars($category);
 
-        $handler->setCategory($this->handle(FieldMapper::class)->toColumns(array_filter(
+        $columns = $this->handle(FieldMapper::class)->toColumns(array_filter(
             $rawData,
-            fn($key) => !in_array($key, ["categoryTranslation"], true),
+            fn($key) => !in_array($key, ["categoryTranslation","tenant"], true),
             ARRAY_FILTER_USE_KEY
-        ), $fieldMap->categoriesColumns()));
+        ), $fieldMap->categoriesColumns());
+        $columns['tenant_key'] = $category->tenant;
+        $handler->setCategory($columns);
     }
 
     /**

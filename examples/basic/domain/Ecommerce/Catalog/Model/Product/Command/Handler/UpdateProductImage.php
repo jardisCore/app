@@ -70,7 +70,11 @@ class UpdateProductImage extends EcommerceContext
         $owner = $connection?->inTransaction() !== true;
 
         try {
-            $query = $this->handle(QueryProduct::class, identifier: $updateProductImage->productIdentifier);
+            $query = $this->handle(
+                QueryProduct::class,
+                tenant: $updateProductImage->tenant,
+                identifier: $updateProductImage->productIdentifier
+            );
             /** @var Product|null $handler */
             $handler = $this->handle(ProductRepository::class)->getProductByIdentifier($query);
             if ($handler === null) {

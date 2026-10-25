@@ -44,7 +44,7 @@ class RemoveVoucher extends EcommerceContext
         try {
             $query = $this->handle(
                 QueryVoucher::class,
-                scopeKey: $removeVoucher->scopeKey,
+                tenant: $removeVoucher->tenant,
                 voucherCode: $removeVoucher->voucherCode
             );
             /** @var Voucher|null $handler */

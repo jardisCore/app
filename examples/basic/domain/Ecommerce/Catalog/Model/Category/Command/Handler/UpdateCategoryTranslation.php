@@ -70,7 +70,11 @@ class UpdateCategoryTranslation extends EcommerceContext
         $owner = $connection?->inTransaction() !== true;
 
         try {
-            $query = $this->handle(QueryCategory::class, identifier: $updateCategoryTranslation->categoryIdentifier);
+            $query = $this->handle(
+                QueryCategory::class,
+                tenant: $updateCategoryTranslation->tenant,
+                identifier: $updateCategoryTranslation->categoryIdentifier
+            );
             /** @var Category|null $handler */
             $handler = $this->handle(CategoryRepository::class)->getCategoryByIdentifier($query);
             if ($handler === null) {

@@ -31,7 +31,7 @@ class BuildSetShipmentAddressData extends EcommerceContext
         return $this->handle(FieldMapper::class)->toColumns([
             ...array_filter(
                 $rawData,
-                fn($key) => !in_array($key, ["shipmentIdentifier"], true),
+                fn($key) => !in_array($key, ["tenant","shipmentIdentifier"], true),
                 ARRAY_FILTER_USE_KEY
             ),
         ], $fieldMap->shipmentAddressesColumns());

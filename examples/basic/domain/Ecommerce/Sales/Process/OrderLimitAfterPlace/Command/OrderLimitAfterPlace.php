@@ -15,7 +15,9 @@ readonly class OrderLimitAfterPlace
 {
     public function __construct(
         public string $limit,
-        public Order $order
+        public Order $order,
+        public string $tenant,
+        public string $user
     ) {
     }
 }

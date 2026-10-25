@@ -15,6 +15,7 @@ readonly class ProductUpdated
 {
     /**
      * @param string $productIdentifier
+     * @param string $tenantKey
      * @param string $sku
      * @param string $productName
      * @param string $slug
@@ -32,6 +33,7 @@ readonly class ProductUpdated
      */
     public function __construct(
         public string $productIdentifier,
+        public string $tenantKey,
         public string $sku,
         public string $productName,
         public string $slug,

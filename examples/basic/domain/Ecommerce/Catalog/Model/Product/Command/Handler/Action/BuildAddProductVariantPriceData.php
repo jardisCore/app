@@ -31,7 +31,7 @@ class BuildAddProductVariantPriceData extends EcommerceContext
         return $this->handle(FieldMapper::class)->toColumns([
             ...array_filter(
                 $rawData,
-                fn($key) => !in_array($key, ["productIdentifier","productVariantIdentifier"], true),
+                fn($key) => !in_array($key, ["tenant","productIdentifier","productVariantIdentifier"], true),
                 ARRAY_FILTER_USE_KEY
             ),
         ], $fieldMap->productVariantPricesColumns());

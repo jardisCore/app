@@ -29,6 +29,11 @@ The right of a route is asked at the door; the access-denied marker is gone. **B
   response 3.0.0: `Forbidden`, `ForbiddenPayload`, `AnswerUnauthorized`).
 - `examples/basic`: `EcommerceAccessDenied` no longer implements the marker; the synthetic route `/test/right-guarded` carries a `RequireRight`
   (acceptance: 200 with the right / `*`, 403 bytes without, 403 without RIGHTS).
+- `examples/basic`: the Beispiel is built from the current generat (Builder golden `Ecommerce`): the domain carries no actor, rights or access-denied
+  classes any more (`EcommerceActor`, `EcommerceActorKind`, `EcommerceRights`, `EcommerceCheckAccess`, `EcommerceAccessDenied` are gone); the doors are
+  tenant-scoped. `app/` only wires: `SingleTenantSession` (PSR-15 stand-in for the session door, fixed tenant and subject under
+  `RequestAttribute::TENANT` / `SUBJECT_ID`), `RegisterOrderRoutes` reads both with `ReadRequestAttribute`. `schema/Sales` follows the Builder `Schema.json`
+  (adds `tenant_key`, eleven tables).
 
 ## [2.1.2] - 2026-10-23
 

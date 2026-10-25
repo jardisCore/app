@@ -203,7 +203,7 @@ Reference: `jardissupport/contracts` → `docs/response-envelope.md`. `ResponseS
 
 ## ERROR CONTRACT — `HandleThrowable`
 - `Exception\InvalidJsonBody` → 400, envelope `errors.message` = the exception's own (non-sensitive) message.
-- No exception type is answered 403 (since 3.0.0; the `AccessDeniedExceptionInterface` branch is gone): the right of a route is checked by `RequireRight`. An exception that carries a message key and a context but no known type is an unknown exception -> 500.
+- No exception type is answered 403 (since 3.0.0; the access-denied branch of the boundary is gone): the right of a route is checked by `RequireRight`. An exception that carries a message key and a context but no known type is an unknown exception -> 500.
 - Any other `Throwable` → 500, **generic** body (no message/class/trace) unless `AppConfig::$debug === true`
   (then `errors.message`/`errors.exception`/`errors.trace` are added). The full exception always goes to the
   injected PSR-3 logger at `error` level regardless of `$debug` — `LogThrowable` falls back to `error_log()`

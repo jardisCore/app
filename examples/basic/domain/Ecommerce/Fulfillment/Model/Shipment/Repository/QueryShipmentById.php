@@ -34,7 +34,7 @@ class QueryShipmentById extends EcommerceContext
     public function __invoke(ShipmentByIdQuery $query): array
     {
         $this->container['shipment'] = $this->load(
-            $this->shipment($query->id)
+            $this->shipment($query->tenant, $query->id)
         );
 
         return $this->container;
@@ -44,10 +44,11 @@ class QueryShipmentById extends EcommerceContext
      * Query for shipment.
      * @throws Throwable
      */
-    protected function shipment(int $id): DbQueryBuilderInterface
+    protected function shipment(string $tenant, int $id): DbQueryBuilderInterface
     {
         return $this->query(ShipmentEntity::class)
-            ->where('id')->equals($id);
+            ->where('tenant_key')->equals($tenant)
+            ->and('id')->equals($id);
     }
 
     /**

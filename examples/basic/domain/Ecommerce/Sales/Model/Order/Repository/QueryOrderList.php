@@ -63,6 +63,7 @@ class QueryOrderList extends EcommerceContext
         if ($hasCreatedAtUntil) {
             $query = $query->and('order.created_at')->lowerEquals($filter->createdAtUntil);
         }
+        $query = $query->and('order.tenant_key')->equals($filter->tenant);
 
         $query = $query
             ->orderBy('order.created_at', 'DESC')

@@ -38,9 +38,7 @@ class QueryInvoicesOfActorTenant extends EcommerceContext
                 . 'invoice.paid_at AS paidAt, invoice.created_at AS createdAt, COUNT(*) OVER() AS total_count'
             );
 
-        $actor = $this->actor();
-
-        $query = $query->and('invoice.invoice_number')->equals($actor->tenant);
+        $query = $query->and('invoice.tenant_key')->equals($filter->tenant);
 
         $query = $query
             ->orderBy('invoice.invoice_number', 'ASC')

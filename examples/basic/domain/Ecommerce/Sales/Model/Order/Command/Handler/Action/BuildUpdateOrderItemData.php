@@ -31,7 +31,7 @@ class BuildUpdateOrderItemData extends EcommerceContext
         return $this->handle(FieldMapper::class)->toColumns([
             ...array_filter(
                 $rawData,
-                fn($key) => !in_array($key, ["orderNumber","orderItemIdentifier"], true),
+                fn($key) => !in_array($key, ["tenant","orderNumber","orderItemIdentifier"], true),
                 ARRAY_FILTER_USE_KEY
             ),
         ], $fieldMap->orderItemsColumns());

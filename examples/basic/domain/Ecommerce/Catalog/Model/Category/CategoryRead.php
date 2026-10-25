@@ -10,9 +10,7 @@ use Ecommerce\Catalog\Model\Category\Query\Handler\GetCategoryByIdentifierHandle
 use Ecommerce\Catalog\Model\Category\Query\Handler\GetCategoryByIdentifiersHandler;
 use Ecommerce\Catalog\Model\Category\Query\Handler\GetCategoryByIdsHandler;
 use Ecommerce\Catalog\Model\Category\Query\Handler\GetCategoryListHandler;
-use Ecommerce\EcommerceCheckAccess;
 use Ecommerce\EcommerceContext;
-use Ecommerce\EcommerceRights;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
 use JardisSupport\Response\Data\ReadResult;
 use Throwable;
@@ -40,15 +38,6 @@ class CategoryRead extends EcommerceContext
      */
     public function getCategoryById(QueryCategoryById $categoryById, string $version = ''): DomainResponseInterface
     {
-        $denied = ($this->handle(EcommerceCheckAccess::class))(
-            $this->entry(),
-            $this->actor(),
-            EcommerceRights::CATALOG_CATEGORY__READ
-        );
-        if ($denied !== null) {
-            throw $denied;
-        }
-
         return $this->context(GetCategoryByIdHandler::class, $categoryById, $version)();
     }
 
@@ -64,15 +53,6 @@ class CategoryRead extends EcommerceContext
         QueryCategoryByIdentifier $categoryByIdentifier,
         string $version = ''
     ): DomainResponseInterface {
-        $denied = ($this->handle(EcommerceCheckAccess::class))(
-            $this->entry(),
-            $this->actor(),
-            EcommerceRights::CATALOG_CATEGORY__READ
-        );
-        if ($denied !== null) {
-            throw $denied;
-        }
-
         return $this->context(GetCategoryByIdentifierHandler::class, $categoryByIdentifier, $version)();
     }
 
@@ -88,15 +68,6 @@ class CategoryRead extends EcommerceContext
         QueryCategoryByIdentifiers $categoryByIdentifiers,
         string $version = ''
     ): DomainResponseInterface {
-        $denied = ($this->handle(EcommerceCheckAccess::class))(
-            $this->entry(),
-            $this->actor(),
-            EcommerceRights::CATALOG_CATEGORY__READ
-        );
-        if ($denied !== null) {
-            throw $denied;
-        }
-
         return $this->context(GetCategoryByIdentifiersHandler::class, $categoryByIdentifiers, $version)();
     }
 
@@ -110,15 +81,6 @@ class CategoryRead extends EcommerceContext
      */
     public function getCategoryByIds(QueryCategoryByIds $categoryByIds, string $version = ''): DomainResponseInterface
     {
-        $denied = ($this->handle(EcommerceCheckAccess::class))(
-            $this->entry(),
-            $this->actor(),
-            EcommerceRights::CATALOG_CATEGORY__READ
-        );
-        if ($denied !== null) {
-            throw $denied;
-        }
-
         return $this->context(GetCategoryByIdsHandler::class, $categoryByIds, $version)();
     }
 
@@ -132,15 +94,6 @@ class CategoryRead extends EcommerceContext
      */
     public function categoryList(CategoryListFilter $filter, string $version = ''): ReadResult
     {
-        $denied = ($this->handle(EcommerceCheckAccess::class))(
-            $this->entry(),
-            $this->actor(),
-            EcommerceRights::CATALOG_CATEGORY__READ
-        );
-        if ($denied !== null) {
-            throw $denied;
-        }
-
         return $this->context(GetCategoryListHandler::class, $filter, $version)();
     }
 }

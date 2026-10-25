@@ -17,10 +17,12 @@ use Ecommerce\Sales\Model\Order\Command\UpdateOrder;
 readonly class OrderInvoiceBatch
 {
     public function __construct(
-        /** @param array<AddOrderItem|AddInvoiceLine> $lineCommands */
+        /** @var array<AddOrderItem|AddInvoiceLine> */
         public array $lineCommands,
         public UpdateOrder|UpdateInvoice $primaryCommand,
         public string $requestedBy,
+        public string $tenant,
+        public string $user,
         public string $note = ''
     ) {
     }

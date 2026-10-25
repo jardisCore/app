@@ -12,6 +12,7 @@ namespace Ecommerce\Catalog\Model\Category\Command;
 readonly class UpdateCategoryTranslation
 {
     public function __construct(
+        public string $tenant,
         public string $categoryIdentifier,
         public int $categoryTranslationId,
         public string $locale,

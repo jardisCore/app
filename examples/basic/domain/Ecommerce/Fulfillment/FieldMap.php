@@ -57,6 +57,7 @@ class FieldMap
     {
         return [
             'id' => 'id',
+            'tenantKey' => 'tenant_key',
             'identifier' => 'identifier',
             'orderNumber' => 'order_number',
             'customerIdentifier' => 'customer_identifier',

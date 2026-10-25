@@ -12,6 +12,7 @@ namespace Ecommerce\Fulfillment\Model\Shipment\Query;
 readonly class ShipmentListFilter
 {
     public function __construct(
+        public string $tenant,
         public ?int $id = null,
         public ?string $identifier = null,
         public ?string $orderNumber = null,

@@ -12,6 +12,7 @@ namespace Ecommerce\Sales\Model\Invoice\Query;
 readonly class InvoiceListFilter
 {
     public function __construct(
+        public string $tenant,
         public ?int $id = null,
         public ?string $identifier = null,
         public ?string $invoiceNumber = null,

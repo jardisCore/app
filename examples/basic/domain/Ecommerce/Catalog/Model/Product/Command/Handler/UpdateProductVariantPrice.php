@@ -70,7 +70,11 @@ class UpdateProductVariantPrice extends EcommerceContext
         $owner = $connection?->inTransaction() !== true;
 
         try {
-            $query = $this->handle(QueryProduct::class, identifier: $updateProductVariantPrice->productIdentifier);
+            $query = $this->handle(
+                QueryProduct::class,
+                tenant: $updateProductVariantPrice->tenant,
+                identifier: $updateProductVariantPrice->productIdentifier
+            );
             /** @var Product|null $handler */
             $handler = $this->handle(ProductRepository::class)->getProductByIdentifier($query);
             if ($handler === null) {

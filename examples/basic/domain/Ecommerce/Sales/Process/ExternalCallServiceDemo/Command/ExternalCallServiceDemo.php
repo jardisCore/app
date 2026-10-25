@@ -15,6 +15,8 @@ readonly class ExternalCallServiceDemo
 {
     public function __construct(
         public string $note,
+        public string $tenant,
+        public string $user,
         public ?string $budget = null,
         public ?string $channel = null,
         public ?string $confirmationKey = null,

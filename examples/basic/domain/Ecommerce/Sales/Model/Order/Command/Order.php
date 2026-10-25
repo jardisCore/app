@@ -12,6 +12,7 @@ namespace Ecommerce\Sales\Model\Order\Command;
 readonly class Order
 {
     public function __construct(
+        public string $tenant,
         public string $orderNumber,
         public string $totalAmount,
         public string $status,

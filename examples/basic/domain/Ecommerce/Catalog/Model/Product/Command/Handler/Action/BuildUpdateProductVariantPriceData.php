@@ -33,7 +33,7 @@ class BuildUpdateProductVariantPriceData extends EcommerceContext
                 $rawData,
                 fn($key) => !in_array(
                     $key,
-                    ["productIdentifier","productVariantIdentifier","productVariantPriceId"],
+                    ["tenant","productIdentifier","productVariantIdentifier","productVariantPriceId"],
                     true
                 ),
                 ARRAY_FILTER_USE_KEY

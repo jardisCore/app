@@ -12,6 +12,7 @@ namespace Ecommerce\Sales\Model\Invoice\Command;
 readonly class RemoveInvoice
 {
     public function __construct(
+        public string $tenant,
         public string $invoiceIdentifier
     ) {
     }

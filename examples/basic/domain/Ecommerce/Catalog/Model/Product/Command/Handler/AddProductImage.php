@@ -70,7 +70,11 @@ class AddProductImage extends EcommerceContext
         $owner = $connection?->inTransaction() !== true;
 
         try {
-            $query = $this->handle(QueryProduct::class, identifier: $addProductImage->productIdentifier);
+            $query = $this->handle(
+                QueryProduct::class,
+                tenant: $addProductImage->tenant,
+                identifier: $addProductImage->productIdentifier
+            );
             /** @var Product|null $handler */
             $handler = $this->handle(ProductRepository::class)->getProductByIdentifier($query);
             if ($handler === null) {

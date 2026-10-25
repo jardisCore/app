@@ -34,7 +34,7 @@ class QueryCategoryByIds extends EcommerceContext
     public function __invoke(CategoryByIdsQuery $query): array
     {
         $this->container['category'] = $this->load(
-            $this->category($query->ids)
+            $this->category($query->tenant, $query->ids)
         );
 
         return $this->container;
@@ -44,10 +44,11 @@ class QueryCategoryByIds extends EcommerceContext
      * Query for category.
      * @throws Throwable
      */
-    protected function category(array $ids): DbQueryBuilderInterface
+    protected function category(string $tenant, array $ids): DbQueryBuilderInterface
     {
         return $this->query(CategoryEntity::class)
-            ->where('id')->in($ids)
+            ->where('tenant_key')->equals($tenant)
+            ->and('id')->in($ids)
             ->orderBy('id', 'ASC');
     }
 

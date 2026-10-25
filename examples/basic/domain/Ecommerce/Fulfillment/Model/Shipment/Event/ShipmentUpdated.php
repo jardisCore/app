@@ -15,6 +15,7 @@ readonly class ShipmentUpdated
 {
     /**
      * @param string $shipmentIdentifier
+     * @param string $tenantKey
      * @param string $orderNumber
      * @param string $customerIdentifier
      * @param string $carrier
@@ -32,6 +33,7 @@ readonly class ShipmentUpdated
      */
     public function __construct(
         public string $shipmentIdentifier,
+        public string $tenantKey,
         public string $orderNumber,
         public string $customerIdentifier,
         public string $carrier,

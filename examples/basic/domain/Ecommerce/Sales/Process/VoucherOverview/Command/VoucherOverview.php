@@ -12,7 +12,9 @@ namespace Ecommerce\Sales\Process\VoucherOverview\Command;
 readonly class VoucherOverview
 {
     public function __construct(
-        public string $scope
+        public string $scope,
+        public string $tenant,
+        public string $user
     ) {
     }
 }

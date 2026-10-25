@@ -41,11 +41,13 @@ class HydrateCreateOrderEntities extends EcommerceContext
 
         $rawData = get_object_vars($order);
 
-        $handler->setOrder($this->handle(FieldMapper::class)->toColumns(array_filter(
+        $columns = $this->handle(FieldMapper::class)->toColumns(array_filter(
             $rawData,
-            fn($key) => !in_array($key, ["customer","orderItem"], true),
+            fn($key) => !in_array($key, ["customer","orderItem","tenant"], true),
             ARRAY_FILTER_USE_KEY
-        ), $fieldMap->ordersColumns()));
+        ), $fieldMap->ordersColumns());
+        $columns['tenant_key'] = $order->tenant;
+        $handler->setOrder($columns);
     }
 
     /**
@@ -108,6 +110,7 @@ class HydrateCreateOrderEntities extends EcommerceContext
             if (!empty($itemDiscountDataList)) {
                 $entityData['itemDiscount'] = $itemDiscountDataList;
             }
+            $entityData['tenant_key'] = $order->tenant;
             $handler->addOrderItem($entityData);
         }
     }

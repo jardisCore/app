@@ -74,7 +74,11 @@ class UpdateInvoice extends EcommerceContext
         $owner = $connection?->inTransaction() !== true;
 
         try {
-            $query = $this->handle(QueryInvoice::class, identifier: $updateInvoice->invoiceIdentifier);
+            $query = $this->handle(
+                QueryInvoice::class,
+                tenant: $updateInvoice->tenant,
+                identifier: $updateInvoice->invoiceIdentifier
+            );
             /** @var Invoice|null $handler */
             $handler = $this->handle(InvoiceRepository::class)->getInvoiceByIdentifier($query);
             if ($handler === null) {
@@ -116,6 +120,7 @@ class UpdateInvoice extends EcommerceContext
             $event = $this->handle(
                 InvoiceUpdated::class,
                 invoiceIdentifier: $handler->getData()->getIdentifier(),
+                tenantKey: $handler->getData()->getTenantKey(),
                 invoiceNumber: $handler->getData()->getInvoiceNumber(),
                 orderNumber: $handler->getData()->getOrderNumber(),
                 customerIdentifier: $handler->getData()->getCustomerIdentifier(),

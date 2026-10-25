@@ -125,6 +125,7 @@ class QueryShipmentList extends EcommerceContext
         if ($hasCreatedAtUntil) {
             $query = $query->and('shipment.created_at')->lowerEquals($filter->createdAtUntil);
         }
+        $query = $query->and('shipment.tenant_key')->equals($filter->tenant);
 
         $query = $query
             ->orderBy('shipment.estimated_delivery', 'DESC')

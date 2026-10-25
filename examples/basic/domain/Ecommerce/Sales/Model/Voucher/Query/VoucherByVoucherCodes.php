@@ -12,7 +12,7 @@ namespace Ecommerce\Sales\Model\Voucher\Query;
 readonly class VoucherByVoucherCodes
 {
     public function __construct(
-        public string $scopeKey,
+        public string $tenant,
         public array $voucherCodes
     ) {
     }

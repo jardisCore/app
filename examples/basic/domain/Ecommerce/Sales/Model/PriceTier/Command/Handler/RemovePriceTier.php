@@ -42,7 +42,11 @@ class RemovePriceTier extends EcommerceContext
         $owner = $connection?->inTransaction() !== true;
 
         try {
-            $query = $this->handle(QueryPriceTier::class, identifier: $removePriceTier->priceTierIdentifier);
+            $query = $this->handle(
+                QueryPriceTier::class,
+                tenant: $removePriceTier->tenant,
+                identifier: $removePriceTier->priceTierIdentifier
+            );
             /** @var PriceTier|null $handler */
             $handler = $this->handle(PriceTierRepository::class)->getPriceTierByIdentifier($query);
             if ($handler === null) {

@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace Ecommerce\Fulfillment\Model\Shipment;
 
-use Ecommerce\EcommerceCheckAccess;
 use Ecommerce\EcommerceContext;
-use Ecommerce\EcommerceRights;
 use Ecommerce\Fulfillment\Model\Shipment\Query\Handler\GetShipmentByIdHandler;
 use Ecommerce\Fulfillment\Model\Shipment\Query\Handler\GetShipmentByIdentifierHandler;
 use Ecommerce\Fulfillment\Model\Shipment\Query\Handler\GetShipmentByIdentifiersHandler;
@@ -42,15 +40,6 @@ class ShipmentRead extends EcommerceContext
      */
     public function getShipmentById(QueryShipmentById $shipmentById, string $version = ''): DomainResponseInterface
     {
-        $denied = ($this->handle(EcommerceCheckAccess::class))(
-            $this->entry(),
-            $this->actor(),
-            EcommerceRights::FULFILLMENT_SHIPMENT__READ
-        );
-        if ($denied !== null) {
-            throw $denied;
-        }
-
         return $this->context(GetShipmentByIdHandler::class, $shipmentById, $version)();
     }
 
@@ -66,15 +55,6 @@ class ShipmentRead extends EcommerceContext
         QueryShipmentByIdentifier $shipmentByIdentifier,
         string $version = ''
     ): DomainResponseInterface {
-        $denied = ($this->handle(EcommerceCheckAccess::class))(
-            $this->entry(),
-            $this->actor(),
-            EcommerceRights::FULFILLMENT_SHIPMENT__READ
-        );
-        if ($denied !== null) {
-            throw $denied;
-        }
-
         return $this->context(GetShipmentByIdentifierHandler::class, $shipmentByIdentifier, $version)();
     }
 
@@ -90,15 +70,6 @@ class ShipmentRead extends EcommerceContext
         QueryShipmentByIdentifiers $shipmentByIdentifiers,
         string $version = ''
     ): DomainResponseInterface {
-        $denied = ($this->handle(EcommerceCheckAccess::class))(
-            $this->entry(),
-            $this->actor(),
-            EcommerceRights::FULFILLMENT_SHIPMENT__READ
-        );
-        if ($denied !== null) {
-            throw $denied;
-        }
-
         return $this->context(GetShipmentByIdentifiersHandler::class, $shipmentByIdentifiers, $version)();
     }
 
@@ -112,15 +83,6 @@ class ShipmentRead extends EcommerceContext
      */
     public function getShipmentByIds(QueryShipmentByIds $shipmentByIds, string $version = ''): DomainResponseInterface
     {
-        $denied = ($this->handle(EcommerceCheckAccess::class))(
-            $this->entry(),
-            $this->actor(),
-            EcommerceRights::FULFILLMENT_SHIPMENT__READ
-        );
-        if ($denied !== null) {
-            throw $denied;
-        }
-
         return $this->context(GetShipmentByIdsHandler::class, $shipmentByIds, $version)();
     }
 
@@ -134,15 +96,6 @@ class ShipmentRead extends EcommerceContext
      */
     public function shipmentByOrderNumber(ShipmentByOrderNumberFilter $filter, string $version = ''): ReadResult
     {
-        $denied = ($this->handle(EcommerceCheckAccess::class))(
-            $this->entry(),
-            $this->actor(),
-            EcommerceRights::FULFILLMENT_SHIPMENT__SHIPMENTBYORDERNUMBER
-        );
-        if ($denied !== null) {
-            throw $denied;
-        }
-
         return $this->context(GetShipmentByOrderNumberHandler::class, $filter, $version)();
     }
 
@@ -156,15 +109,6 @@ class ShipmentRead extends EcommerceContext
      */
     public function shipmentList(ShipmentListFilter $filter, string $version = ''): ReadResult
     {
-        $denied = ($this->handle(EcommerceCheckAccess::class))(
-            $this->entry(),
-            $this->actor(),
-            EcommerceRights::FULFILLMENT_SHIPMENT__READ
-        );
-        if ($denied !== null) {
-            throw $denied;
-        }
-
         return $this->context(GetShipmentListHandler::class, $filter, $version)();
     }
 }

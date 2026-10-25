@@ -15,6 +15,7 @@ readonly class PriceTierUpdated
 {
     /**
      * @param string $priceTierIdentifier
+     * @param string $tenantKey
      * @param string $tierCode
      * @param int $minQuantity
      * @param string $unitPrice
@@ -22,6 +23,7 @@ readonly class PriceTierUpdated
      */
     public function __construct(
         public string $priceTierIdentifier,
+        public string $tenantKey,
         public string $tierCode,
         public int $minQuantity,
         public string $unitPrice,

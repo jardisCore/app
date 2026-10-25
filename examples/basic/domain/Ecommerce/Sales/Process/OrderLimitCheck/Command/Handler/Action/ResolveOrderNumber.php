@@ -15,6 +15,8 @@ use JardisSupport\Workflow\Data\NodeResult;
  * Handgeschriebener Vorknoten: liefert die Bestellnummer als Ergebnis-Feld
  * (`outputShape`), aus dem der Rule-Knoten die Wurzel laedt.
  *
+ * Mandant und Nutzer des Laufs: $ctx->input()->tenant, $ctx->input()->user (beide string).
+ *
  * Kontext-Kette (von oben nach unten):
  * Domain: Ecommerce
  * BC: Sales

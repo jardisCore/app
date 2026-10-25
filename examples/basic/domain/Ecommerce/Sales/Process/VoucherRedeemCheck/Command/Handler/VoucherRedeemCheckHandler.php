@@ -16,10 +16,8 @@ use Throwable;
 /**
  * Door of the process VoucherRedeemCheck (hermetic): input check, run in its bracket (RunProcess), answer.
  *
- * Request-Attribut-Feld an der Prozess-Tuer: nur `session` (Sitzungsreferenz) kommt als Prozess-Input aus dem
- * Request-Attribut, nie vom Client - es fehlt im Body und im OpenAPI-Request. Mandant und Akteur traegt der
- * Domain-Akteur (`$this->actor()`), kein Prozess-Input deklariert sie. Der Rule-Knoten laedt die mandanten-gescopte
- * Voucher-Wurzel ueber LoadVoucherForRule im Mandanten des Akteurs; der Akteur ist nur Wert, nie Lesefilter (B4).
+ * Rule-Knoten an der Prozess-Tuer: der Rule-Knoten laedt die mandanten-gescopte Voucher-Wurzel ueber LoadVoucherForRule
+ * im Mandanten der Sitzung; der Akteur ist nur Wert, nie Lesefilter (B4).
  */
 final class VoucherRedeemCheckHandler extends EcommerceContext
 {

@@ -12,6 +12,7 @@ namespace Ecommerce\Fulfillment\Model\Shipment\Command;
 readonly class AddShipmentItem
 {
     public function __construct(
+        public string $tenant,
         public string $shipmentIdentifier,
         public string $productSku,
         public string $productName,

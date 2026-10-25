@@ -31,7 +31,7 @@ class BuildSetVoucherChannelData extends EcommerceContext
         return $this->handle(FieldMapper::class)->toColumns([
             ...array_filter(
                 $rawData,
-                fn($key) => !in_array($key, ["scopeKey","voucherCode","channelHook"], true),
+                fn($key) => !in_array($key, ["tenant","voucherCode","channelHook"], true),
                 ARRAY_FILTER_USE_KEY
             ),
             'channelHook' => $setVoucherChannel->channelHook !== null

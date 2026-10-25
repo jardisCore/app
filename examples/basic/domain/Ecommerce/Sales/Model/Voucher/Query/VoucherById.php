@@ -12,6 +12,7 @@ namespace Ecommerce\Sales\Model\Voucher\Query;
 readonly class VoucherById
 {
     public function __construct(
+        public string $tenant,
         public int $id
     ) {
     }

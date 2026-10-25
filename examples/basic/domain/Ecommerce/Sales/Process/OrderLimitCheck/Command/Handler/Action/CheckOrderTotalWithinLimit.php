@@ -33,7 +33,7 @@ final class CheckOrderTotalWithinLimit extends EcommerceContext
         $fromResolveOrderNumber = $ctx->resolveOrderNumber() ?? throw new \LogicException('ResolveOrderNumber');
 
         $identifierRoot = $fromResolveOrderNumber->orderNumber;
-        $loadedRoot = $this->handle(LoadOrderForRule::class)($identifierRoot);
+        $loadedRoot = $this->handle(LoadOrderForRule::class)($ctx->input()->tenant, $identifierRoot);
 
         if ($loadedRoot === null) {
             return NodeResult::reject(

@@ -32,6 +32,7 @@ class OrderItem
         'id' => null,
         'identifier' => null,
         'order_id' => null,
+        'tenant_key' => null,
         'product_identifier' => null,
         'quantity' => null,
         'unit_price' => null,
@@ -57,6 +58,12 @@ class OrderItem
     #[Column(name: 'order_id', type: 'int')]
     #[ForeignKey(referencedTable: 'orders', referencedColumn: 'id')]
     protected ?int $orderId = null;
+
+    /**
+     * @var ?string
+     */
+    #[Column(name: 'tenant_key', type: 'varchar', length: 36)]
+    protected ?string $tenantKey = null;
 
     /**
      * @var ?string
@@ -107,6 +114,11 @@ class OrderItem
         return $this->orderId;
     }
 
+    public function getTenantKey(): ?string
+    {
+        return $this->tenantKey;
+    }
+
     public function getProductIdentifier(): ?string
     {
         return $this->productIdentifier;
@@ -142,6 +154,12 @@ class OrderItem
     public function setOrderId(?int $orderId): self
     {
         $this->orderId = $orderId;
+        return $this;
+    }
+
+    public function setTenantKey(?string $tenantKey): self
+    {
+        $this->tenantKey = $tenantKey;
         return $this;
     }
 

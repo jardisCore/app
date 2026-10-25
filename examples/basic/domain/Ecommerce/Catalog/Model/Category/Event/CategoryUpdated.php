@@ -15,6 +15,7 @@ readonly class CategoryUpdated
 {
     /**
      * @param string $categoryIdentifier
+     * @param string $tenantKey
      * @param string $slug
      * @param ?string $parentIdentifier
      * @param string $categoryName
@@ -29,6 +30,7 @@ readonly class CategoryUpdated
      */
     public function __construct(
         public string $categoryIdentifier,
+        public string $tenantKey,
         public string $slug,
         public ?string $parentIdentifier,
         public string $categoryName,

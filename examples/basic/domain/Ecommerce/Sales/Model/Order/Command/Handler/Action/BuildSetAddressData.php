@@ -31,7 +31,7 @@ class BuildSetAddressData extends EcommerceContext
         return $this->handle(FieldMapper::class)->toColumns([
             ...array_filter(
                 $rawData,
-                fn($key) => !in_array($key, ["orderNumber"], true),
+                fn($key) => !in_array($key, ["tenant","orderNumber"], true),
                 ARRAY_FILTER_USE_KEY
             ),
         ], $fieldMap->addressesColumns());

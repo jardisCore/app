@@ -14,7 +14,7 @@ readonly class OrderBulkQuoteLinesItem
     public function __construct(
         public ?OrderBulkQuoteLinesDiscountItem $discount,
         public int $quantity,
-        /** @param list<string>|null $serialNumbers */
+        /** @var list<string>|null */
         public ?array $serialNumbers,
         public string $sku,
         public string $unitPrice

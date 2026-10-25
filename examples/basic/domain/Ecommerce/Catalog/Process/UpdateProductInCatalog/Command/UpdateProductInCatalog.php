@@ -14,7 +14,9 @@ use Ecommerce\Catalog\Model\Product\Command\UpdateProduct;
 readonly class UpdateProductInCatalog
 {
     public function __construct(
-        public UpdateProduct $update
+        public string $tenant,
+        public UpdateProduct $update,
+        public string $user
     ) {
     }
 }

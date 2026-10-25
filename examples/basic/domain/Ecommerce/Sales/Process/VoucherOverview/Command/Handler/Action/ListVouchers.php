@@ -17,6 +17,8 @@ use JardisSupport\Workflow\Data\NodeResult;
  * Liefert die Zeilen der Query voucherDigestList so, wie die interne Lesung sie kennt; ein unbekannter Scope antwortet
  * 404.
  *
+ * Mandant und Nutzer des Laufs: $ctx->input()->tenant, $ctx->input()->user (beide string).
+ *
  * Kontext-Kette (von oben nach unten):
  * Domain: Ecommerce
  * BC: Sales

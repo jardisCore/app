@@ -34,7 +34,7 @@ class QueryProductById extends EcommerceContext
     public function __invoke(ProductByIdQuery $query): array
     {
         $this->container['product'] = $this->load(
-            $this->product($query->id)
+            $this->product($query->tenant, $query->id)
         );
 
         return $this->container;
@@ -44,10 +44,11 @@ class QueryProductById extends EcommerceContext
      * Query for product.
      * @throws Throwable
      */
-    protected function product(int $id): DbQueryBuilderInterface
+    protected function product(string $tenant, int $id): DbQueryBuilderInterface
     {
         return $this->query(ProductEntity::class)
-            ->where('id')->equals($id);
+            ->where('tenant_key')->equals($tenant)
+            ->and('id')->equals($id);
     }
 
     /**

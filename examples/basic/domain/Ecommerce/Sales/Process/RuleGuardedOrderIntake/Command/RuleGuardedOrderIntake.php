@@ -14,7 +14,9 @@ use Ecommerce\Sales\Model\Order\Command\Order;
 readonly class RuleGuardedOrderIntake
 {
     public function __construct(
-        public Order $order
+        public Order $order,
+        public string $tenant,
+        public string $user
     ) {
     }
 }

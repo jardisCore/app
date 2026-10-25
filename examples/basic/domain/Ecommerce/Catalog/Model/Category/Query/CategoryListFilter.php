@@ -12,6 +12,7 @@ namespace Ecommerce\Catalog\Model\Category\Query;
 readonly class CategoryListFilter
 {
     public function __construct(
+        public string $tenant,
         public ?int $id = null,
         public ?string $identifier = null,
         public ?string $slug = null,

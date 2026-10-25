@@ -73,7 +73,11 @@ class UpdateOrderItem extends EcommerceContext
         $owner = $connection?->inTransaction() !== true;
 
         try {
-            $query = $this->handle(QueryOrder::class, orderNumber: $updateOrderItem->orderNumber);
+            $query = $this->handle(
+                QueryOrder::class,
+                tenant: $updateOrderItem->tenant,
+                orderNumber: $updateOrderItem->orderNumber
+            );
             /** @var Order|null $handler */
             $handler = $this->handle(OrderRepository::class)->getOrderByOrderNumber($query);
             if ($handler === null) {

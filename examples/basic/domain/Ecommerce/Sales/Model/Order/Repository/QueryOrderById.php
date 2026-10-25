@@ -34,7 +34,7 @@ class QueryOrderById extends EcommerceContext
     public function __invoke(OrderByIdQuery $query): array
     {
         $this->container['order'] = $this->load(
-            $this->order($query->id)
+            $this->order($query->tenant, $query->id)
         );
 
         return $this->container;
@@ -44,10 +44,11 @@ class QueryOrderById extends EcommerceContext
      * Query for order.
      * @throws Throwable
      */
-    protected function order(int $id): DbQueryBuilderInterface
+    protected function order(string $tenant, int $id): DbQueryBuilderInterface
     {
         return $this->query(OrderEntity::class)
-            ->where('id')->equals($id);
+            ->where('tenant_key')->equals($tenant)
+            ->and('id')->equals($id);
     }
 
     /**

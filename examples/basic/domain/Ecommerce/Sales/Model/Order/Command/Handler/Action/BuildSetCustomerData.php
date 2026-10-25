@@ -31,7 +31,7 @@ class BuildSetCustomerData extends EcommerceContext
         return $this->handle(FieldMapper::class)->toColumns([
             ...array_filter(
                 $rawData,
-                fn($key) => !in_array($key, ["orderNumber","address"], true),
+                fn($key) => !in_array($key, ["tenant","orderNumber","address"], true),
                 ARRAY_FILTER_USE_KEY
             ),
             'address' => $setCustomer->address !== null

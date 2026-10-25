@@ -14,6 +14,7 @@ use DateTimeImmutable;
 readonly class UpdateShipment
 {
     public function __construct(
+        public string $tenant,
         public string $shipmentIdentifier,
         public string $orderNumber,
         public string $customerIdentifier,

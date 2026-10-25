@@ -25,6 +25,9 @@ use Ecommerce\Catalog\Model\Product\Query\ProductByIdentifier as QueryProductByI
  * ACL-Hinweis: Antwort in eigenes Vokabular uebersetzen, fremdes DTO
  * nicht unveraendert durchreichen.
  *
+ * Mandant und Nutzer des Laufs: $context->input()->tenant, $context->input()->user
+ * (beide string); wer fremde Lese- oder Schreibtueren ruft, reicht sie dort durch.
+ *
  * Antwort: ein NodeResult (jardissupport/workflow). NodeResult::ok() bei Erfolg,
  * NodeResult::route(Route::OnFalse|OnTimeout|OnSkip, ...) fuer einen Zweig,
  * NodeResult::reject(<4xx-Status>, <messageKey>, <context>) fuer eine Ablehnung.
@@ -56,7 +59,7 @@ final class CatalogProductGetProductByIdentifier extends EcommerceContext
         // Service ist die einzige Stelle, die den fremden BC kennt.
         /** @var DomainResponseInterface $read */
         $read = $catalog->product()->getProductByIdentifier(
-            new QueryProductByIdentifier(identifier: $cmd->productIdentifier)
+            new QueryProductByIdentifier(tenant: $cmd->tenant, identifier: $cmd->productIdentifier)
         );
 
         // ACL: die Antwort ins eigene Vokabular mappen, das fremde DTO nicht

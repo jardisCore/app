@@ -12,6 +12,7 @@ namespace Ecommerce\Catalog\Model\Category\Command;
 readonly class UpdateCategory
 {
     public function __construct(
+        public string $tenant,
         public string $categoryIdentifier,
         public string $slug,
         public ?string $parentIdentifier,

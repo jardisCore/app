@@ -31,7 +31,7 @@ class BuildUpdateShipmentItemData extends EcommerceContext
         return $this->handle(FieldMapper::class)->toColumns([
             ...array_filter(
                 $rawData,
-                fn($key) => !in_array($key, ["shipmentIdentifier","shipmentItemIdentifier"], true),
+                fn($key) => !in_array($key, ["tenant","shipmentIdentifier","shipmentItemIdentifier"], true),
                 ARRAY_FILTER_USE_KEY
             ),
         ], $fieldMap->shipmentItemsColumns());
