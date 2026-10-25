@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace ExampleApp;
 
 use Ecommerce\Ecommerce;
-use Ecommerce\EcommerceActor;
 use Ecommerce\Sales\Sales;
+use ExampleApp\Support\SingleTenantSession;
 use JardisCore\App\App;
 use JardisCore\App\Config\AppConfig;
 use JardisCore\App\Routes;
@@ -42,9 +42,7 @@ final class ExampleAppFactory
 
     public function sales(DomainKernelInterface $kernel): Sales
     {
-        // The generated domain carries the actor of the run (E1): this example has no session layer,
-        // so every request runs as the system entry `example-app`.
-        return (new Ecommerce($kernel))->sales(EcommerceActor::system('example-app'));
+        return (new Ecommerce($kernel))->sales();
     }
 
     /**
@@ -61,6 +59,8 @@ final class ExampleAppFactory
         // without any Jardis adapter — see RegisterSyntheticRoutes'
         // `/debug/client-ip` for the assertable effect.
         $routes->middleware(new ClientIp());
+        // The example has no session layer: one fixed tenant and subject stand in for the session door.
+        $routes->middleware(new SingleTenantSession());
         $routes->health('/health');
 
         (new RegisterOrderRoutes())($routes, $sales);

@@ -15,6 +15,7 @@ readonly class InvoiceUpdated
 {
     /**
      * @param string $invoiceIdentifier
+     * @param string $tenantKey
      * @param string $invoiceNumber
      * @param string $orderNumber
      * @param string $customerIdentifier
@@ -32,6 +33,7 @@ readonly class InvoiceUpdated
      */
     public function __construct(
         public string $invoiceIdentifier,
+        public string $tenantKey,
         public string $invoiceNumber,
         public string $orderNumber,
         public string $customerIdentifier,

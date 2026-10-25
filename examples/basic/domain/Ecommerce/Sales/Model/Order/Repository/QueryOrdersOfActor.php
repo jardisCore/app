@@ -24,7 +24,6 @@ class QueryOrdersOfActor extends EcommerceContext
      * @return array<int, array<string, mixed>>
      * @throws \RuntimeException
      * @throws Throwable
-     * @throws \UnexpectedValueException
      */
     public function __invoke(OrdersOfActorFilter $filter): array
     {
@@ -35,13 +34,8 @@ class QueryOrdersOfActor extends EcommerceContext
                 . 'order.created_at AS createdAt, COUNT(*) OVER() AS total_count'
             );
 
-        $actor = $this->actor();
-        $actorId = filter_var($actor->id, FILTER_VALIDATE_INT);
-        if ($actorId === false) {
-            throw new \UnexpectedValueException('The actor id is not a whole number.');
-        }
-
-        $query = $query->and('order.customer_id')->equals($actorId);
+        $query = $query->and('order.customer_id')->equals($filter->user);
+        $query = $query->and('order.tenant_key')->equals($filter->tenant);
 
         $query = $query
             ->orderBy('order.created_at', 'DESC')

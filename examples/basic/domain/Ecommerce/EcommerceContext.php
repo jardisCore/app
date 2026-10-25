@@ -46,7 +46,6 @@ class EcommerceContext implements GeneratedContextInterface
     private DomainKernelInterface $domainKernel;
     private mixed $payload;
     private string $version;
-    private EcommerceActor $actor;
     private int $depth;
     private bool $entry;
     private ?ContextResponseInterface $result = null;
@@ -56,21 +55,19 @@ class EcommerceContext implements GeneratedContextInterface
         DomainKernelInterface $domainKernel,
         mixed $payload,
         string $version,
-        EcommerceActor $actor,
         int $depth = 0,
         bool $entry = true,
     ) {
         $this->domainKernel = $domainKernel;
         $this->payload = $payload;
         $this->version = $version;
-        $this->actor = $actor;
         $this->depth = $depth;
         $this->entry = $entry;
     }
 
     /**
      * Resolves and instantiates a class while inheriting the current
-     * payload+version+actor from this Context. Family-internal only.
+     * payload+version from this Context. Family-internal only.
      *
      * @template T
      * @param class-string<T> $className
@@ -94,8 +91,7 @@ class EcommerceContext implements GeneratedContextInterface
      * Starts a fresh context for the given generated-context subclass,
      * setting payload+version explicitly (and the nesting depth of a sub-process
      * call: the savepoint name of its door); an empty version is the caller's own.
-     * The kernel and the actor of the run are inherited - the actor is the value
-     * of the run, never chosen by the caller of context().
+     * The kernel of the run is inherited.
      * Family-internal only; rejects non-GeneratedContextInterface targets.
      *
      * @template T of GeneratedContextInterface
@@ -146,9 +142,9 @@ class EcommerceContext implements GeneratedContextInterface
 
             $resolved = $this->resolveClassName($className, $version);
 
-            // The actor of the run and the entry mark always travel on (named, so no construction
-            // can lose either); a nesting depth only where there is one.
-            $named = ['actor' => $this->actor, 'entry' => $entry] + ($depth === 0 ? [] : ['depth' => $depth]);
+            // The entry mark always travels on (named, so no construction can lose it); a nesting
+            // depth only where there is one.
+            $named = ['entry' => $entry] + ($depth === 0 ? [] : ['depth' => $depth]);
 
             if (is_object($resolved)) {
                 return $resolved;
@@ -244,15 +240,6 @@ class EcommerceContext implements GeneratedContextInterface
     }
 
     /**
-     * The actor of this run (V1): built once per request by routes.php, or by the
-     * CLI/queue/cron entry (system), never null; inherited by every sub-run.
-     */
-    protected function actor(): EcommerceActor
-    {
-        return $this->actor;
-    }
-
-    /**
      * The nesting depth of this run: 0 at the outermost door, the depth of the calling
      * run plus one for a sub-process. The process door names its savepoint after it.
      */
@@ -264,8 +251,7 @@ class EcommerceContext implements GeneratedContextInterface
     /**
      * Whether this run entered the domain from outside (the entry mark): true for a context built
      * by a door (routes.php, App/, CLI), false for every context the run starts itself - a handler
-     * (context()) - and for everything those construct through the kernel seam. The access check at
-     * the doors asks it: an internal call is no entry and is not checked a second time.
+     * (context()) - and for everything those construct through the kernel seam.
      */
     protected function entry(): bool
     {

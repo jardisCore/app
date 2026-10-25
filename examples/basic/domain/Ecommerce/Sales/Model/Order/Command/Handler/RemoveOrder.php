@@ -42,7 +42,11 @@ class RemoveOrder extends EcommerceContext
         $owner = $connection?->inTransaction() !== true;
 
         try {
-            $query = $this->handle(QueryOrder::class, orderNumber: $removeOrder->orderNumber);
+            $query = $this->handle(
+                QueryOrder::class,
+                tenant: $removeOrder->tenant,
+                orderNumber: $removeOrder->orderNumber
+            );
             /** @var Order|null $handler */
             $handler = $this->handle(OrderRepository::class)->getOrderByOrderNumber($query);
             if ($handler === null) {

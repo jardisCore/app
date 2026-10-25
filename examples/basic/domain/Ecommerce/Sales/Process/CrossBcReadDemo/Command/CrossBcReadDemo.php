@@ -12,7 +12,9 @@ namespace Ecommerce\Sales\Process\CrossBcReadDemo\Command;
 readonly class CrossBcReadDemo
 {
     public function __construct(
-        public string $productIdentifier
+        public string $productIdentifier,
+        public string $tenant,
+        public string $user
     ) {
     }
 }

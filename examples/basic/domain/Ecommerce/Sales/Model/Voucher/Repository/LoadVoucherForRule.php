@@ -21,9 +21,9 @@ final class LoadVoucherForRule extends EcommerceContext
     /**
      * @throws Throwable
      */
-    public function __invoke(string $scopeKey, string $voucherCode): ?Voucher
+    public function __invoke(string $tenant, string $voucherCode): ?Voucher
     {
-        $query = $this->handle(QueryVoucher::class, scopeKey: $scopeKey, voucherCode: $voucherCode);
+        $query = $this->handle(QueryVoucher::class, tenant: $tenant, voucherCode: $voucherCode);
         /** @var VoucherHandler|null $handler */
         $handler = $this->handle(VoucherRepository::class)->getVoucherByVoucherCode($query);
 

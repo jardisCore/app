@@ -49,7 +49,9 @@ final class RunBatch extends EcommerceContext
                 ),
                 lineCommands: \call_user_func(
                     static fn(): mixed => throw new \RuntimeException('Sub-DTO-Feld lineCommands fuellen: RunBatch')
-                )
+                ),
+                tenant: $ctx->input()->tenant,
+                user: $ctx->input()->user
             ),
             depth: $ctx->depth() + 1
         )();

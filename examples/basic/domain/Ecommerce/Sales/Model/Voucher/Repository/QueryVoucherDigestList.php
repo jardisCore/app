@@ -30,9 +30,10 @@ class QueryVoucherDigestList extends EcommerceContext
         $query = $this->handle(DbQuery::class)
             ->from(VoucherEntity::SOURCE, 'voucher')
             ->select(
-                'voucher.id AS id, voucher.voucher_code AS voucherCode, voucher.amount AS amount, '
-                . 'voucher.note AS note, voucher.secret_digest AS secretDigest, voucher.issued_by AS issuedBy, '
-                . 'voucher.issuer_id AS issuerId, voucher.created_at AS createdAt, COUNT(*) OVER() AS total_count'
+                'voucher.id AS id, voucher.scope_key AS scopeKey, voucher.voucher_code AS voucherCode, '
+                . 'voucher.amount AS amount, voucher.note AS note, voucher.secret_digest AS secretDigest, '
+                . 'voucher.issued_by AS issuedBy, voucher.issuer_id AS issuerId, voucher.created_at AS createdAt, '
+                . 'COUNT(*) OVER() AS total_count'
             );
 
         $query = $query->and('voucher.scope_key')->equals($filter->scopeKey);

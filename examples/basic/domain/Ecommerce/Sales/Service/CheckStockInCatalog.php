@@ -29,6 +29,9 @@ use Ecommerce\Catalog\Model\Product\Query\ProductByIdentifier as QueryProductByI
  * ACL-Hinweis: Antwort in eigenes Vokabular uebersetzen, fremdes DTO
  * nicht unveraendert durchreichen.
  *
+ * Mandant und Nutzer des Laufs: $context->input()->tenant, $context->input()->user
+ * (beide string); wer fremde Lese- oder Schreibtueren ruft, reicht sie dort durch.
+ *
  * Antwort: ein NodeResult (jardissupport/workflow). NodeResult::ok() bei Erfolg,
  * NodeResult::route(Route::OnFalse|OnTimeout|OnSkip, ...) fuer einen Zweig,
  * NodeResult::reject(<4xx-Status>, <messageKey>, <context>) fuer eine Ablehnung.
@@ -63,7 +66,7 @@ final class CheckStockInCatalog extends EcommerceContext
         // Ziel-BC ziehen (kein Aggregat-Direktzugriff).
         /** @var DomainResponseInterface $read */
         $read = $catalog->product()->getProductByIdentifier(
-            new QueryProductByIdentifier(identifier: $cmd->productIdentifier)
+            new QueryProductByIdentifier(tenant: $cmd->tenant, identifier: $cmd->productIdentifier)
         );
         if (!$read->isSuccess()) {
             return NodeResult::route(Route::OnFalse, ['productIdentifier' => $cmd->productIdentifier]);
@@ -82,7 +85,10 @@ final class CheckStockInCatalog extends EcommerceContext
         // uebersetzen (nur der Preis aendert sich, der Rest bleibt der
         // Ist-Stand des fremden BC).
         $update = new UpdateProductInCatalog(
-            new UpdateProduct(
+            tenant: $cmd->tenant,
+            user: $cmd->user,
+            update: new UpdateProduct(
+                tenant: $cmd->tenant,
                 productIdentifier: $current->identifier,
                 sku: $current->sku,
                 productName: $current->productName,

@@ -12,6 +12,7 @@ namespace Ecommerce\Catalog\Model\Product\Command;
 readonly class RemoveProductVariant
 {
     public function __construct(
+        public string $tenant,
         public string $productIdentifier,
         public string $productVariantIdentifier
     ) {

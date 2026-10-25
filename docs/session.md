@@ -107,3 +107,30 @@ Signature: `__construct(ResponseFactoryInterface, StreamFactoryInterface, string
 | Forgery | A path placeholder named like the attribute (`/x/{jardisTenant}`) does not satisfy the check: `ApplySession` removes it first. |
 | 404 / 405 | Like every middleware it only runs on a matched route. |
 | Guard | It does NOT implement `SessionGuardInterface`, so it never satisfies `AppConfig::$requireSessionGuard`. |
+
+## The right of a route - `RequireRight`
+
+`JardisCore\App\Middleware\RequireRight` (since 3.0.0) is the third per-route PSR-15 middleware: it asks whether the rights of the
+session (`RequestAttribute::RIGHTS`, set by `ApplySession`) hold the one right the route needs. It is an orchestrator: it reads the list
+(`Handler\Request\ReadRequestAttributeList`), asks the injected check and routes - pass on or answer `403`. It decides nothing itself.
+
+```php
+use JardisCore\App\Middleware\RequireRight;
+use JardisSupport\Auth\Handler\Authorization\HasRight;
+
+$hasRight = (new HasRight())->__invoke(...);   // jardissupport/auth; this package does not require it
+$routes->middleware($requireSession);          // global: 401 for a guest, sets jardisRights
+$routes->get('/orders', $handler, new RequireRight($psr17, $psr17, 'sales.order:read', $hasRight));
+```
+
+Signature: `__construct(ResponseFactoryInterface, StreamFactoryInterface, string $right, Closure $hasRight)` with
+`$hasRight: Closure(list<string> $rights, string $right): bool`. An empty `$right` throws `InvalidArgumentException`.
+
+| Aspect | Behaviour |
+|---|---|
+| Check | `$hasRight($rights, $right)`; with `HasRight`: `resource:action`, `resource:*` and the superuser `*` match. |
+| Answer | `403`, handler never called: `{"status":403,"data":{},"errors":{"message":"Right \"<right>\" is missing.","messageKey":"access.rightMissing","context":{"right":"<right>"}},"meta":{}}` (the same form as the other door answers: no `@type`). The key is the constant `RequireRight::MESSAGE_KEY`. |
+| Fail-closed | RIGHTS absent (nothing granted), RIGHTS not a list of strings (unusable) and a check that throws `InvalidArgumentException` (a right it cannot parse) all answer the same `403` - never `200`, never `500`. |
+| Guest | A request without a session never reaches it: the session door answers `401` first. Wired without `RequireSession`, the missing RIGHTS still denies. |
+| Forgery | A path placeholder `{jardisRights}` cannot grant a right: `ApplySession` removes the attribute first. |
+| Guard | It does NOT implement `SessionGuardInterface`, so it never satisfies `AppConfig::$requireSessionGuard`. |

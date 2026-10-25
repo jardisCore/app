@@ -12,6 +12,7 @@ namespace Ecommerce\Sales\Model\PriceTier\Command;
 readonly class RemovePriceTier
 {
     public function __construct(
+        public string $tenant,
         public string $priceTierIdentifier
     ) {
     }

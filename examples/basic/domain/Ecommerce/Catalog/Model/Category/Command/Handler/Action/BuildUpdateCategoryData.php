@@ -31,7 +31,7 @@ class BuildUpdateCategoryData extends EcommerceContext
         return $this->handle(FieldMapper::class)->toColumns([
             ...array_filter(
                 $rawData,
-                fn($key) => !in_array($key, ["categoryIdentifier"], true),
+                fn($key) => !in_array($key, ["tenant","categoryIdentifier"], true),
                 ARRAY_FILTER_USE_KEY
             ),
         ], $fieldMap->categoriesColumns());

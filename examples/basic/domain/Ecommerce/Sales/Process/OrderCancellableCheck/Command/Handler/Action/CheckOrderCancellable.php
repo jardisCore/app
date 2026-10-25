@@ -32,7 +32,7 @@ final class CheckOrderCancellable extends EcommerceContext
     public function __invoke(OrderCancellableCheckContext $ctx): NodeResult
     {
         $identifier = $ctx->input()->orderNumberToCheck;
-        $loaded = $this->handle(LoadOrderForRule::class)($identifier);
+        $loaded = $this->handle(LoadOrderForRule::class)($ctx->input()->tenant, $identifier);
 
         if ($loaded === null) {
             return NodeResult::reject(

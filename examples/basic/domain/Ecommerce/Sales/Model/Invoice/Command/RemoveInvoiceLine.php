@@ -12,6 +12,7 @@ namespace Ecommerce\Sales\Model\Invoice\Command;
 readonly class RemoveInvoiceLine
 {
     public function __construct(
+        public string $tenant,
         public string $invoiceIdentifier,
         public string $invoiceLineIdentifier
     ) {

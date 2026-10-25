@@ -12,13 +12,15 @@ namespace Ecommerce\Sales\Process\OrderBulkQuote\Command;
 readonly class OrderBulkQuote
 {
     public function __construct(
-        /** @param list<string>|null $deliveryChannels */
+        /** @var list<string>|null */
         public ?array $deliveryChannels,
-        /** @param list<OrderBulkQuoteLinesItem> $lines */
+        /** @var list<OrderBulkQuoteLinesItem> */
         public array $lines,
         public string $requestedBy,
         public OrderBulkQuoteShippingAddressItem $shippingAddress,
-        /** @param list<string> $voucherCodes */
+        public string $tenant,
+        public string $user,
+        /** @var list<string> */
         public array $voucherCodes
     ) {
     }

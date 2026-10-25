@@ -6,7 +6,9 @@ namespace ExampleApp;
 
 use Closure;
 use ExampleApp\Support\StaticDomainResponse;
+use JardisCore\App\Middleware\RequireRight;
 use JardisCore\App\Routes;
+use JardisSupport\Auth\Handler\Authorization\HasRight;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
 use JardisSupport\Contract\Kernel\ResponseStatus;
 use Nyholm\Psr7\Factory\Psr17Factory;
@@ -39,6 +41,14 @@ final class RegisterSyntheticRoutes
         $routes->get('/test/unauthorized', $this->staticStatus(ResponseStatus::Unauthorized));
         $routes->get('/test/forbidden', $this->staticStatus(ResponseStatus::Forbidden));
         $routes->get('/test/conflict', $this->staticStatus(ResponseStatus::Conflict));
+        // The right of the route is asked per route (RequireRight, behind a session door that sets the rights);
+        // the rights test itself is HasRight of jardissupport/auth.
+        $psr17 = new Psr17Factory();
+        $routes->get(
+            '/test/right-guarded',
+            $this->staticStatus(ResponseStatus::Success),
+            new RequireRight($psr17, $psr17, 'sales.order:read', (new HasRight())->__invoke(...)),
+        );
         $routes->get('/debug/client-ip', $this->echoClientIp());
         $routes->get('/test/boom', $this->throwingHandler());
     }

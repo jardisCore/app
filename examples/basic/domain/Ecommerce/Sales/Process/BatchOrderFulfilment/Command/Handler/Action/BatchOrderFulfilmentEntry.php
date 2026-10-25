@@ -14,6 +14,8 @@ use JardisSupport\Workflow\Data\NodeResult;
  * Platzhalter fuer den Input-Sub-Flow.
  * Bereitet den Command-DTO-Strom auf.
  *
+ * Mandant und Nutzer des Laufs: $ctx->input()->tenant, $ctx->input()->user (beide string).
+ *
  * Kontext-Kette (von oben nach unten):
  * Domain: Ecommerce
  * BC: Sales

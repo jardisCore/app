@@ -12,6 +12,7 @@ namespace Ecommerce\Sales\Model\Order\Command;
 readonly class RemoveAddress
 {
     public function __construct(
+        public string $tenant,
         public string $orderNumber
     ) {
     }

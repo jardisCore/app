@@ -12,6 +12,7 @@ namespace Ecommerce\Sales\Model\PriceTier\Query;
 readonly class PriceTierById
 {
     public function __construct(
+        public string $tenant,
         public int $id
     ) {
     }

@@ -12,6 +12,7 @@ namespace Ecommerce\Catalog\Model\Category\Query;
 readonly class CategoryByIds
 {
     public function __construct(
+        public string $tenant,
         public array $ids
     ) {
     }

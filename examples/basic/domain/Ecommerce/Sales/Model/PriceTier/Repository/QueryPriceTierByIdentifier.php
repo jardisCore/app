@@ -34,7 +34,7 @@ class QueryPriceTierByIdentifier extends EcommerceContext
     public function __invoke(PriceTierByIdentifierQuery $query): array
     {
         $this->container['priceTier'] = $this->load(
-            $this->priceTier($query->identifier)
+            $this->priceTier($query->tenant, $query->identifier)
         );
 
         return $this->container;
@@ -44,10 +44,11 @@ class QueryPriceTierByIdentifier extends EcommerceContext
      * Query for priceTier.
      * @throws Throwable
      */
-    protected function priceTier(string $identifier): DbQueryBuilderInterface
+    protected function priceTier(string $tenant, string $identifier): DbQueryBuilderInterface
     {
         return $this->query(PriceTierEntity::class)
-            ->where('identifier')->equals($identifier);
+            ->where('tenant_key')->equals($tenant)
+            ->and('identifier')->equals($identifier);
     }
 
     /**

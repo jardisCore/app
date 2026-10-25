@@ -4,11 +4,7 @@ declare(strict_types=1);
 
 namespace Ecommerce\Sales\Model\Invoice;
 
-use Ecommerce\EcommerceAccessDenied;
-use Ecommerce\EcommerceActorKind;
-use Ecommerce\EcommerceCheckAccess;
 use Ecommerce\EcommerceContext;
-use Ecommerce\EcommerceRights;
 use Ecommerce\Sales\Model\Invoice\Query\Handler\GetInvoiceByIdHandler;
 use Ecommerce\Sales\Model\Invoice\Query\Handler\GetInvoiceByIdentifierHandler;
 use Ecommerce\Sales\Model\Invoice\Query\Handler\GetInvoiceByIdentifiersHandler;
@@ -44,15 +40,6 @@ class InvoiceRead extends EcommerceContext
      */
     public function getInvoiceById(QueryInvoiceById $invoiceById, string $version = ''): DomainResponseInterface
     {
-        $denied = ($this->handle(EcommerceCheckAccess::class))(
-            $this->entry(),
-            $this->actor(),
-            EcommerceRights::SALES_INVOICE__READ
-        );
-        if ($denied !== null) {
-            throw $denied;
-        }
-
         return $this->context(GetInvoiceByIdHandler::class, $invoiceById, $version)();
     }
 
@@ -68,15 +55,6 @@ class InvoiceRead extends EcommerceContext
         QueryInvoiceByIdentifier $invoiceByIdentifier,
         string $version = ''
     ): DomainResponseInterface {
-        $denied = ($this->handle(EcommerceCheckAccess::class))(
-            $this->entry(),
-            $this->actor(),
-            EcommerceRights::SALES_INVOICE__READ
-        );
-        if ($denied !== null) {
-            throw $denied;
-        }
-
         return $this->context(GetInvoiceByIdentifierHandler::class, $invoiceByIdentifier, $version)();
     }
 
@@ -92,15 +70,6 @@ class InvoiceRead extends EcommerceContext
         QueryInvoiceByIdentifiers $invoiceByIdentifiers,
         string $version = ''
     ): DomainResponseInterface {
-        $denied = ($this->handle(EcommerceCheckAccess::class))(
-            $this->entry(),
-            $this->actor(),
-            EcommerceRights::SALES_INVOICE__READ
-        );
-        if ($denied !== null) {
-            throw $denied;
-        }
-
         return $this->context(GetInvoiceByIdentifiersHandler::class, $invoiceByIdentifiers, $version)();
     }
 
@@ -114,15 +83,6 @@ class InvoiceRead extends EcommerceContext
      */
     public function getInvoiceByIds(QueryInvoiceByIds $invoiceByIds, string $version = ''): DomainResponseInterface
     {
-        $denied = ($this->handle(EcommerceCheckAccess::class))(
-            $this->entry(),
-            $this->actor(),
-            EcommerceRights::SALES_INVOICE__READ
-        );
-        if ($denied !== null) {
-            throw $denied;
-        }
-
         return $this->context(GetInvoiceByIdsHandler::class, $invoiceByIds, $version)();
     }
 
@@ -136,15 +96,6 @@ class InvoiceRead extends EcommerceContext
      */
     public function invoiceList(InvoiceListFilter $filter, string $version = ''): ReadResult
     {
-        $denied = ($this->handle(EcommerceCheckAccess::class))(
-            $this->entry(),
-            $this->actor(),
-            EcommerceRights::SALES_INVOICE__READ
-        );
-        if ($denied !== null) {
-            throw $denied;
-        }
-
         return $this->context(GetInvoiceListHandler::class, $filter, $version)();
     }
 
@@ -155,27 +106,9 @@ class InvoiceRead extends EcommerceContext
      * @param string $version Optional ClassVersion override (default: caller version)
      * @return ReadResult<array<string, mixed>>
      * @throws Throwable
-     * @throws EcommerceAccessDenied
      */
     public function invoicesOfActorTenant(InvoicesOfActorTenantFilter $filter, string $version = ''): ReadResult
     {
-        $denied = ($this->handle(EcommerceCheckAccess::class))(
-            $this->entry(),
-            $this->actor(),
-            EcommerceRights::SALES_INVOICE__INVOICESOFACTORTENANT
-        );
-        if ($denied !== null) {
-            throw $denied;
-        }
-
-        if ($this->actor()->kind !== EcommerceActorKind::User) {
-            if ($this->entry()) {
-                throw new EcommerceAccessDenied('actor.kindNotAllowed', ['kind' => $this->actor()->kind->value]);
-            }
-
-            return ReadResult::ofList([], 0);
-        }
-
         return $this->context(GetInvoicesOfActorTenantHandler::class, $filter, $version)();
     }
 }

@@ -70,7 +70,11 @@ class SetShipmentAddress extends EcommerceContext
         $owner = $connection?->inTransaction() !== true;
 
         try {
-            $query = $this->handle(QueryShipment::class, identifier: $setShipmentAddress->shipmentIdentifier);
+            $query = $this->handle(
+                QueryShipment::class,
+                tenant: $setShipmentAddress->tenant,
+                identifier: $setShipmentAddress->shipmentIdentifier
+            );
             /** @var Shipment|null $handler */
             $handler = $this->handle(ShipmentRepository::class)->getShipmentByIdentifier($query);
             if ($handler === null) {

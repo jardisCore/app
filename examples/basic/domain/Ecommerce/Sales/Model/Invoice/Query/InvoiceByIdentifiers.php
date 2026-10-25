@@ -12,6 +12,7 @@ namespace Ecommerce\Sales\Model\Invoice\Query;
 readonly class InvoiceByIdentifiers
 {
     public function __construct(
+        public string $tenant,
         public array $identifiers
     ) {
     }

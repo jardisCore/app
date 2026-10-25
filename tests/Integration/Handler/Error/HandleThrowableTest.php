@@ -10,7 +10,6 @@ use JardisCore\App\Handler\Error\HandleThrowable;
 use JardisCore\App\Tests\Support\ErrorLogRedirect;
 use JardisCore\App\Tests\Support\LoggerSpy;
 use JardisCore\App\Tests\Support\ThrowingLogger;
-use JardisSupport\Contract\Kernel\AccessDeniedExceptionInterface;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -18,7 +17,7 @@ use RuntimeException;
 /**
  * Tests for HandleThrowable (E8/F9): the outermost pipeline layer. Covers
  * the InvalidJsonBody-400 case, the generic-500 case (negative assertions:
- * no message/class/trace leak), logging at `error` level, the
+ * no message/class/trace leak; also for an exception shaped like the retired denial marker), logging at `error` level, the
  * `error_log` fallback (missing logger and a throwing logger), and the
  * APP_DEBUG detail switch.
  */
@@ -86,7 +85,7 @@ final class HandleThrowableTest extends TestCase
         $this->assertStringContainsString('"meta":{}', $json);
     }
 
-    public function testAccessDeniedMarkerMapsToCanonical403EnvelopeWithKeyAndContext(): void
+    public function testExceptionWithMessageKeyAndContextButNoKnownTypeAnswersGeneric500(): void
     {
         $factory = $this->factory();
         $logger = new LoggerSpy();
@@ -96,40 +95,38 @@ final class HandleThrowableTest extends TestCase
             throw self::denial('actor.rightMissing', ['right' => 'sales.process:voucherRedeemCheck']);
         }, $factory->createServerRequest('POST', '/sales/voucherRedeemCheck'));
 
-        $this->assertSame(403, $response->getStatusCode());
-        $this->assertSame('application/json', $response->getHeaderLine('Content-Type'));
-        $this->assertSame(
-            '{"status":403,"data":{"@type":"forbidden","context":{"right":"sales.process:voucherRedeemCheck"},'
-            . '"messageKey":"actor.rightMissing"},"errors":{},"meta":{}}',
-            (string) $response->getBody(),
-        );
-        $this->assertSame([], $logger->records, 'a denial is an answer, not a failure: nothing is logged');
+        $this->assertSame(500, $response->getStatusCode());
+        $this->assertSame('{"status":500,"data":{},"errors":{},"meta":{}}', (string) $response->getBody());
+        $this->assertCount(1, $logger->records, 'an unknown exception is a failure: it is logged');
+        $this->assertSame('error', $logger->records[0]['level']);
     }
 
-    public function testAccessDeniedWithEmptyContextEncodesContextAsObjectAndLeaksNoMessage(): void
+    public function testFormerlyMarkedDenialLeaksNoMessageNoKeyNoContextEvenInProduction(): void
     {
         $factory = $this->factory();
-        $handle = new HandleThrowable($factory, $factory, null, new AppConfig(debug: true));
+        $handle = new HandleThrowable($factory, $factory, null, new AppConfig());
 
         $response = $handle(static function () {
-            throw self::denial('actor.kindNotAllowed', [], 'secret internal message');
+            throw self::denial('actor.kindNotAllowed', ['kind' => 'anonymous'], 'secret internal message');
         }, $factory->createServerRequest('GET', '/x'));
 
         $json = (string) $response->getBody();
-        $this->assertSame(403, $response->getStatusCode());
-        $this->assertSame(
-            '{"status":403,"data":{"@type":"forbidden","context":{},"messageKey":"actor.kindNotAllowed"},"errors":{},"meta":{}}',
-            $json,
-        );
+        $this->assertSame(500, $response->getStatusCode());
+        $this->assertSame('{"status":500,"data":{},"errors":{},"meta":{}}', $json);
         $this->assertStringNotContainsString('secret internal message', $json);
+        $this->assertStringNotContainsString('actor.kindNotAllowed', $json);
+        $this->assertStringNotContainsString('forbidden', $json);
     }
 
     /**
+     * An exception shaped like the retired access-denied marker (message key and context), WITHOUT the marker:
+     * the denial of a right is answered by the route (RequireRight), no exception type is answered 403 anymore.
+     *
      * @param array<string, mixed> $context
      */
     private static function denial(string $key, array $context, string $message = 'denied'): \Throwable
     {
-        return new class ($key, $context, $message) extends \RuntimeException implements AccessDeniedExceptionInterface {
+        return new class ($key, $context, $message) extends \RuntimeException {
             /**
              * @param array<string, mixed> $context
              */
@@ -143,6 +140,9 @@ final class HandleThrowableTest extends TestCase
                 return $this->key;
             }
 
+            /**
+             * @return array<string, mixed>
+             */
             public function getContext(): array
             {
                 return $this->context;

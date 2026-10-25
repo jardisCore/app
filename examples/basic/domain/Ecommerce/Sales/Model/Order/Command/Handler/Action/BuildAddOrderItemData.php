@@ -28,12 +28,14 @@ class BuildAddOrderItemData extends EcommerceContext
 
         $rawData = get_object_vars($addOrderItem);
 
-        return $this->handle(FieldMapper::class)->toColumns([
+        $columns = $this->handle(FieldMapper::class)->toColumns([
             ...array_filter(
                 $rawData,
-                fn($key) => !in_array($key, ["orderNumber"], true),
+                fn($key) => !in_array($key, ["tenant","orderNumber"], true),
                 ARRAY_FILTER_USE_KEY
             ),
         ], $fieldMap->orderItemsColumns());
+        $columns['tenant_key'] = $addOrderItem->tenant;
+        return $columns;
     }
 }

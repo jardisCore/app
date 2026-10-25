@@ -70,7 +70,11 @@ class SetCustomer extends EcommerceContext
         $owner = $connection?->inTransaction() !== true;
 
         try {
-            $query = $this->handle(QueryOrder::class, orderNumber: $setCustomer->orderNumber);
+            $query = $this->handle(
+                QueryOrder::class,
+                tenant: $setCustomer->tenant,
+                orderNumber: $setCustomer->orderNumber
+            );
             /** @var Order|null $handler */
             $handler = $this->handle(OrderRepository::class)->getOrderByOrderNumber($query);
             if ($handler === null) {

@@ -18,6 +18,8 @@ use Throwable;
 /**
  * Node SubjectRemovalAlertedNode of the process OrderInvoiceUnionAlert (action).
  *
+ * Mandant und Nutzer des Laufs: $ctx->input()->tenant, $ctx->input()->user (beide string).
+ *
  * Kontext-Kette (von oben nach unten):
  * Domain: Ecommerce
  * BC: Sales

@@ -12,7 +12,9 @@ namespace Ecommerce\Sales\Process\OrderCancellableCheck\Command;
 readonly class OrderCancellableCheck
 {
     public function __construct(
-        public string $orderNumberToCheck
+        public string $orderNumberToCheck,
+        public string $tenant,
+        public string $user
     ) {
     }
 }

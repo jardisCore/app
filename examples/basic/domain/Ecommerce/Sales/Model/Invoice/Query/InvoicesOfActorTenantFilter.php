@@ -12,6 +12,7 @@ namespace Ecommerce\Sales\Model\Invoice\Query;
 readonly class InvoicesOfActorTenantFilter
 {
     public function __construct(
+        public string $tenant,
         public int $limit = 20,
         public int $offset = 0
     ) {

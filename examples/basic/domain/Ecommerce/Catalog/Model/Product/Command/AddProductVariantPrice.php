@@ -14,6 +14,7 @@ use DateTimeImmutable;
 readonly class AddProductVariantPrice
 {
     public function __construct(
+        public string $tenant,
         public string $productIdentifier,
         public string $productVariantIdentifier,
         public string $region,

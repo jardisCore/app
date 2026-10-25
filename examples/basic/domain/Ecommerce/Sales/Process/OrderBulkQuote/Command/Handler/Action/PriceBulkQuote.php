@@ -15,6 +15,8 @@ use JardisSupport\Workflow\Data\NodeResult;
  * Bepreist die Angebotspositionen. Der Koerper ist Dev-Code; der
  * Eingang ist vor dem ersten Knoten vollstaendig geprueft.
  *
+ * Mandant und Nutzer des Laufs: $ctx->input()->tenant, $ctx->input()->user (beide string).
+ *
  * Kontext-Kette (von oben nach unten):
  * Domain: Ecommerce
  * BC: Sales

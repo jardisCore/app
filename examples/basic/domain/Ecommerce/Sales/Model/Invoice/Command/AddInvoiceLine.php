@@ -12,6 +12,7 @@ namespace Ecommerce\Sales\Model\Invoice\Command;
 readonly class AddInvoiceLine
 {
     public function __construct(
+        public string $tenant,
         public string $invoiceIdentifier,
         public int $position,
         public string $description,

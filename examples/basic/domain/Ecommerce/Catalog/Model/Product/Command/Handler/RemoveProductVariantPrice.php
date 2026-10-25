@@ -44,7 +44,11 @@ class RemoveProductVariantPrice extends EcommerceContext
         $owner = $connection?->inTransaction() !== true;
 
         try {
-            $query = $this->handle(QueryProduct::class, identifier: $removeProductVariantPrice->productIdentifier);
+            $query = $this->handle(
+                QueryProduct::class,
+                tenant: $removeProductVariantPrice->tenant,
+                identifier: $removeProductVariantPrice->productIdentifier
+            );
             /** @var Product|null $handler */
             $handler = $this->handle(ProductRepository::class)->getProductByIdentifier($query);
             if ($handler === null) {

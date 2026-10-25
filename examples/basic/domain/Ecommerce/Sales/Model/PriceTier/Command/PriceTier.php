@@ -12,6 +12,7 @@ namespace Ecommerce\Sales\Model\PriceTier\Command;
 readonly class PriceTier
 {
     public function __construct(
+        public string $tenant,
         public string $tierCode,
         public int $minQuantity,
         public string $unitPrice

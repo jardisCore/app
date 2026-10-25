@@ -79,6 +79,7 @@ class FieldMap
     {
         return [
             'id' => 'id',
+            'tenantKey' => 'tenant_key',
             'identifier' => 'identifier',
             'invoiceNumber' => 'invoice_number',
             'orderNumber' => 'order_number',
@@ -115,6 +116,7 @@ class FieldMap
             'id' => 'id',
             'identifier' => 'identifier',
             'orderId' => 'order_id',
+            'tenantKey' => 'tenant_key',
             'productIdentifier' => 'product_identifier',
             'quantity' => 'quantity',
             'unitPrice' => 'unit_price',
@@ -127,6 +129,7 @@ class FieldMap
     {
         return [
             'id' => 'id',
+            'tenantKey' => 'tenant_key',
             'orderNumber' => 'order_number',
             'customerId' => 'customer_id',
             'totalAmount' => 'total_amount',
@@ -140,6 +143,7 @@ class FieldMap
     {
         return [
             'id' => 'id',
+            'tenantKey' => 'tenant_key',
             'identifier' => 'identifier',
             'tierCode' => 'tier_code',
             'minQuantity' => 'min_quantity',

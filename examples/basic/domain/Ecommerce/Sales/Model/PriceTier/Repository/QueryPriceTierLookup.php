@@ -30,12 +30,13 @@ class QueryPriceTierLookup extends EcommerceContext
         $query = $this->handle(DbQuery::class)
             ->from(PriceTierEntity::SOURCE, 'priceTier')
             ->select(
-                'priceTier.id AS id, priceTier.identifier AS identifier, priceTier.tier_code AS tierCode, '
-                . 'priceTier.min_quantity AS minQuantity, priceTier.unit_price AS unitPrice, '
-                . 'priceTier.created_at AS createdAt, COUNT(*) OVER() AS total_count'
+                'priceTier.id AS id, priceTier.tenant_key AS tenantKey, priceTier.identifier AS identifier, '
+                . 'priceTier.tier_code AS tierCode, priceTier.min_quantity AS minQuantity, '
+                . 'priceTier.unit_price AS unitPrice, priceTier.created_at AS createdAt, COUNT(*) OVER() AS total_count'
             );
 
         $query = $query->and('priceTier.tier_code')->equals($filter->tierCode);
+        $query = $query->and('priceTier.tenant_key')->equals($filter->tenant);
 
         $query = $query
             ->orderBy('priceTier.min_quantity', 'ASC')

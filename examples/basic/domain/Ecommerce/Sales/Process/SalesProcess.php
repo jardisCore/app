@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace Ecommerce\Sales\Process;
 
-use Ecommerce\EcommerceCheckAccess;
 use Ecommerce\EcommerceContext;
-use Ecommerce\EcommerceRights;
 use Ecommerce\Sales\Process\BatchOrderFulfilment\Command\BatchOrderFulfilment;
 use Ecommerce\Sales\Process\BatchOrderFulfilment\Command\Handler\BatchOrderFulfilmentHandler;
 use Ecommerce\Sales\Process\CrossBcReadDemo\Command\CrossBcReadDemo;
@@ -36,10 +34,7 @@ use Ecommerce\Sales\Process\VoucherOverview\Command\VoucherOverview;
 use Ecommerce\Sales\Process\VoucherRedeemCheck\Command\Handler\VoucherRedeemCheckHandler;
 use Ecommerce\Sales\Process\VoucherRedeemCheck\Command\VoucherRedeemCheck;
 use JardisSupport\Contract\Kernel\DomainResponseInterface;
-use JardisSupport\Response\Data\Response\ContextResponse;
-use JardisSupport\Response\Handler\Answer\AnswerThrowable;
 use JardisSupport\Response\Handler\Response\ProjectAnswer;
-use JardisSupport\Response\Handler\Response\TransformResponse;
 use Throwable;
 
 /**
@@ -59,25 +54,9 @@ final class SalesProcess extends EcommerceContext
      * R5 (Listen-Command-Feld lineCommands: array<AddOrderItem|AddInvoiceLine>)
      * und R1 (Skalare requestedBy: string, note: string).
      *
-     * @throws Throwable
      */
     public function batchOrderFulfilment(BatchOrderFulfilment $in, string $version = ''): DomainResponseInterface
     {
-        $denied = ($this->handle(EcommerceCheckAccess::class))(
-            $this->entry(),
-            $this->actor(),
-            EcommerceRights::SALES_PROCESS__BATCHORDERFULFILMENT
-        );
-        if ($denied !== null) {
-            return ($this->handle(AnswerThrowable::class))(
-                new ContextResponse('BatchOrderFulfilmentHandler'),
-                new TransformResponse($this->clock(), $version !== '' ? $version : $this->version()),
-                $denied,
-                true,
-                'BatchOrderFulfilmentHandler'
-            );
-        }
-
         return $this->context(BatchOrderFulfilmentHandler::class, $in, $version)();
     }
 
@@ -89,25 +68,9 @@ final class SalesProcess extends EcommerceContext
      * Action importiert nichts aus Catalog und delegiert ueber die Kernel-Naht an das
      * Service-Scaffold, das die Lese-Fassade des fremden BC verdrahtet.
      *
-     * @throws Throwable
      */
     public function crossBcReadDemo(CrossBcReadDemo $in, string $version = ''): DomainResponseInterface
     {
-        $denied = ($this->handle(EcommerceCheckAccess::class))(
-            $this->entry(),
-            $this->actor(),
-            EcommerceRights::SALES_PROCESS__CROSSBCREADDEMO
-        );
-        if ($denied !== null) {
-            return ($this->handle(AnswerThrowable::class))(
-                new ContextResponse('CrossBcReadDemoHandler'),
-                new TransformResponse($this->clock(), $version !== '' ? $version : $this->version()),
-                $denied,
-                true,
-                'CrossBcReadDemoHandler'
-            );
-        }
-
         return $this->context(CrossBcReadDemoHandler::class, $in, $version)();
     }
 
@@ -135,25 +98,9 @@ final class SalesProcess extends EcommerceContext
      * Cross-Domain-Variante als Ausweichpfad betreten; CrossBcServiceDemoFinalize
      * bleibt der Fehler-Abschluss-Stub (KI-/Dev-Hoheit).
      *
-     * @throws Throwable
      */
     public function crossBcServiceDemo(CrossBcServiceDemo $in, string $version = ''): DomainResponseInterface
     {
-        $denied = ($this->handle(EcommerceCheckAccess::class))(
-            $this->entry(),
-            $this->actor(),
-            EcommerceRights::SALES_PROCESS__CROSSBCSERVICEDEMO
-        );
-        if ($denied !== null) {
-            return ($this->handle(AnswerThrowable::class))(
-                new ContextResponse('CrossBcServiceDemoHandler'),
-                new TransformResponse($this->clock(), $version !== '' ? $version : $this->version()),
-                $denied,
-                true,
-                'CrossBcServiceDemoHandler'
-            );
-        }
-
         return $this->context(CrossBcServiceDemoHandler::class, $in, $version)();
     }
 
@@ -164,25 +111,9 @@ final class SalesProcess extends EcommerceContext
      * CallPricingApiDomain. Jeder Knoten deklariert einen Service mit demselben
      * Namen wie der Knoten selbst (Alias-Guard-Beleg, analog CrossBcServiceDemo P3).
      *
-     * @throws Throwable
      */
     public function externalCallServiceDemo(ExternalCallServiceDemo $in, string $version = ''): DomainResponseInterface
     {
-        $denied = ($this->handle(EcommerceCheckAccess::class))(
-            $this->entry(),
-            $this->actor(),
-            EcommerceRights::SALES_PROCESS__EXTERNALCALLSERVICEDEMO
-        );
-        if ($denied !== null) {
-            return ($this->handle(AnswerThrowable::class))(
-                new ContextResponse('ExternalCallServiceDemoHandler'),
-                new TransformResponse($this->clock(), $version !== '' ? $version : $this->version()),
-                $denied,
-                true,
-                'ExternalCallServiceDemoHandler'
-            );
-        }
-
         return $this->context(ExternalCallServiceDemoHandler::class, $in, $version)();
     }
 
@@ -197,21 +128,6 @@ final class SalesProcess extends EcommerceContext
      */
     public function orderBulkQuote(OrderBulkQuote $in, string $version = ''): DomainResponseInterface
     {
-        $denied = ($this->handle(EcommerceCheckAccess::class))(
-            $this->entry(),
-            $this->actor(),
-            EcommerceRights::SALES_PROCESS__ORDERBULKQUOTE
-        );
-        if ($denied !== null) {
-            return ($this->handle(AnswerThrowable::class))(
-                new ContextResponse('OrderBulkQuoteHandler'),
-                new TransformResponse($this->clock(), $version !== '' ? $version : $this->version()),
-                $denied,
-                true,
-                'OrderBulkQuoteHandler'
-            );
-        }
-
         return ($this->handle(ProjectAnswer::class))(
             $this->context(OrderBulkQuoteHandler::class, $in, $version)(),
             'lineCount',
@@ -248,25 +164,9 @@ final class SalesProcess extends EcommerceContext
      * beide cross-aggregat (Order + Invoice). Skalar-Felder gemischt; die
      * Dispatch-Schleife bleibt Dev-Code im Knoten (R7), nicht Generat.
      *
-     * @throws Throwable
      */
     public function orderInvoiceBatch(OrderInvoiceBatch $in, string $version = ''): DomainResponseInterface
     {
-        $denied = ($this->handle(EcommerceCheckAccess::class))(
-            $this->entry(),
-            $this->actor(),
-            EcommerceRights::SALES_PROCESS__ORDERINVOICEBATCH
-        );
-        if ($denied !== null) {
-            return ($this->handle(AnswerThrowable::class))(
-                new ContextResponse('OrderInvoiceBatchHandler'),
-                new TransformResponse($this->clock(), $version !== '' ? $version : $this->version()),
-                $denied,
-                true,
-                'OrderInvoiceBatchHandler'
-            );
-        }
-
         return $this->context(OrderInvoiceBatchHandler::class, $in, $version)();
     }
 
@@ -283,21 +183,6 @@ final class SalesProcess extends EcommerceContext
      */
     public function orderInvoiceUnionAlert(OrderInvoiceUnionAlert $in, string $version = ''): DomainResponseInterface
     {
-        $denied = ($this->handle(EcommerceCheckAccess::class))(
-            $this->entry(),
-            $this->actor(),
-            EcommerceRights::SALES_PROCESS__ORDERINVOICEUNIONALERT
-        );
-        if ($denied !== null) {
-            return ($this->handle(AnswerThrowable::class))(
-                new ContextResponse('OrderInvoiceUnionAlertHandler'),
-                new TransformResponse($this->clock(), $version !== '' ? $version : $this->version()),
-                $denied,
-                true,
-                'OrderInvoiceUnionAlertHandler'
-            );
-        }
-
         return ($this->handle(ProjectAnswer::class))(
             $this->context(OrderInvoiceUnionAlertHandler::class, $in, $version)()
         );
@@ -314,21 +199,6 @@ final class SalesProcess extends EcommerceContext
      */
     public function orderLimitAfterPlace(OrderLimitAfterPlace $in, string $version = ''): DomainResponseInterface
     {
-        $denied = ($this->handle(EcommerceCheckAccess::class))(
-            $this->entry(),
-            $this->actor(),
-            EcommerceRights::SALES_PROCESS__ORDERLIMITAFTERPLACE
-        );
-        if ($denied !== null) {
-            return ($this->handle(AnswerThrowable::class))(
-                new ContextResponse('OrderLimitAfterPlaceHandler'),
-                new TransformResponse($this->clock(), $version !== '' ? $version : $this->version()),
-                $denied,
-                true,
-                'OrderLimitAfterPlaceHandler'
-            );
-        }
-
         return ($this->handle(ProjectAnswer::class))(
             $this->context(OrderLimitAfterPlaceHandler::class, $in, $version)()
         );
@@ -390,21 +260,6 @@ final class SalesProcess extends EcommerceContext
      */
     public function ruleGuardedOrderIntake(RuleGuardedOrderIntake $in, string $version = ''): DomainResponseInterface
     {
-        $denied = ($this->handle(EcommerceCheckAccess::class))(
-            $this->entry(),
-            $this->actor(),
-            EcommerceRights::SALES_PROCESS__RULEGUARDEDORDERINTAKE
-        );
-        if ($denied !== null) {
-            return ($this->handle(AnswerThrowable::class))(
-                new ContextResponse('RuleGuardedOrderIntakeHandler'),
-                new TransformResponse($this->clock(), $version !== '' ? $version : $this->version()),
-                $denied,
-                true,
-                'RuleGuardedOrderIntakeHandler'
-            );
-        }
-
         return ($this->handle(ProjectAnswer::class))(
             $this->context(RuleGuardedOrderIntakeHandler::class, $in, $version)(),
             'orderNumber',
@@ -430,30 +285,13 @@ final class SalesProcess extends EcommerceContext
     }
 
     /**
-     * Request-Attribut-Feld an der Prozess-Tuer: nur `session` (Sitzungsreferenz) kommt als Prozess-Input aus dem
-     * Request-Attribut, nie vom Client - es fehlt im Body und im OpenAPI-Request. Mandant und Akteur traegt der
-     * Domain-Akteur (`$this->actor()`), kein Prozess-Input deklariert sie. Der Rule-Knoten laedt die mandanten-gescopte
-     * Voucher-Wurzel ueber LoadVoucherForRule im Mandanten des Akteurs; der Akteur ist nur Wert, nie Lesefilter (B4).
+     * Rule-Knoten an der Prozess-Tuer: der Rule-Knoten laedt die mandanten-gescopte Voucher-Wurzel ueber
+     * LoadVoucherForRule im Mandanten der Sitzung; der Akteur ist nur Wert, nie Lesefilter (B4).
      *
      * @throws Throwable
      */
     public function voucherRedeemCheck(VoucherRedeemCheck $in, string $version = ''): DomainResponseInterface
     {
-        $denied = ($this->handle(EcommerceCheckAccess::class))(
-            $this->entry(),
-            $this->actor(),
-            EcommerceRights::SALES_PROCESS__VOUCHERREDEEMCHECK
-        );
-        if ($denied !== null) {
-            return ($this->handle(AnswerThrowable::class))(
-                new ContextResponse('VoucherRedeemCheckHandler'),
-                new TransformResponse($this->clock(), $version !== '' ? $version : $this->version()),
-                $denied,
-                true,
-                'VoucherRedeemCheckHandler'
-            );
-        }
-
         return ($this->handle(ProjectAnswer::class))($this->context(VoucherRedeemCheckHandler::class, $in, $version)());
     }
 }

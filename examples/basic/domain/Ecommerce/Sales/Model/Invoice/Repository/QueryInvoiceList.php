@@ -119,6 +119,7 @@ class QueryInvoiceList extends EcommerceContext
         if ($hasCreatedAtUntil) {
             $query = $query->and('invoice.created_at')->lowerEquals($filter->createdAtUntil);
         }
+        $query = $query->and('invoice.tenant_key')->equals($filter->tenant);
 
         $query = $query
             ->orderBy('invoice.issued_at', 'DESC')

@@ -30,6 +30,7 @@ class Category
     // phpcs:ignore PSR2.Classes.PropertyDeclaration.Underscore -- Reflection-Slot jardissupport/data
     protected array $__snapshot = [
         'id' => null,
+        'tenant_key' => null,
         'identifier' => null,
         'slug' => null,
         'parent_identifier' => null,
@@ -51,6 +52,12 @@ class Category
     #[PrimaryKey(autoIncrement: true)]
     #[Column(name: 'id', type: 'int')]
     protected ?int $id = null;
+
+    /**
+     * @var ?string
+     */
+    #[Column(name: 'tenant_key', type: 'varchar', length: 36)]
+    protected ?string $tenantKey = null;
 
     /**
      * @var ?string
@@ -145,6 +152,11 @@ class Category
         return $this->id;
     }
 
+    public function getTenantKey(): ?string
+    {
+        return $this->tenantKey;
+    }
+
     public function getIdentifier(): ?string
     {
         return $this->identifier;
@@ -208,6 +220,12 @@ class Category
     public function getUpdatedAt(): ?DateTime
     {
         return $this->updatedAt;
+    }
+
+    public function setTenantKey(?string $tenantKey): self
+    {
+        $this->tenantKey = $tenantKey;
+        return $this;
     }
 
     public function setIdentifier(?string $identifier): self

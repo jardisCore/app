@@ -12,6 +12,7 @@ namespace Ecommerce\Sales\Model\Order\Query;
 readonly class OrderListFilter
 {
     public function __construct(
+        public string $tenant,
         public ?int $id = null,
         public ?string $orderNumber = null,
         public ?int $customerId = null,

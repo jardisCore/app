@@ -34,7 +34,7 @@ final class CheckPlacedOrderWithinLimit extends EcommerceContext
 
         $identifierRoot = $fromPlaceLimitedOrder->data()['orderNumber']
             ?? throw new \LogicException('PlaceLimitedOrder/orderNumber');
-        $loadedRoot = $this->handle(LoadOrderForRule::class)($identifierRoot);
+        $loadedRoot = $this->handle(LoadOrderForRule::class)($ctx->input()->tenant, $identifierRoot);
 
         if ($loadedRoot === null) {
             return NodeResult::reject(

@@ -31,7 +31,7 @@ class BuildUpdateInvoiceLineData extends EcommerceContext
         return $this->handle(FieldMapper::class)->toColumns([
             ...array_filter(
                 $rawData,
-                fn($key) => !in_array($key, ["invoiceIdentifier","invoiceLineIdentifier"], true),
+                fn($key) => !in_array($key, ["tenant","invoiceIdentifier","invoiceLineIdentifier"], true),
                 ARRAY_FILTER_USE_KEY
             ),
         ], $fieldMap->invoiceLinesColumns());

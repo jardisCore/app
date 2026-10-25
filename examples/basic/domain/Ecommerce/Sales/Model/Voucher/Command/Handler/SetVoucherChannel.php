@@ -72,7 +72,7 @@ class SetVoucherChannel extends EcommerceContext
         try {
             $query = $this->handle(
                 QueryVoucher::class,
-                scopeKey: $setVoucherChannel->scopeKey,
+                tenant: $setVoucherChannel->tenant,
                 voucherCode: $setVoucherChannel->voucherCode
             );
             /** @var Voucher|null $handler */

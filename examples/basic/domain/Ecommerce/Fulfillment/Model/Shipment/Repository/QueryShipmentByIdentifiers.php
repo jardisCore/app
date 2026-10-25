@@ -34,7 +34,7 @@ class QueryShipmentByIdentifiers extends EcommerceContext
     public function __invoke(ShipmentByIdentifiersQuery $query): array
     {
         $this->container['shipment'] = $this->load(
-            $this->shipment($query->identifiers)
+            $this->shipment($query->tenant, $query->identifiers)
         );
 
         return $this->container;
@@ -44,10 +44,11 @@ class QueryShipmentByIdentifiers extends EcommerceContext
      * Query for shipment.
      * @throws Throwable
      */
-    protected function shipment(array $identifiers): DbQueryBuilderInterface
+    protected function shipment(string $tenant, array $identifiers): DbQueryBuilderInterface
     {
         return $this->query(ShipmentEntity::class)
-            ->where('identifier')->in($identifiers)
+            ->where('tenant_key')->equals($tenant)
+            ->and('identifier')->in($identifiers)
             ->orderBy('id', 'ASC');
     }
 

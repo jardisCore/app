@@ -44,7 +44,11 @@ class RemoveTrackingEvent extends EcommerceContext
         $owner = $connection?->inTransaction() !== true;
 
         try {
-            $query = $this->handle(QueryShipment::class, identifier: $removeTrackingEvent->shipmentIdentifier);
+            $query = $this->handle(
+                QueryShipment::class,
+                tenant: $removeTrackingEvent->tenant,
+                identifier: $removeTrackingEvent->shipmentIdentifier
+            );
             /** @var Shipment|null $handler */
             $handler = $this->handle(ShipmentRepository::class)->getShipmentByIdentifier($query);
             if ($handler === null) {

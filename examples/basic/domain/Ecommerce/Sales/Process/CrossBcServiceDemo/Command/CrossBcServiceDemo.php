@@ -18,7 +18,9 @@ readonly class CrossBcServiceDemo
         public string $counterNumber,
         public string $meterLocationIdentifier,
         public float $newPrice,
-        public string $productIdentifier
+        public string $productIdentifier,
+        public string $tenant,
+        public string $user
     ) {
     }
 }

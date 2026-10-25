@@ -31,6 +31,7 @@ class Product
     // phpcs:ignore PSR2.Classes.PropertyDeclaration.Underscore -- Reflection-Slot jardissupport/data
     protected array $__snapshot = [
         'id' => null,
+        'tenant_key' => null,
         'identifier' => null,
         'sku' => null,
         'name' => null,
@@ -55,6 +56,12 @@ class Product
     #[PrimaryKey(autoIncrement: true)]
     #[Column(name: 'id', type: 'int')]
     protected ?int $id = null;
+
+    /**
+     * @var ?string
+     */
+    #[Column(name: 'tenant_key', type: 'varchar', length: 36)]
+    protected ?string $tenantKey = null;
 
     /**
      * @var ?string
@@ -167,6 +174,11 @@ class Product
         return $this->id;
     }
 
+    public function getTenantKey(): ?string
+    {
+        return $this->tenantKey;
+    }
+
     public function getIdentifier(): ?string
     {
         return $this->identifier;
@@ -254,6 +266,12 @@ class Product
     public function getUpdatedAt(): ?DateTime
     {
         return $this->updatedAt;
+    }
+
+    public function setTenantKey(?string $tenantKey): self
+    {
+        $this->tenantKey = $tenantKey;
+        return $this;
     }
 
     public function setIdentifier(?string $identifier): self

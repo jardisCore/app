@@ -72,7 +72,11 @@ class UpdatePriceTier extends EcommerceContext
         $owner = $connection?->inTransaction() !== true;
 
         try {
-            $query = $this->handle(QueryPriceTier::class, identifier: $updatePriceTier->priceTierIdentifier);
+            $query = $this->handle(
+                QueryPriceTier::class,
+                tenant: $updatePriceTier->tenant,
+                identifier: $updatePriceTier->priceTierIdentifier
+            );
             /** @var PriceTier|null $handler */
             $handler = $this->handle(PriceTierRepository::class)->getPriceTierByIdentifier($query);
             if ($handler === null) {
@@ -114,6 +118,7 @@ class UpdatePriceTier extends EcommerceContext
             $event = $this->handle(
                 PriceTierUpdated::class,
                 priceTierIdentifier: $handler->getData()->getIdentifier(),
+                tenantKey: $handler->getData()->getTenantKey(),
                 tierCode: $handler->getData()->getTierCode(),
                 minQuantity: $handler->getData()->getMinQuantity(),
                 unitPrice: $handler->getData()->getUnitPrice(),

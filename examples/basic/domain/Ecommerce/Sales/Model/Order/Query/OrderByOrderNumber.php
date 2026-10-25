@@ -12,6 +12,7 @@ namespace Ecommerce\Sales\Model\Order\Query;
 readonly class OrderByOrderNumber
 {
     public function __construct(
+        public string $tenant,
         public string $orderNumber
     ) {
     }

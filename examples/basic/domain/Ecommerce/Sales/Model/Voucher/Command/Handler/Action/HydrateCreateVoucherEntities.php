@@ -40,11 +40,15 @@ class HydrateCreateVoucherEntities extends EcommerceContext
 
         $rawData = get_object_vars($voucher);
 
-        $handler->setVoucher($this->handle(FieldMapper::class)->toColumns(array_filter(
+        $columns = $this->handle(FieldMapper::class)->toColumns(array_filter(
             $rawData,
-            fn($key) => !in_array($key, ["voucherChannel"], true),
+            fn($key) => !in_array($key, ["voucherChannel","tenant","user"], true),
             ARRAY_FILTER_USE_KEY
-        ), $fieldMap->vouchersColumns()));
+        ), $fieldMap->vouchersColumns());
+        $columns['scope_key'] = $voucher->tenant;
+        $columns['issued_by'] = $voucher->user;
+        $columns['issuer_id'] = $voucher->user;
+        $handler->setVoucher($columns);
     }
 
     /**

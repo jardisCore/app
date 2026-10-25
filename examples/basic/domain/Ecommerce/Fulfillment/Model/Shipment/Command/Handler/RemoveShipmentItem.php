@@ -44,7 +44,11 @@ class RemoveShipmentItem extends EcommerceContext
         $owner = $connection?->inTransaction() !== true;
 
         try {
-            $query = $this->handle(QueryShipment::class, identifier: $removeShipmentItem->shipmentIdentifier);
+            $query = $this->handle(
+                QueryShipment::class,
+                tenant: $removeShipmentItem->tenant,
+                identifier: $removeShipmentItem->shipmentIdentifier
+            );
             /** @var Shipment|null $handler */
             $handler = $this->handle(ShipmentRepository::class)->getShipmentByIdentifier($query);
             if ($handler === null) {

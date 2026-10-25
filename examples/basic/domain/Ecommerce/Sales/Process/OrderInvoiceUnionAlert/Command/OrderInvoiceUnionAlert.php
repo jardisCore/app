@@ -15,7 +15,9 @@ use Ecommerce\Sales\Model\Order\Command\RemoveOrder;
 readonly class OrderInvoiceUnionAlert
 {
     public function __construct(
-        public RemoveOrder|RemoveInvoice $subjectRemoval
+        public RemoveOrder|RemoveInvoice $subjectRemoval,
+        public string $tenant,
+        public string $user
     ) {
     }
 }

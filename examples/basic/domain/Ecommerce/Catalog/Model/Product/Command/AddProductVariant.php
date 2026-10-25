@@ -12,6 +12,7 @@ namespace Ecommerce\Catalog\Model\Product\Command;
 readonly class AddProductVariant
 {
     public function __construct(
+        public string $tenant,
         public string $productIdentifier,
         public string $sku,
         public string $variantName,

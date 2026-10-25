@@ -14,7 +14,7 @@
     "require": {
         "php": ">=8.3",
         "jardiscore/kernel": "^2.0",
-        "jardissupport/contracts": "^2.16",
+        "jardissupport/contracts": "^2.17",
         "nikic/fast-route": "^1.3",
         "nyholm/psr7": "^1.8",
         "nyholm/psr7-server": "^1.1",
@@ -23,7 +23,7 @@
         "psr/http-server-handler": "^1",
         "psr/http-server-middleware": "^1",
         "jardissupport/factory": "^1.0",
-        "jardissupport/response": "^1.5 || ^2.0"
+        "jardissupport/response": "^3.0"
     },
     "require-dev": {
         "phpunit/phpunit": "^11.0",

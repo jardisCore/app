@@ -12,6 +12,7 @@ namespace Ecommerce\Catalog\Model\Category\Command;
 readonly class Category
 {
     public function __construct(
+        public string $tenant,
         public string $slug,
         public ?string $parentIdentifier,
         public string $categoryName,

@@ -77,7 +77,11 @@ class UpdateOrder extends EcommerceContext
         $owner = $connection?->inTransaction() !== true;
 
         try {
-            $query = $this->handle(QueryOrder::class, orderNumber: $updateOrder->orderNumber);
+            $query = $this->handle(
+                QueryOrder::class,
+                tenant: $updateOrder->tenant,
+                orderNumber: $updateOrder->orderNumber
+            );
             /** @var Order|null $handler */
             $handler = $this->handle(OrderRepository::class)->getOrderByOrderNumber($query);
             if ($handler === null) {
@@ -141,6 +145,7 @@ class UpdateOrder extends EcommerceContext
             $event = $this->handle(
                 OrderUpdated::class,
                 orderNumber: $handler->getData()->getOrderNumber(),
+                tenantKey: $handler->getData()->getTenantKey(),
                 totalAmount: $handler->getData()->getTotalAmount(),
                 status: $handler->getData()->getStatus()?->value ?? throw new RuntimeException('status is required'),
                 occurredAt: new DateTimeImmutable()

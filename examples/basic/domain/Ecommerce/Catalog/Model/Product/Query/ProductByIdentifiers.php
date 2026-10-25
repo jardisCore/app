@@ -12,6 +12,7 @@ namespace Ecommerce\Catalog\Model\Product\Query;
 readonly class ProductByIdentifiers
 {
     public function __construct(
+        public string $tenant,
         public array $identifiers
     ) {
     }

@@ -44,7 +44,11 @@ class RemoveProductImage extends EcommerceContext
         $owner = $connection?->inTransaction() !== true;
 
         try {
-            $query = $this->handle(QueryProduct::class, identifier: $removeProductImage->productIdentifier);
+            $query = $this->handle(
+                QueryProduct::class,
+                tenant: $removeProductImage->tenant,
+                identifier: $removeProductImage->productIdentifier
+            );
             /** @var Product|null $handler */
             $handler = $this->handle(ProductRepository::class)->getProductByIdentifier($query);
             if ($handler === null) {

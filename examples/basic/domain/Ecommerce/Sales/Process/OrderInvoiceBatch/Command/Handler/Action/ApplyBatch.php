@@ -15,6 +15,8 @@ use JardisSupport\Workflow\Data\NodeResult;
  * (foreach … match(instanceof)) ist Dev-Code und lebt hier im logic(),
  * nicht im generierten DTO.
  *
+ * Mandant und Nutzer des Laufs: $ctx->input()->tenant, $ctx->input()->user (beide string).
+ *
  * Kontext-Kette (von oben nach unten):
  * Domain: Ecommerce
  * BC: Sales

@@ -72,7 +72,11 @@ class UpdateCategory extends EcommerceContext
         $owner = $connection?->inTransaction() !== true;
 
         try {
-            $query = $this->handle(QueryCategory::class, identifier: $updateCategory->categoryIdentifier);
+            $query = $this->handle(
+                QueryCategory::class,
+                tenant: $updateCategory->tenant,
+                identifier: $updateCategory->categoryIdentifier
+            );
             /** @var Category|null $handler */
             $handler = $this->handle(CategoryRepository::class)->getCategoryByIdentifier($query);
             if ($handler === null) {
@@ -114,6 +118,7 @@ class UpdateCategory extends EcommerceContext
             $event = $this->handle(
                 CategoryUpdated::class,
                 categoryIdentifier: $handler->getData()->getIdentifier(),
+                tenantKey: $handler->getData()->getTenantKey(),
                 slug: $handler->getData()->getSlug(),
                 parentIdentifier: $handler->getData()->getParentIdentifier(),
                 categoryName: $handler->getData()->getName(),
