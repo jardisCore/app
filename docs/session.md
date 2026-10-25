@@ -165,7 +165,7 @@ Signature: `__construct(Closure $revoke)` with `$revoke: Closure(string $session
 `JardisCore\App\SignedInRun` (since 3.2.0) lets a system run (CLI, job) get its rights like any user: sign in -> token -> switch tenant -> token -> target
 request with `Authorization: Bearer`. Every stage goes through `App::handle()`, so the target passes `RequireSession` and `RequireRight`; there is no special
 value and no second check. It is an orchestrator (one public entry point) over the closures `Handler\System\BuildSystemRequest`, `BuildSwitchBody`,
-`ReadSessionToken` and the existing `AuthenticateToken`.
+`ReadAccessToken` and the existing `AuthenticateToken`.
 
 ```php
 use JardisCore\App\Data\SessionDoor;
@@ -186,6 +186,6 @@ $response = $run->handle('acme', '{"secret":"..."}', 'GET', '/orders');
 |---|---|
 | Switch body | `{"<tenantField>": "<tenant>"}` with `Authorization: Bearer <sign-in token>`. |
 | Target | `method`, `path` (query string allowed) and `body` as given, with `Authorization: Bearer <switch token>`; its answer comes back unchanged, also 4xx (e.g. `403 access.rightMissing`). |
-| Token | A probe over the answer structure (compromise, the route table names no token field): all strings of the envelope's `data` (recursively) are offered to the authenticator; the token is the ONE distinct string it accepts. The refresh token is unsigned and not accepted. |
-| Refusal | `Exception\SystemRunRefused` (`reason`, `?int status`): empty tenant (before any request, nothing is called), sign-in or switch not `2xx` (status of that stage), no token or more than one distinct token. Never carries a body. |
+| Token | `data.access_token` of the answer (RFC 6749 section 5.1; the doors answer `access_token`, `token_type`, `expires_in`, `refresh_token`), read by `Handler\System\ReadAccessToken`. It must be a non-empty string AND accepted by the authenticator (the check `RequireSession` runs); other fields such as `refresh_token` are not looked at. `ReadSessionToken` (the former probe over all strings of `data`) is deprecated since 3.3.0 and removed in 4.0. |
+| Refusal | `Exception\SystemRunRefused` (`reason`, `?int status`): empty tenant (before any request, nothing is called), sign-in or switch not `2xx` (status of that stage), no usable `data.access_token` (missing, empty, not a string, not accepted). Never carries a body. |
 | Sign-out | None after the run; the session lives until it expires. |

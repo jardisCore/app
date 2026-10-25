@@ -23,7 +23,7 @@
         "psr/http-server-handler": "^1",
         "psr/http-server-middleware": "^1",
         "jardissupport/factory": "^1.0",
-        "jardissupport/response": "^3.0"
+        "jardissupport/response": "^3.0 || ^4.0"
     },
     "require-dev": {
         "phpunit/phpunit": "^11.0",
