@@ -35,7 +35,7 @@
         "jardissupport/workflow": "^5.0",
         "middlewares/client-ip": "^2.1",
         "ext-pdo": "*",
-        "jardissupport/auth": "^1.8",
+        "jardissupport/auth": "^2.0",
         "jardissupport/validation": "^1.5",
         "jardissupport/scheduling": "^1.2"
     },
