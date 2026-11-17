@@ -20,6 +20,7 @@ use JardisSupport\Auth\Handler\Authorization\HasRight;
 use JardisSupport\Auth\SessionManager;
 use JardisSupport\Auth\SignedTokenAuthenticator;
 use JardisSupport\Contract\Auth\RequestAttribute;
+use JardisSupport\Contract\Auth\SeeAllRight;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
@@ -53,6 +54,28 @@ final class RequireRightTest extends TestCase
 
         $this->assertSame(200, $response->getStatusCode());
         $this->assertCount(1, $this->handled);
+    }
+
+    public function testSeeAllTickNextToTheRightsOpensTheDoorsLikeBefore(): void
+    {
+        $tick = SeeAllRight::RESOURCE . ':' . self::RIGHT;
+        $app = $this->app();
+        $token = $this->issue([self::RIGHT, 'sales.invoice:*', $tick]);
+
+        $this->assertSame(200, $app->handle($this->request('/orders', $token))->getStatusCode());
+        $this->assertSame(200, $app->handle($this->request('/invoices', $token))->getStatusCode());
+        $this->assertCount(2, $this->handled);
+    }
+
+    public function testSeeAllTickAloneOpensNoDoorNotEvenTheOneOfItsRight(): void
+    {
+        $tick = SeeAllRight::RESOURCE . ':' . self::RIGHT;
+        $app = $this->app();
+        $token = $this->issue([$tick]);
+
+        $this->assertSame(403, $app->handle($this->request('/orders', $token))->getStatusCode());
+        $this->assertSame(403, $app->handle($this->request('/invoices', $token))->getStatusCode());
+        $this->assertSame([], $this->handled);
     }
 
     public function testResourceWildcardPassesLikeTheExactRight(): void

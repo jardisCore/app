@@ -2,6 +2,23 @@
 
 All notable changes to `jardiscore/app` are listed here. Versions only move forward (SemVer).
 
+## [Unreleased]
+
+Groups of the subject in the request.
+
+### Added
+
+- `Middleware\ResolveGroups(GroupLookupInterface)` (PSR-15, behind `RequireSession`): asks the contract once per request with the bare subject id and
+  the tenant and binds `RequestAttribute::GROUPS` (`list<int>`) and `PERSONAL_GROUP` (`int`) through the closure `Handler\Session\ApplyGroups`.
+  Both attributes are always removed first, absent when empty (never `[]`); an anonymous request or one without `SUBJECT_ID` never reaches the contract;
+  a throwing lookup is answered by the existing error path (500).
+- `Handler\Request\ReadRequestAttributeIntList` (absent -> `[]`, `list<int>` -> the list, anything else -> `null`).
+- `Handler\Request\ReadSeesAll(ServerRequestInterface, string $right): bool` (`*` or `SeeAllRight::RESOURCE . ':' . $right` in `RIGHTS`).
+
+### Changed
+
+- Requires `jardissupport/contracts ^2.21` (was `^2.17`).
+
 ## [3.3.0] - 2026-10-25
 
 A system run reads the access token by name, not by probe.
