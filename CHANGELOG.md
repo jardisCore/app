@@ -2,7 +2,7 @@
 
 All notable changes to `jardiscore/app` are listed here. Versions only move forward (SemVer).
 
-## [Unreleased]
+## [3.4.0] - 2026-11-17
 
 Groups of the subject in the request.
 
@@ -14,6 +14,16 @@ Groups of the subject in the request.
   a throwing lookup is answered by the existing error path (500).
 - `Handler\Request\ReadRequestAttributeIntList` (absent -> `[]`, `list<int>` -> the list, anything else -> `null`).
 - `Handler\Request\ReadSeesAll(ServerRequestInterface, string $right): bool` (`*` or `SeeAllRight::RESOURCE . ':' . $right` in `RIGHTS`).
+- `Middleware\ResolveShareTargets(GroupLookupInterface, Data\ShareTargetSource)` (PSR-15, per route behind `RequireRight`): resolves the share targets of a
+  request and binds `RequestAttribute::SHARE_TARGETS` (`array<int, string>`, group id => level word, the word unchanged; `false` = not resolvable;
+  absent = no indication, never `[]`) through the closure `Handler\Request\ApplyShareTargets`, which removes a value set before. Source by the
+  constructor: `ShareTargetSource::Header` (`X-Jardis-Share-With: 12=view, 15=edit`) or `ShareTargetSource::Body` (fields `groups`, `person`, `level`;
+  a person becomes her personal group). Foreign tenant, unknown person or group, unusable input -> `false`; empty or broken body -> absent; the middleware
+  never answers on its own and never checks a level word. Readers `Handler\Request\ReadShareTargetsFromHeader` / `ReadShareTargetsFromBody`, lookup
+  `Handler\Request\LookUpShareTargets`.
+- `GroupDirectoryFromDoors` (implements `GroupLookupInterface`): the four questions of the contract over four injected `Closure`s with a raw answer;
+  one closure of its own per question under `Handler\Directory\` (`AnswerGroupsOf`, `AnswerPersonalGroupOf`, `AnswerExistingGroups`,
+  `AnswerFallbackGroupOf`); the answer of `groupsOf` becomes `Data\SubjectGroups`.
 
 ### Changed
 

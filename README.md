@@ -80,6 +80,11 @@ closes that gap with a deliberately small core:
   `RequestAttribute::GROUPS` (`list<int>`) and `PERSONAL_GROUP` (`int`) - absent when empty, always removed first so a client
   cannot inject them; an anonymous request never reaches the contract; a throwing lookup is answered `500`.
   `Handler\Request\ReadSeesAll` tells a route whether the session sees all for one right (owner `*` or the tick entry).
+- **Share targets in the request.** `Middleware\ResolveShareTargets(GroupLookupInterface, ShareTargetSource)` (per route, behind
+  `RequireRight`) reads the targets of "share with" from the header `X-Jardis-Share-With: 12=view, 15=edit` or from the body fields
+  `groups` / `person` / `level` and sets `RequestAttribute::SHARE_TARGETS` (group id => level word, the word unchanged; a person is her
+  personal group; `false` = not resolvable - foreign tenant, unknown person or group; absent = no indication). It never answers on its own
+  and never checks a level word - the door does. `GroupDirectoryFromDoors` answers the four questions of the contract over injected door calls.
 - **Revoke the session after success.** `Middleware\RevokeSessionOnSuccess` (since 3.1.0) calls the handler first and, when the answer is
   `2xx` and the request carries a session reference (`RequestAttribute::SESSION`), revokes exactly that session through an injected closure
   (`SessionManager::invalidateByReference(...)` of `jardissupport/auth`); the response is returned unchanged. Not `2xx` or no reference: nothing is

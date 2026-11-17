@@ -10,19 +10,35 @@ use RuntimeException;
 
 /**
  * Test fake for the GroupLookupInterface port: a fixed answer for `groupsOf()`, every call recorded.
- * A subject id of `boom` throws. The other three questions are not used by the app middleware and answer
- * the neutral value.
+ * A subject id of `boom` throws. `personalGroupOf()` and `existingGroups()` are recorded as well; by default they
+ * answer like a directory without a tenant boundary (the one personal group, every asked group exists). The
+ * optional arguments make the directory strict: known groups, personal groups per subject id, one single tenant.
+ * `fallbackGroupOf()` answers the neutral value.
  */
 final class FakeGroupLookup implements GroupLookupInterface
 {
     /** @var list<array{0: string, 1: ?string}> */
     public array $calls = [];
 
+    /** @var list<array{0: string, 1: ?string}> */
+    public array $personalCalls = [];
+
+    /** @var list<array{0: list<int>, 1: ?string}> */
+    public array $existingCalls = [];
+
     /**
      * @param list<int> $groups
+     * @param list<int>|null $knownGroups groups that exist in `$onlyTenant`; null = every asked group exists
+     * @param array<array-key, int>|null $personalGroups subject id => personal group; null = every subject has `$personal`
+     * @param string|null $onlyTenant the one tenant the directory knows; every other tenant has no group and no person
      */
-    public function __construct(private readonly array $groups = [], private readonly ?int $personal = null)
-    {
+    public function __construct(
+        private readonly array $groups = [],
+        private readonly ?int $personal = null,
+        private readonly ?array $knownGroups = null,
+        private readonly ?array $personalGroups = null,
+        private readonly ?string $onlyTenant = null,
+    ) {
     }
 
     public function groupsOf(string $subjectId, ?string $tenant): SubjectGroupsInterface
@@ -55,12 +71,26 @@ final class FakeGroupLookup implements GroupLookupInterface
 
     public function personalGroupOf(string $subjectId, ?string $tenant): ?int
     {
-        return $this->personal;
+        $this->personalCalls[] = [$subjectId, $tenant];
+
+        if ($this->onlyTenant !== null && $tenant !== $this->onlyTenant) {
+            return null;
+        }
+
+        return $this->personalGroups === null ? $this->personal : ($this->personalGroups[$subjectId] ?? null);
     }
 
     public function existingGroups(array $groups, ?string $tenant): array
     {
-        return $groups;
+        $this->existingCalls[] = [$groups, $tenant];
+
+        if ($this->onlyTenant !== null && $tenant !== $this->onlyTenant) {
+            return [];
+        }
+
+        return $this->knownGroups === null
+            ? $groups
+            : array_values(array_filter($groups, fn (int $group): bool => in_array($group, $this->knownGroups, true)));
     }
 
     public function fallbackGroupOf(int $kind, ?string $tenant): ?int
