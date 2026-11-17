@@ -75,6 +75,16 @@ closes that gap with a deliberately small core:
   closure (`JardisSupport\Auth\Handler\Authorization\HasRight` of `jardissupport/auth`; the superuser `*` passes). Fail-closed:
   absent or unusable rights deny. A guest gets `401` from the session door first. Details: [`docs/session.md`](docs/session.md).
   `HandleThrowable` no longer knows an access-denied exception: every unknown exception is a generic `500`.
+- **Groups of the subject in the request.** `Middleware\ResolveGroups` (behind the session door) asks an injected
+  `GroupLookupInterface` (`jardissupport/contracts` ^2.21) once per request for the groups of the session subject and sets
+  `RequestAttribute::GROUPS` (`list<int>`) and `PERSONAL_GROUP` (`int`) - absent when empty, always removed first so a client
+  cannot inject them; an anonymous request never reaches the contract; a throwing lookup is answered `500`.
+  `Handler\Request\ReadSeesAll` tells a route whether the session sees all for one right (owner `*` or the tick entry).
+- **Share targets in the request.** `Middleware\ResolveShareTargets(GroupLookupInterface, ShareTargetSource)` (per route, behind
+  `RequireRight`) reads the targets of "share with" from the header `X-Jardis-Share-With: 12=view, 15=edit` or from the body fields
+  `groups` / `person` / `level` and sets `RequestAttribute::SHARE_TARGETS` (group id => level word, the word unchanged; a person is her
+  personal group; `false` = not resolvable - foreign tenant, unknown person or group; absent = no indication). It never answers on its own
+  and never checks a level word - the door does. `GroupDirectoryFromDoors` answers the four questions of the contract over injected door calls.
 - **Revoke the session after success.** `Middleware\RevokeSessionOnSuccess` (since 3.1.0) calls the handler first and, when the answer is
   `2xx` and the request carries a session reference (`RequestAttribute::SESSION`), revokes exactly that session through an injected closure
   (`SessionManager::invalidateByReference(...)` of `jardissupport/auth`); the response is returned unchanged. Not `2xx` or no reference: nothing is
@@ -138,6 +148,8 @@ What hangs on the HTTP request lives here; the type check of values and the 400 
 | `Handler\Request\ParseJsonBody` | the one JSON body parser (`InvalidJsonBody` -> 400) |
 | `Handler\Request\ReadRequestAttribute` | a request attribute as a string; absent / not a string -> `''` (the reader behind a `RequireRequestAttribute`-guarded route) |
 | `Handler\Request\ReadRequestAttributeList` | a request attribute as `list<string>` (e.g. `RequestAttribute::RIGHTS`); absent -> `[]`, present but not a list of strings -> `null` ("unusable", the caller answers 401, never 500); never throws |
+| `Handler\Request\ReadRequestAttributeIntList` | a request attribute as `list<int>` (e.g. `RequestAttribute::GROUPS`); absent -> `[]`, present but not a list of integers -> `null` ("unusable"); never throws |
+| `Handler\Request\ReadSeesAll` | `bool`: the rights of the session hold `*` or the "sees all" entry of exactly the given right (`SeeAllRight::RESOURCE . ':' . $right`) |
 | `Handler\Request\ReadRequestAttributeStrict` | the same, but absent / not a string / empty -> `Exception\RequestAttributeMissing` (a `RuntimeException`), which the error boundary answers as the generic 500 - for an attribute no middleware can guard up front |
 | `Handler\Response\AnswerUnsupportedRequest` | the 500 answer (`errors.routes`) of a route whose request the generated adapter cannot build: `__invoke(list<string> $properties)` |
 
@@ -169,7 +181,7 @@ return (new AnswerUnsupportedRequest())(['lines', 'meta']);                     
 
 - PHP `>=8.3`
 - `jardiscore/kernel ^2.0`
-- `jardissupport/contracts ^2.17`
+- `jardissupport/contracts ^2.21`
 - `jardissupport/response ^3.0 || ^4.0`
 
 ## Related Packages
