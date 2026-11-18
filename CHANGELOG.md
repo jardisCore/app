@@ -2,6 +2,23 @@
 
 All notable changes to `jardiscore/app` are listed here. Versions only move forward (SemVer).
 
+## [3.5.0] - 2026-11-18
+
+Fallback groups in the request.
+
+### Added
+
+- `Middleware\ResolveFallbackGroups(GroupLookupInterface, list<int> $kinds)` (PSR-15, global behind `ResolveGroups`): for a request without a
+  personal group (`PERSONAL_GROUP` is not an `int`) asks `fallbackGroupOf($kind, $tenant)` once per information kind and binds
+  `RequestAttribute::FALLBACK_GROUPS` (`array<int, int>`: kind => fallback group) through the closure `Handler\Session\ApplyFallbackGroups`.
+  The attribute is always removed first, absent when no kind has a fallback group (never `[]`); a request with a personal group never reaches
+  the contract; no subject is needed; a throwing lookup is answered by the existing error path (500). Needs `jardissupport/contracts ^2.22`.
+- `Handler\Request\ReadRequestAttributeInt` (an `int` -> the integer, absent or anything else -> `null`).
+
+### Changed
+
+- Requires `jardissupport/contracts ^2.22` (was `^2.21`).
+
 ## [3.4.0] - 2026-11-17
 
 Groups of the subject in the request.

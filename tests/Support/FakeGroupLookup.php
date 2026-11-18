@@ -13,7 +13,8 @@ use RuntimeException;
  * A subject id of `boom` throws. `personalGroupOf()` and `existingGroups()` are recorded as well; by default they
  * answer like a directory without a tenant boundary (the one personal group, every asked group exists). The
  * optional arguments make the directory strict: known groups, personal groups per subject id, one single tenant.
- * `fallbackGroupOf()` answers the neutral value.
+ * `fallbackGroupOf()` is recorded as well and answers from the optional map kind => group (default: no kind has a
+ * fallback group); with `$fallbackThrows` it throws.
  */
 final class FakeGroupLookup implements GroupLookupInterface
 {
@@ -26,11 +27,16 @@ final class FakeGroupLookup implements GroupLookupInterface
     /** @var list<array{0: list<int>, 1: ?string}> */
     public array $existingCalls = [];
 
+    /** @var list<array{0: int, 1: ?string}> */
+    public array $fallbackCalls = [];
+
     /**
      * @param list<int> $groups
      * @param list<int>|null $knownGroups groups that exist in `$onlyTenant`; null = every asked group exists
      * @param array<array-key, int>|null $personalGroups subject id => personal group; null = every subject has `$personal`
      * @param string|null $onlyTenant the one tenant the directory knows; every other tenant has no group and no person
+     * @param array<int, int|null> $fallbackGroups information kind => fallback group; a kind not listed has none
+     * @param bool $fallbackThrows `fallbackGroupOf()` throws, like an unreachable group store
      */
     public function __construct(
         private readonly array $groups = [],
@@ -38,6 +44,8 @@ final class FakeGroupLookup implements GroupLookupInterface
         private readonly ?array $knownGroups = null,
         private readonly ?array $personalGroups = null,
         private readonly ?string $onlyTenant = null,
+        private readonly array $fallbackGroups = [],
+        private readonly bool $fallbackThrows = false,
     ) {
     }
 
@@ -95,6 +103,12 @@ final class FakeGroupLookup implements GroupLookupInterface
 
     public function fallbackGroupOf(int $kind, ?string $tenant): ?int
     {
-        return null;
+        $this->fallbackCalls[] = [$kind, $tenant];
+
+        if ($this->fallbackThrows) {
+            throw new RuntimeException('fallback store unreachable');
+        }
+
+        return $this->fallbackGroups[$kind] ?? null;
     }
 }
