@@ -2,6 +2,22 @@
 
 All notable changes to `jardiscore/app` are listed here. Versions only move forward (SemVer).
 
+## [3.6.0] - 2026-11-23
+
+"Sees all" asks the rule of the door.
+
+### Added
+
+- `Handler\Request\ReadSeesAll::__construct(?Closure $hasRight = null)` (`Closure(list<string>, string): bool`, the same type as `RequireRight`): with the rule
+  handed in (e.g. `HasRight::__invoke(...)` of `jardissupport/auth`) the "sees all" entries of `RIGHTS` are taken out, their prefix `seeAll:` is cut off and the widened
+  rights are given to the rule together with the right of the door - a tick `seeAll:x.y:*` opens the view at every door of `x.y`, `seeAll:*` at every door. Ordinary
+  rights never reach the rule; `*` is true without asking it; a rule throwing `InvalidArgumentException` and unusable `RIGHTS` answer `false`. The package
+  compares no right with a right itself and does not depend on `jardissupport/auth`.
+
+### Changed
+
+- Nothing for existing callers: `new ReadSeesAll()` compares literally as before.
+
 ## [3.5.0] - 2026-11-18
 
 Fallback groups in the request.
