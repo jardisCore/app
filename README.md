@@ -79,7 +79,7 @@ closes that gap with a deliberately small core:
   `GroupLookupInterface` (`jardissupport/contracts` ^2.21) once per request for the groups of the session subject and sets
   `RequestAttribute::GROUPS` (`list<int>`) and `PERSONAL_GROUP` (`int`) - absent when empty, always removed first so a client
   cannot inject them; an anonymous request never reaches the contract; a throwing lookup is answered `500`.
-  `Handler\Request\ReadSeesAll` tells a route whether the session sees all for one right (owner `*` or the tick entry).
+  `Handler\Request\ReadSeesAll` tells a route whether the session sees all for one right (owner `*` or the tick entry). Since 3.6.0 it takes the rule "right fits door" as an optional closure (`new ReadSeesAll(HasRight::__invoke(...))`): then the tick `seeAll:x.y:*` opens the view at every door of `x.y`; without it the tick is compared literally.
 - **Fallback groups in the request.** `Middleware\ResolveFallbackGroups(GroupLookupInterface, list<int> $kinds)` (global, behind
   `ResolveGroups`) asks the contract `fallbackGroupOf($kind, $tenant)` once per information kind - only for a request without a personal
   group (`PERSONAL_GROUP` is not an `int`) - and sets `RequestAttribute::FALLBACK_GROUPS` (`array<int, int>`: kind => fallback group) through
@@ -156,7 +156,7 @@ What hangs on the HTTP request lives here; the type check of values and the 400 
 | `Handler\Request\ReadRequestAttribute` | a request attribute as a string; absent / not a string -> `''` (the reader behind a `RequireRequestAttribute`-guarded route) |
 | `Handler\Request\ReadRequestAttributeList` | a request attribute as `list<string>` (e.g. `RequestAttribute::RIGHTS`); absent -> `[]`, present but not a list of strings -> `null` ("unusable", the caller answers 401, never 500); never throws |
 | `Handler\Request\ReadRequestAttributeIntList` | a request attribute as `list<int>` (e.g. `RequestAttribute::GROUPS`); absent -> `[]`, present but not a list of integers -> `null` ("unusable"); never throws |
-| `Handler\Request\ReadSeesAll` | `bool`: the rights of the session hold `*` or the "sees all" entry of exactly the given right (`SeeAllRight::RESOURCE . ':' . $right`) |
+| `Handler\Request\ReadSeesAll` | `__construct(?Closure $hasRight = null)`; `bool`: the rights of the session hold `*`, or - without a rule - the "sees all" entry of exactly the given right (`SeeAllRight::RESOURCE . ':' . $right`), or - with the rule `Closure(list<string>, string): bool` handed in - the ticks (prefix cut off) fit the right of the door by that rule (`seeAll:x.y:*` opens every door of `x.y`; ordinary rights never reach the rule) |
 | `Handler\Request\ReadRequestAttributeStrict` | the same, but absent / not a string / empty -> `Exception\RequestAttributeMissing` (a `RuntimeException`), which the error boundary answers as the generic 500 - for an attribute no middleware can guard up front |
 | `Handler\Response\AnswerUnsupportedRequest` | the 500 answer (`errors.routes`) of a route whose request the generated adapter cannot build: `__invoke(list<string> $properties)` |
 
