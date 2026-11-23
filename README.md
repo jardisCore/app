@@ -92,6 +92,12 @@ closes that gap with a deliberately small core:
   `groups` / `person` / `level` and sets `RequestAttribute::SHARE_TARGETS` (group id => level word, the word unchanged; a person is her
   personal group; `false` = not resolvable - foreign tenant, unknown person or group; absent = no indication). It never answers on its own
   and never checks a level word - the door does. `GroupDirectoryFromDoors` answers the four questions of the contract over injected door calls.
+- **Bulk runs over existing records.** Two translators over the group contract: `Handler\Directory\PersonalGroupPerCreator(GroupLookupInterface)`
+  (`(?string $tenant, list<string> $creators): array<string, int>`, `creator => personal group`, unknown creators missing) and
+  `Handler\Directory\FallbackGroupPerTenant(GroupLookupInterface, int $kind)` (`(?string $tenant): ?int`); both are plain closures to hand to a bulk
+  run (this package knows no such package). `Handler\Repeat\RepeatWhileOpen` (since 3.7.0) repeats a call `Closure(): DomainResponseInterface` while the integer
+  field of the answer is greater than zero - no maximum number of rounds; status 400 or above ends with that answer, zero or less ends as success, a number
+  not smaller than in the previous round or a field without an `int` throws `Exception\RepeatAborted` (`reason`, `?int open`, never a body).
 - **Revoke the session after success.** `Middleware\RevokeSessionOnSuccess` (since 3.1.0) calls the handler first and, when the answer is
   `2xx` and the request carries a session reference (`RequestAttribute::SESSION`), revokes exactly that session through an injected closure
   (`SessionManager::invalidateByReference(...)` of `jardissupport/auth`); the response is returned unchanged. Not `2xx` or no reference: nothing is
