@@ -28,7 +28,8 @@ use Psr\Http\Message\ServerRequestInterface;
  *
  * False for the entry of another right, for a RIGHTS attribute that is absent and for one that is not a list of
  * strings (unusable). Fail-closed: a rule that cannot read a right (`InvalidArgumentException`) answers false, as
- * `RequireRight` answers 403. It only reads, it never decides on access and never throws (but `\Error`).
+ * `RequireRight` answers 403. It only reads and never decides on access; it throws nothing of its own (but
+ * `\Error`), a rule that throws anything other than `InvalidArgumentException` propagates.
  */
 final class ReadSeesAll
 {

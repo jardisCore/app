@@ -79,7 +79,7 @@ closes that gap with a deliberately small core:
   `GroupLookupInterface` (`jardissupport/contracts` ^2.21) once per request for the groups of the session subject and sets
   `RequestAttribute::GROUPS` (`list<int>`) and `PERSONAL_GROUP` (`int`) - absent when empty, always removed first so a client
   cannot inject them; an anonymous request never reaches the contract; a throwing lookup is answered `500`.
-  `Handler\Request\ReadSeesAll` tells a route whether the session sees all for one right (owner `*` or the tick entry). Since 3.6.0 it takes the rule "right fits door" as an optional closure (`new ReadSeesAll(HasRight::__invoke(...))`): then the tick `seeAll:x.y:*` opens the view at every door of `x.y`; without it the tick is compared literally.
+  `Handler\Request\ReadSeesAll` tells a route whether the session sees all for one right (owner `*` or the tick entry). Since 3.6.0 it takes the rule "right fits door" as an optional closure (`new ReadSeesAll((new HasRight())->__invoke(...))`): then the tick `seeAll:x.y:*` opens the view at every door of `x.y`; without it the tick is compared literally.
 - **Fallback groups in the request.** `Middleware\ResolveFallbackGroups(GroupLookupInterface, list<int> $kinds)` (global, behind
   `ResolveGroups`) asks the contract `fallbackGroupOf($kind, $tenant)` once per information kind - only for a request without a personal
   group (`PERSONAL_GROUP` is not an `int`) - and sets `RequestAttribute::FALLBACK_GROUPS` (`array<int, int>`: kind => fallback group) through
