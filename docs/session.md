@@ -189,3 +189,21 @@ $response = $run->handle('acme', '{"secret":"..."}', 'GET', '/orders');
 | Token | `data.access_token` of the answer (RFC 6749 section 5.1; the doors answer `access_token`, `token_type`, `expires_in`, `refresh_token`), read by `Handler\System\ReadAccessToken`. It must be a non-empty string AND accepted by the authenticator (the check `RequireSession` runs); other fields such as `refresh_token` are not looked at. `ReadSessionToken` (the former probe over all strings of `data`) is deprecated since 3.3.0 and removed in 4.0. |
 | Refusal | `Exception\SystemRunRefused` (`reason`, `?int status`): empty tenant (before any request, nothing is called), sign-in or switch not `2xx` (status of that stage), no usable `data.access_token` (missing, empty, not a string, not accepted). Never carries a body. |
 | Sign-out | None after the run; the session lives until it expires. |
+
+## Bulk runs: translators and repeat (since 3.7.0)
+
+A bulk run over existing records asks the group contract per person and tenant and repeats a door call until nothing is open. The package ships the small
+closures; the run itself (and its package) stays outside.
+
+```php
+$creatorToGroup = (new PersonalGroupPerCreator($groupLookup))(...);        // (?string $tenant, list<string> $creators): array<string, int>
+$fallbackOfKind = (new FallbackGroupPerTenant($groupLookup, 3))(...);      // (?string $tenant): ?int
+$last = (new RepeatWhileOpen())(fn () => $bc->runBatch(), 'open');          // Closure(): DomainResponseInterface, integer field 'open'
+```
+
+| Aspect | Behaviour |
+|---|---|
+| `PersonalGroupPerCreator` | `personalGroupOf` once per creator (a creator listed twice is asked once); `creator => group`, no personal group -> missing. A numeric creator id such as `'42'` becomes the integer key `42` (PHP array keys). |
+| `FallbackGroupPerTenant` | `fallbackGroupOf($kind, $tenant)`, `null` when the kind has no fallback group in the tenant. |
+| `RepeatWhileOpen` | Calls `$call` until the integer `getData()[$field]` is zero or less; no maximum number of rounds. Status 400 or above: that answer, no further call. The answer of the last call is returned unchanged. |
+| Abort | `Exception\RepeatAborted` (`reason`, `?int open`): the number did not fall below the one of the previous round (carries the number), or below 400 the field is no `int` (missing, `"3"`, `1.0`, `null`). The reason names the next step (remove the cause in the call, start again); never a body. |

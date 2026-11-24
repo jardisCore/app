@@ -2,6 +2,25 @@
 
 All notable changes to `jardiscore/app` are listed here. Versions only move forward (SemVer).
 
+## [3.7.0] - 2026-11-24
+
+Translators over the group contract and one repeat closure for bulk runs.
+
+### Added
+
+- `Handler\Directory\PersonalGroupPerCreator(GroupLookupInterface)`: `__invoke(?string $tenant, list<string> $creators): array<string, int>` asks
+  `personalGroupOf` once per creator and returns `creator => group`; a creator without a personal group is missing from the answer.
+- `Handler\Directory\FallbackGroupPerTenant(GroupLookupInterface, int $kind)`: `__invoke(?string $tenant): ?int` from `fallbackGroupOf($kind, $tenant)`.
+  Both forms fit the closure arguments of a bulk run over existing records; the package depends on no package of that run.
+- `Handler\Repeat\RepeatWhileOpen`: `__invoke(Closure $call, string $field): DomainResponseInterface` repeats `$call` (no argument) while the integer
+  `getData()[$field]` of the answer is greater than zero, without a maximum number of rounds. Status 400 or above: that answer, no further call; below 400
+  without an `int` in the field: `RepeatAborted`; value of zero or less: that answer; value not smaller than in the previous round: `RepeatAborted`.
+- `Exception\RepeatAborted` (extends `AppException`): public `reason` (it names the next step) and `?int $open`; never a body of an answer.
+
+### Changed
+
+- Nothing for existing callers; `require` unchanged.
+
 ## [3.6.0] - 2026-11-23
 
 "Sees all" asks the rule of the door.
