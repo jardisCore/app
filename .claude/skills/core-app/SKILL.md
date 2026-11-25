@@ -8,6 +8,9 @@ prerequisites: [foundation-architecture, foundation-patterns, core-kernel]
 next: []
 ---
 
+This skill is an index; the detail lives in `reference/`, one leaf per topic. Read exactly the leaf whose question matches your task, not all of them.
+The route registration API (ROUTES), the JSON body parser, the `X-Jardis-Version` contract, the bootstrap recipe, the rules and the dependencies stay in this index.
+
 ## Triggers
 
 jardiscore/app v3 - the HTTP-Delivery layer for Jardis domains, a FastRoute router hidden behind an own RouterInterface, a PSR-15 middleware pipeline, the canonical DomainResponse-to-PSR-7 envelope mapper, and a DomainKernel bootstrap bridge. TRIGGER: ReadRequestAttribute, ReadRequestAttributeList, ReadRequestAttributeIntList, ReadSeesAll, ResolveGroups, ApplyGroups, ResolveFallbackGroups, ApplyFallbackGroups, jardisFallbackGroups, ReadRequestAttributeInt, jardisGroups, jardisPersonalGroup, GroupLookupInterface, ReadRequestAttributeStrict, jardisRights, RequestAttribute::RIGHTS, RequireRight, access.rightMissing, HasRight, RevokeSessionOnSuccess, SignedInRun, SystemRunRefused, SessionDoor, PersonalGroupPerCreator, FallbackGroupPerTenant, RepeatWhileOpen, RepeatAborted, system run, invalidateByReference, logout, revoke session, AnswerUnsupportedRequest, App, Routes, Router, RouterInterface, ParseJsonBody, X-Jardis-Version, knownVersions, jardisVersion, EmitResponse, HandleThrowable, MapDomainResponse, BuildErrorResponse, jardiscore/app, response envelope, {status,data,errors,meta}, health(), auto-HEAD, middleware: when and where, RequireSession, RequireRequestAttribute, request.attributeMissing, required request attribute, 403, per-route middleware.
@@ -15,45 +18,17 @@ jardiscore/app v3 - the HTTP-Delivery layer for Jardis domains, a FastRoute rout
 # APP_COMPONENT_SKILL
 > `jardiscore/app` | NS: `JardisCore\App` | PHP 8.3+
 
-## CLASSES
-| Class | Responsibility |
-|-------|---------------|
-| `Routes` | Registration collector. `__construct(ResponseFactoryInterface $responseFactory)`. Accumulates `Data\Route` VOs + global middleware for one-time consumption by `Router`. |
-| `Router` (`implements Contract\RouterInterface`) | `__construct(array $routes)` (`list<Route>`). `dispatch(ServerRequestInterface): RouteMatch`. Wraps FastRoute; dispatcher built lazily on first call. |
-| `Contract\RouterInterface` | `dispatch(ServerRequestInterface $request): RouteMatch` — the only routing contract; FastRoute never leaks past `Router`. |
-| `App` | The orchestrator. `__construct(Routes $routes, DomainKernelInterface $kernel, AppConfig $config, ?ResponseFactoryInterface, ?StreamFactoryInterface, ?ServerRequestFactoryInterface, ?UriFactoryInterface, ?UploadedFileFactoryInterface)` — all PSR-17 factories default to `Nyholm\Psr7\Factory\Psr17Factory`. `handle(ServerRequestInterface): ResponseInterface` (pure). `run(): void` (impure — builds request from SAPI, `handle()`s, emits). |
-| `Config\AppConfig` | `final readonly class` — `__construct(bool $debug = false, array $knownVersions = [], bool $requireSessionGuard = false)` (`list<string>`). `requireSessionGuard`: `App` throws `LogicException` at construction if a non-anonymous route has no `SessionGuardInterface` in its chain (via `Handler\Pipeline\AssertSessionGuard`). Bootstrap-injected only; never reads ENV itself (E11). |
-| `Handler\Request\ParseJsonBody` | `__invoke(ServerRequestInterface): array<array-key, mixed>` — the one JSON body parser (E7). |
-| `Handler\Request\ReadRequestAttribute` | `__invoke(ServerRequestInterface, string $name): string` - the request attribute as a string; absent / not a string -> `''`. Reads only (a guarded route sits behind `RequireRequestAttribute`). |
-| `Handler\Request\ReadRequestAttributeList` | `__invoke(ServerRequestInterface, string $name): ?array` (`list<string>`) - absent / `null` -> `[]`; a list of strings (also empty) -> the list; anything else (string, scalar, non-string element, associative array) -> `null` = unusable (the caller answers 401, never 500); never throws but `\Error`. For `RequestAttribute::RIGHTS`. |
-| `Handler\Request\ReadRequestAttributeIntList` | `__invoke(ServerRequestInterface, string $name): ?array` (`list<int>`) - absent / `null` -> `[]`; a list of integers (also empty) -> the list; anything else (string, scalar, list with a non-integer element, associative array) -> `null` = unusable; never throws but `\Error`. For `RequestAttribute::GROUPS`. |
-| `Handler\Request\ReadRequestAttributeInt` | `__invoke(ServerRequestInterface, string $name): ?int` - an `int` -> the integer; absent or anything else (string, float, list) -> `null`. Reads only. For `RequestAttribute::PERSONAL_GROUP`. |
-| `Handler\Request\ReadSeesAll` | `__construct(?Closure $hasRight = null)` (since 3.6.0, `Closure(list<string>, string): bool`, the door's rule handed in, e.g. `(new HasRight())->__invoke(...)`), `__invoke(ServerRequestInterface, string $right): bool` - without a rule: true when `RIGHTS` holds `*` or `SeeAllRight::RESOURCE . ':' . $right` (e.g. `seeAll:sales.order:read`), literal; with a rule: true for `*`, else the ticks (prefix `seeAll:` cut off) go to `$hasRight($widened, $right)` - `seeAll:x.y:*` opens the view at every door of `x.y`, `seeAll:*` opens every door; ordinary rights never reach the rule; a rule throwing `InvalidArgumentException` -> false. False for the tick of another right, without `RIGHTS` and for unusable `RIGHTS`. The route then passes `groups = null` to the access filter. |
-| `Handler\Request\ReadRequestAttributeStrict` | same signature; absent / not a string / empty -> `Exception\RequestAttributeMissing` (`AppException` -> `RuntimeException`, text `Request attribute <name> is not set - the scoped route needs the session middleware.`), the error boundary answers the generic 500. For an attribute no middleware guards. |
-| `Handler\Response\AnswerUnsupportedRequest` | `__invoke(list<string> $properties): DomainResponseInterface` - `DomainResponse` 500, `data` `[]`, `errors` `['routes' => ['Request property not buildable by the generated adapter: <a, b>']]`. The route whose request the generated adapter cannot build. |
-| `Handler\Request\ResolveVersion` | `__construct(array $knownVersions = [])` (`list<string>`). `__invoke(ServerRequestInterface): ?string` — the one reader of `X-Jardis-Version`: absent → `''` (baseline), exactly one case-sensitive known value → that value, else `null` (unknown / empty / repeated header). `App` wires it from `AppConfig::$knownVersions`. |
-| `Handler\Response\MapDomainResponse` | `__construct(ResponseFactoryInterface, StreamFactoryInterface)`. `__invoke(DomainResponseInterface): ResponseInterface` — the canonical envelope mapper (reference impl of `contract/docs/response-envelope.md`). |
-| `Handler\Response\BuildErrorResponse` | `__construct(ResponseFactoryInterface, StreamFactoryInterface)`. `__invoke(int $status, array $data = [], array $errors = [], array $meta = [], array $allowedMethods = []): ResponseInterface` — the ONE place assembling `{status,data,errors,meta}`. |
-| `Handler\Error\HandleThrowable` | `__construct(ResponseFactoryInterface, StreamFactoryInterface, ?LoggerInterface, AppConfig)`. `__invoke(Closure $inner, ServerRequestInterface): ResponseInterface` — outermost try/catch boundary (F9): `InvalidJsonBody` -> 400, any other `Throwable` -> 500 (no exception type is answered 403 since 3.0.0). |
-| `Handler\Error\LogThrowable` | Closure the above composes — logs via the injected PSR-3 logger, falls back to `error_log` if the logger is `null` or itself throws. |
-| `Handler\Pipeline\RunMiddlewarePipeline` | `__invoke(array $globalMiddleware, array $routeMiddleware, RequestHandlerInterface $finalHandler, ServerRequestInterface): ResponseInterface` — builds+runs the PSR-15 chain, global outer / route inner (E9). |
-| `Handler\Request\CreateServerRequest` | `__invoke(?array $server=null, ?array $headers=null, ?array $cookies=null, ?array $query=null, ?array $post=null, ?array $files=null, mixed $body=null): ServerRequestInterface` — Raw-Body-Invariante: reads `php://input` exactly once. |
-| `Handler\Response\EmitResponse` | `__invoke(ServerRequestInterface, ResponseInterface): void` — status line, headers, `Content-Length`, body (suppressed for HEAD, RFC 7231 §4.3.2). Never throws; best-effort 500 fallback on internal failure. |
-| `Middleware\RequireSession` (`implements Contract\SessionGuardInterface`, which extends `MiddlewareInterface`) | `__construct(AuthenticatorInterface $authenticator, Closure $credentialFor, ResponseFactoryInterface, StreamFactoryInterface, string $headerName = 'Authorization', string $scheme = 'Bearer')`. Session door — see SESSION below. Closures it composes: `ReadBearerToken`, `AuthenticateToken`, `ApplySession`; anonymity is read from the route attribute `DispatchAndRespond::ANONYMOUS_ATTRIBUTE`. |
-| `Middleware\RequireRequestAttribute` (`implements MiddlewareInterface`, NOT `SessionGuardInterface`) | `__construct(ResponseFactoryInterface, StreamFactoryInterface, string ...$names)`. Per-route presence check — see REQUIRED ATTRIBUTES below. Empty list / empty name -> `InvalidArgumentException`. |
-| `Middleware\ResolveGroups` (`implements MiddlewareInterface`, NOT `SessionGuardInterface`) | `__construct(JardisSupport\Contract\Auth\GroupLookupInterface)` (contracts ^2.21). Behind `RequireSession`: with `SUBJECT_ID` asks `groupsOf($subjectId, $tenant)` once (tenant absent -> `null`) and sets `GROUPS` / `PERSONAL_GROUP` through the closure `Handler\Session\ApplyGroups`; without `SUBJECT_ID` no call. A throwing lookup is not caught -> the generic 500. See GROUPS below. |
-| `Middleware\ResolveShareTargets` (`implements MiddlewareInterface`, NOT `SessionGuardInterface`) | `__construct(GroupLookupInterface, Data\ShareTargetSource)` (`Header` or `Body`). Per route behind `RequireRight`: reads the targets from the source, asks the contract (`personalGroupOf` for a person, `existingGroups` once for the named groups; tenant from `TENANT`, empty -> `null`) and sets `RequestAttribute::SHARE_TARGETS` through `Handler\Request\ApplyShareTargets`. See SHARE TARGETS below. |
-| `Middleware\ResolveFallbackGroups` (`implements MiddlewareInterface`, NOT `SessionGuardInterface`) | `__construct(GroupLookupInterface, array $kinds)` (`list<int>`). Global behind `ResolveGroups`: a request WITHOUT an `int` in `PERSONAL_GROUP` is asked `fallbackGroupOf($kind, $tenant)` once per kind (also without `SUBJECT_ID`; tenant from `TENANT`, empty -> `null`); the answers go through the closure `Handler\Session\ApplyFallbackGroups` into `RequestAttribute::FALLBACK_GROUPS`. A throwing lookup is not caught -> the generic 500. See FALLBACK GROUPS below. |
-| `GroupDirectoryFromDoors` (`implements GroupLookupInterface`) | `__construct(Closure $groupsOf, Closure $personalGroupOf, Closure $existingGroups, Closure $fallbackGroupOf)` with raw answers: `(string, ?string): array{groups: list<int>, personal: ?int}`, `(string, ?string): ?int`, `(list<int>, ?string): list<int>`, `(int, ?string): ?int`. One closure of its own per question under `Handler\Directory\` (`AnswerGroupsOf` builds `Data\SubjectGroups`, the others pass through); no logic, a throwing door call is not caught. |
-| `Handler\Directory\PersonalGroupPerCreator` (since 3.7.0) | `__construct(GroupLookupInterface)`, `__invoke(?string $tenant, list<string> $creators): array<string, int>`: `personalGroupOf` once per creator, `creator => group`, `null` answers missing (a numeric id becomes an int array key). The form of a creator-to-group closure of a bulk run; no import of that package. |
-| `Handler\Directory\FallbackGroupPerTenant` (since 3.7.0) | `__construct(GroupLookupInterface, int $kind)`, `__invoke(?string $tenant): ?int` from `fallbackGroupOf($kind, $tenant)`. The form of a fallback-group closure of a bulk run. |
-| `Handler\Repeat\RepeatWhileOpen` (since 3.7.0) | `__invoke(Closure $call, string $field): DomainResponseInterface`, `$call: Closure(): DomainResponseInterface`. Per round: status >= 400 -> that answer; else `getData()[$field]` must be `int` (else `RepeatAborted`); `<= 0` -> that answer (success); not smaller than the previous round -> `RepeatAborted`; else next call. No maximum. |
-| `Exception\RepeatAborted` (since 3.7.0, extends `AppException`) | `__construct(string $reason, ?int $open = null)`, public readonly `reason` (names the next step) and `open`; message `Repeat aborted: <reason> (open: N)`; never a body. |
-| `Middleware\RequireRight` (`implements MiddlewareInterface`, NOT `SessionGuardInterface`, since 3.0.0) | `__construct(ResponseFactoryInterface, StreamFactoryInterface, string $right, Closure $hasRight)`, `$hasRight: Closure(list<string>, string): bool` (`JardisSupport\Auth\Handler\Authorization\HasRight`, `jardissupport/auth` - not required by this package). Per-route right check - see RIGHT OF A ROUTE below. Empty `$right` -> `InvalidArgumentException`. |
-| `Middleware\RevokeSessionOnSuccess` (`implements MiddlewareInterface`, NOT `SessionGuardInterface`, since 3.1.0) | `__construct(Closure $revoke)`, `$revoke: Closure(string): void` (`SessionManager::invalidateByReference`, `jardissupport/auth` - not required by this package). Per-route revocation after success - see REVOKE SESSION below. |
-| `SignedInRun` (since 3.2.0; token by `ReadAccessToken` since 3.3.0) | `__construct(App $app, AuthenticatorInterface $authenticator, Closure $credentialFor, Data\SessionDoor $signIn, Data\SessionDoor $switchTenant, string $tenantField, ?ServerRequestFactoryInterface = null, ?StreamFactoryInterface = null)`; `handle(string $tenant, string $signInBody, string $method, string $path, string $body = ''): ResponseInterface`. System run - see SYSTEM RUN below. Throws `Exception\SystemRunRefused`. |
-| `Data\Route` / `Data\RouteMatch` / `Data\RouteMatchStatus` | `final readonly` VOs. `Route(string $method, string $path, Closure\|RequestHandlerInterface $handler, array $middleware = [], bool $anonymous = false)` (`anonymous` is set only by `Routes::health()` and `Routes::anonymous()`). `RouteMatch` only via named constructors `found()/notFound()/methodNotAllowed()`. `RouteMatchStatus`: `Found`/`NotFound`/`MethodNotAllowed`. |
-| `Exception\AppException` (abstract), `Exception\InvalidJsonBody`, `Exception\RequestAttributeMissing`, `Exception\UnresolvableHandlerResult` | `InvalidJsonBody` — empty/invalid/non-array JSON body (F8, mapped to 400). `RequestAttributeMissing` — thrown by `ReadRequestAttributeStrict` (generic 500). `UnresolvableHandlerResult` — handler returned neither `DomainResponseInterface` nor `ResponseInterface` (E6, propagates to generic 500). |
+## Navigation
+
+Navigation: one leaf per topic under `reference/`. Pick the row whose question fits the task.
+
+| Question the leaf answers | Leaf |
+| --- | --- |
+| Which classes does the package have, with constructor and `__invoke` signatures (App, Routes, Router, AppConfig, request/response/session/directory closures, middleware, `SignedInRun`, VOs, exceptions)? | reference/classes.md |
+| Is it middleware at all, what is fixed in the chain and what is pluggable, where does the pipeline live in the app template, and how do `RequireSession`, the 401, the session attributes and `requireSessionGuard` work? | reference/middleware-and-session.md |
+| How do `ResolveGroups`, `ResolveShareTargets`, `ResolveFallbackGroups` and the sees-all tick work for per-record access? | reference/groups-and-share-targets.md |
+| How do `RequireRequestAttribute`, `RequireRight` (403) and `RevokeSessionOnSuccess` (logout) work, and how does a system run (`SignedInRun`) sign in? | reference/route-guards-and-system-run.md |
+| Which status maps to which HTTP code, what does the `{status,data,errors,meta}` envelope look like, how are errors, 500 and `debug` answered, and what about auto-HEAD and OPTIONS? | reference/envelope-and-errors.md |
 
 ## ROUTES — registration API
 ```php
@@ -99,183 +74,6 @@ no middleware and no handler runs: `data = {"@type":"validation","fields":[{"fie
 an app that never receives the header behaves as before. Wiring: `new AppConfig(knownVersions: ['v2', 'v3'])`; a handler
 reads `$request->getAttribute('jardisVersion')`. The set of known versions comes from outside (the Builder generates it
 from the domain manifest); this package scans no directories and knows no classes.
-
-## Middleware: when and where
-
-**Is it middleware? Three questions, all "yes":** (1) Does it apply equally to all or many routes, independent of any aggregate? (2) Does it need only the request/response, not the domain model? (3) Does it run before or after the route, never in the middle? Otherwise it is a process node / Rule / Closure. "May this user see this project" is domain logic (Rule); "is there a valid session" is middleware.
-
-**Fixed, not switchable** (`src/App.php`, `Handler/Routing/DispatchAndRespond.php`): `HandleThrowable` (outermost, any throwable incl. from middleware -> 500 envelope) -> router (404/405 answered before any middleware) -> path attributes -> `ResolveVersion` (`X-Jardis-Version`, 400 before any middleware) -> middleware pipeline -> route handler (`ResolveRouteHandler`/`ResolveResponse`, `MapDomainResponse` maps `DomainResponseInterface`) -> `EmitResponse` in `run()`. `ParseJsonBody` is a helper handlers call, not a chain stage.
-
-**Pluggable:** any PSR-15 `MiddlewareInterface`. `Routes::middleware($m)` = global; the verb methods (`get/post/put/patch/delete`) take trailing `MiddlewareInterface ...$middleware` = per route. There is no route-group API. Order (`Handler/Pipeline/RunMiddlewarePipeline.php`): `[...global, ...route]`, outer first, registration order within each group.
-
-**Delivered:** `Middleware\RequireSession` - reads `Authorization: Bearer <token>`, authenticates through an `AuthenticatorInterface`, else 401 envelope + `WWW-Authenticate: Bearer`. Sets `RequestAttribute::SUBJECT`, `TENANT` (absent without tenant), `ROLE` (only for a `RoleAwareAuthResultInterface` with a non-empty role, else absent), `RIGHTS` (only for a `RightsAwareAuthResultInterface` with a non-empty list, else absent), `SUBJECT_ID`, `SESSION` (last two only for a session-aware result); client-supplied values are overwritten/removed. **Also delivered:** `Middleware\RequireRequestAttribute` - per route, behind the session door: each named attribute must be a non-empty string, else 403 envelope `errors {message, messageKey: 'request.attributeMissing', context: {attribute}}` (first missing name wins); presence only, authorizes nothing, not a session guard. Anonymous: routes registered by `Routes::health()` or `Routes::anonymous()` (`Route::$anonymous`); there is no path-pattern list.
-
-**Where (app template):** the pipeline is the **project setting `middleware`** (Builder, `project.json`). `core/app` ships no wiring: the Builder generator emits `src/App/middleware.php` (`return static function (DomainKernelInterface $kernel): array`, regenerated on every build), which builds the PSR-15 instances itself, e.g.
-```php
-return static function (DomainKernelInterface $kernel): array {
-    $psr17 = new Psr17Factory();
-    $key = base64_decode((string) $_ENV['AUTH_TOKEN_KEY'], true);   // raw 32 bytes
-
-    return [new RequireSession(new SignedTokenAuthenticator($key), Credential::token(...), $psr17, $psr17)];
-};
-```
-The once-written `src/App/bootstrap.php` loads it into the `'middleware'` entry of the app config, and the template's `public/index.php` registers every entry of `$app['middleware']` via `$routes->middleware()` (strictly checked: `list<MiddlewareInterface>`, else 500 envelope, never a stack trace). The template sets `new AppConfig(requireSessionGuard: true)`, so a non-anonymous route without a session guard fails at start. A hand-written route that needs no session goes through `$routes->anonymous()->get(...)` in `public/index.php`; the session middleware must stand before any middleware that reads session attributes.
-
-**Guarantees:** `Routes::health()` is always anonymous and never mounted under `$prefix`; 404, 405 and the version check (`X-Jardis-Version`) are answered before the pipeline runs.
-
-**Boundary:** retrofitting a standard middleware = a PSR-15 class in `jardisCore/app` plus one line in the generated `middleware.php`; a project-specific middleware = an own PSR-15 class in the project, its FQCN named in the project setting. Not a patch of the template's `index.php`. A generally useful one (CORS, request id/audit, rate limit, tenant context) is an issue in `jardisCore/app`, not project code imitating the package.
-
-## SESSION — `RequireSession` (PSR-15, global or per route)
-Binds a request to a verified session or rejects it. Depends only on the ports of `jardissupport/contracts` ^2.13
-(`AuthenticatorInterface`, `CredentialInterface`, `TenantAwareAuthResultInterface`, `RequestAttribute`) — NOT on `support/auth`.
-```php
-use JardisCore\App\Middleware\RequireSession;
-use JardisSupport\Auth\Data\Credential;      // support/auth (the app requires it, not core/app)
-use JardisSupport\Auth\SignedTokenAuthenticator; // access tokens of SessionManager (auth ^1.5): signature + exp, no store
-
-$routes->middleware(new RequireSession(
-    new SignedTokenAuthenticator($accessTokenKey), // raw 32-byte key
-    Credential::token(...),                     // Closure(string): CredentialInterface
-    $psr17, $psr17,                             // response + stream factory (the 401 uses BuildErrorResponse)
-));
-$routes->anonymous()->post('/auth/login', $login); // routes that need no session
-$routes->health('/health');                     // anonymous automatically
-```
-- **Token:** `Authorization: Bearer <token>` (exactly one header line, scheme case-insensitive, no whitespace in the token).
-  `headerName`/`scheme` configurable; `scheme: ''` = the whole header value is the token.
-- **401:** `{status:401, data:{}, errors:{message:"Authentication required."}, meta:{}}` + `WWW-Authenticate: Bearer`; missing, malformed,
-  unknown, expired, revoked token and a "successful" result without subject are answered identically (reason stays internal).
-  The handler is never called. A `Throwable` from the authenticator (token store down) is NOT a 401 but the generic 500.
-- **Session:** valid → request attribute `RequestAttribute::SUBJECT` (`jardisSubject`) and, if the result is `TenantAwareAuthResultInterface`
-  with a non-empty tenant, `RequestAttribute::TENANT` (`jardisTenant`); no tenant → the attribute is ABSENT (never null/''). Pre-existing
-  attributes of these names (e.g. a path placeholder `{jardisSubject}`) are always overwritten/removed, also on anonymous paths.
-  If the result is a `RoleAwareAuthResultInterface` (contracts ^2.11, auth ^1.6) with a non-empty role, `RequestAttribute::ROLE` (`jardisRole`) is set too; else ABSENT (never null/''). It is an attribute, not a guard - core/app authorizes nothing, no new middleware. Same forgery strip.
-  If the result is a `RightsAwareAuthResultInterface` (contracts ^2.16, auth ^1.8) with a non-empty `getRights()` (`list<string>`, claim `SessionClaim::RIGHTS`), `RequestAttribute::RIGHTS` (`jardisRights`) is set too; empty list / no claim / plain result -> ABSENT (never `[]`/null). A client value (path placeholder `{jardisRights}`) is always removed first. Read it with `ReadRequestAttributeList`.
-  If the result is a `SessionAwareAuthResultInterface` (contracts ^2.9, auth ^1.3) it additionally sets `RequestAttribute::SUBJECT_ID`
-  (`jardisSubjectId`, bare id without `user:` prefix) and `RequestAttribute::SESSION` (`jardisSession`, reference that revokes exactly this
-  session); empty/null or a plain tenant-aware result → both ABSENT. Same forgery strip as SUBJECT/TENANT.
-  Recipe "revoke own session": `$sessionManager->invalidateByReference($request->getAttribute(RequestAttribute::SESSION))`.
-- **Where it runs:** only on a matched route (inside the pipeline) → unknown path stays 404, wrong method 405. `Routes::health()` and `Routes::anonymous()` routes carry
-  `Route::$anonymous` → request attribute `DispatchAndRespond::ANONYMOUS_ATTRIBUTE` (`jardisAnonymousRoute`, strict bool, always written by
-  the dispatcher, compare with `=== true`). 
-- **Per route:** `$routes->get('/x', $handler, $requireSession)` guards only that route (global = guard everything except anonymous).
-- **`Contract\SessionGuardInterface`:** method-less marker (`extends MiddlewareInterface`), implemented by `RequireSession`. The start-up check only tests `instanceof`; a decorator around the guard does not count unless it implements the marker.
-- **Switch:** `new AppConfig(requireSessionGuard: true)` makes `new App(...)` throw `LogicException` listing `METHOD path` of every non-anonymous route without a guard in `[...global, ...route]`. Default `false`.
-
-## GROUPS — `ResolveGroups` (PSR-15, global behind `RequireSession` or per route)
-`$routes->middleware($requireSession); $routes->middleware(new ResolveGroups($groupLookup));` - `$groupLookup` is any `GroupLookupInterface` (this package does not depend on `jardissupport/auth` or `acl`).
-- **Attributes:** with a session subject `RequestAttribute::GROUPS` (`jardisGroups`, `list<int>`) and `PERSONAL_GROUP` (`jardisPersonalGroup`, `int`); no group -> `GROUPS` ABSENT (never `[]`), no personal group -> `PERSONAL_GROUP` ABSENT. Both are always removed first by `Handler\Session\ApplyGroups` (a path placeholder `{jardisGroups}` cannot inject groups). Read with `ReadRequestAttributeIntList` / `ReadRequestAttribute`.
-- **Anonymous / no `SUBJECT_ID`:** the contract is not called, both attributes are absent. **Lookup throws:** the exception ends the request in the error boundary (generic 500), never as a request without groups.
-- **Sees all:** `ReadSeesAll($request, 'sales.order:read')` is true for the owner `*` or the tick entry `seeAll:sales.order:read` in `RIGHTS` (form: `SeeAllRight`); `RequireRight` + `HasRight` (`auth` splits every entry with `Permission::from`) treat the tick as an ordinary entry that matches no real right - it opens no door. To let a wildcard tick open the view at every door of a resource, hand the same rule in: `new ReadSeesAll((new HasRight())->__invoke(...))` (this package does not depend on `auth`, it never rebuilds the rule).
-
-## SHARE TARGETS — `ResolveShareTargets` (PSR-15, per route behind `RequireRight`)
-`$routes->post('/x', $handler, $requireRight, new ResolveShareTargets($groupLookup, ShareTargetSource::Header));` - `Body` for the share itself.
-- **Attribute:** `RequestAttribute::SHARE_TARGETS` (`array<int, string>`: group id => level word, unchanged, `''` without one) or `false` = not resolvable; ABSENT = no indication (never `[]`, never null; the contract is not asked). Always removed first by `ApplyShareTargets`.
-- **Header** (create): `X-Jardis-Share-With: 12=view, 15=edit` - comma-separated `group=word`, white space allowed, entry without `=` -> word `''`, group not a whole number -> `false`; no person; header absent or blank -> absent.
-- **Body** (share): `groups` (`list<int>`), `person` (bare subject id, string), `level` (ONE word for all targets; absent or not a string -> `''`). A person is her `personalGroupOf`; neither non-empty `groups` nor `person` -> absent; `groups` not `list<int>` or `person` not a string -> `false`; empty, broken or non-object body -> caught, absent. A field that is `null` counts as not named.
-- **Not resolvable (`false`):** a named group the tenant does not hold (`existingGroups` answers fewer), a person without personal group, a foreign tenant, unusable input.
-- **Never rejects, never checks a word:** the handler always runs; the door builds the entry (`fromWord`) and answers 400. A throwing lookup is not caught -> the generic 500.
-
-## FALLBACK GROUPS — `ResolveFallbackGroups` (PSR-15, global behind `ResolveGroups`)
-`$routes->middleware(new ResolveGroups($groupLookup)); $routes->middleware(new ResolveFallbackGroups($groupLookup, [3, 4]));` - `[3, 4]` are the information kinds (`list<int>`).
-- **Attribute:** `RequestAttribute::FALLBACK_GROUPS` (`jardisFallbackGroups`, `array<int, int>`: kind => fallback group). Kinds without a fallback group fall away; nothing left -> ABSENT (never `[]`). Always removed first by `Handler\Session\ApplyFallbackGroups` (a path placeholder `{jardisFallbackGroups}` cannot inject it).
-- **Asked only without a personal group:** an `int` in `PERSONAL_GROUP` (read with `ReadRequestAttributeInt`) -> the contract is not asked, the attribute is absent. Otherwise once per kind, also without a subject (anonymous route); tenant from `TENANT`, empty -> `null`.
-- **Lookup throws:** ends the request in the error boundary (generic 500), never as a request without fallback groups. Needs `jardissupport/contracts` ^2.22 (`FALLBACK_GROUPS`).
-
-## REQUIRED ATTRIBUTES — `RequireRequestAttribute` (PSR-15, per route)
-For a door that depends on a request attribute (e.g. a tenant). Presence check only - no role/ownership check (that is domain logic).
-```php
-use JardisCore\App\Middleware\RequireRequestAttribute;
-use JardisSupport\Contract\Auth\RequestAttribute;
-
-$routes->middleware($requireSession);
-$routes->get('/projects', $handler, new RequireRequestAttribute($psr17, $psr17, RequestAttribute::TENANT));
-```
-- **Check:** per name, in order: the attribute must be a non-empty string (absent / not a string / `''` fails); the first failing name ends the request.
-- **403:** `{status:403, data:{}, errors:{message, messageKey:"request.attributeMissing" (const `MESSAGE_KEY`), context:{attribute:"<name>"}}, meta:{}}` - same form as the 401, no `@type`; handler not called. Otherwise the request passes unchanged.
-- **Order:** behind the middleware that sets the attribute; with no token the session door answers 401 first. A path placeholder `{jardisTenant}` cannot satisfy it (`ApplySession` strips it).
-- **Not a guard:** does not implement `SessionGuardInterface` -> never satisfies `requireSessionGuard`. 404/405 unchanged (runs only on a matched route).
-
-## RIGHT OF A ROUTE — `RequireRight` (PSR-15, per route, since 3.0.0)
-The rights of the session (`RequestAttribute::RIGHTS`, list of `resource:action`) must hold the right of the route. Orchestrator: `ReadRequestAttributeList` -> injected check -> pass on or 403.
-```php
-use JardisCore\App\Middleware\RequireRight;
-use JardisSupport\Auth\Handler\Authorization\HasRight;
-
-$hasRight = (new HasRight())->__invoke(...);
-$routes->middleware($requireSession);
-$routes->get('/orders', $handler, new RequireRight($psr17, $psr17, 'sales.order:read', $hasRight));
-```
-- **403:** `{"status":403,"data":{},"errors":{"message":"Right \"sales.order:read\" is missing.","messageKey":"access.rightMissing" (const `MESSAGE_KEY`),"context":{"right":"sales.order:read"}},"meta":{}}`; handler not called. Superuser `*` and `resource:*` pass (via `HasRight`).
-- **Fail-closed:** RIGHTS absent, not a list of strings, or a check throwing `InvalidArgumentException` (unparsable right) -> the same 403, never 200/500.
-- **Order:** behind `RequireSession` (guest -> 401 there, not here). Not a guard: never satisfies `requireSessionGuard`. A path placeholder `{jardisRights}` cannot grant a right.
-
-## REVOKE SESSION — `RevokeSessionOnSuccess` (PSR-15, per route, since 3.1.0)
-Logout / tenant switch: the session of the request is revoked once the route answered successfully. Orchestrator: handler first -> `ReadRequestAttribute` (`RequestAttribute::SESSION`) -> injected closure -> response unchanged.
-```php
-use JardisCore\App\Middleware\RevokeSessionOnSuccess;
-
-$routes->middleware($requireSession);
-$routes->post('/logout', $logout, new RevokeSessionOnSuccess($sessionManager->invalidateByReference(...)));
-```
-- **Revokes** only for status `2xx` AND a non-empty string session reference: `$revoke($reference)` once. Not `2xx` or no reference -> nothing is revoked.
-- **No swallowing:** an exception from `$revoke` leaves the middleware (error boundary). The response is never changed.
-- **Effect:** at the next refresh (the refresh token fails); the access token already issued stays valid until its `exp`.
-- **Order:** behind `RequireSession` (sets the reference). Not a guard: never satisfies `requireSessionGuard`.
-
-## SYSTEM RUN — `SignedInRun` (since 3.2.0)
-A system run (CLI, job) gets its rights like a user: sign in -> token -> switch tenant -> token -> target with `Authorization: Bearer`, every stage through `App::handle()` (so `RequireSession` + `RequireRight` judge it). Orchestrator over `Handler\System\BuildSystemRequest`, `BuildSwitchBody`, `ReadAccessToken`, `AuthenticateToken`.
-```php
-$run = new SignedInRun($app, $authenticator, Credential::token(...), new SessionDoor('POST', '/sign-in'), new SessionDoor('POST', '/switch-tenant'), 'tenantSlug');
-$response = $run->handle('acme', '{"secret":"..."}', 'GET', '/orders');
-```
-- **Switch body:** `{"<tenantField>": "<tenant>"}` with the sign-in token as Bearer. Target answer is returned unchanged (also 4xx).
-- **Token:** `data.access_token` of the session door's answer (RFC 6749 section 5.1: `access_token`, `token_type`, `expires_in`, `refresh_token`), read by `Handler\System\ReadAccessToken` (since 3.3.0; `FIELD` constant): non-empty string AND accepted by the authenticator, else `SystemRunRefused`. Other fields (`refresh_token`) are never looked at. `ReadSessionToken` (the old probe over all strings of `data`) is `@deprecated` since 3.3.0, removed in 4.0.
-- **`SystemRunRefused(reason, ?status)`:** empty tenant (before any request), sign-in/switch not `2xx`, no usable access token. No body in the message. No sign-out after the run.
-
-## ENVELOPE CONTRACT — `{status, data, errors, meta}`
-Reference: `jardissupport/contracts` → `docs/response-envelope.md`. `ResponseStatus` (11 cases, `jardissupport/contracts`,
-`JardisSupport\Contract\Kernel\ResponseStatus`) maps 1:1 to the HTTP code:
-
-| Case | HTTP |
-|---|---|
-| `Success` | 200 |
-| `Created` | 201 |
-| `NoContent` | 204 |
-| `ValidationError` | 400 |
-| `Unauthorized` | 401 |
-| `Forbidden` | 403 |
-| `NotFound` | 404 |
-| `MethodNotAllowed` | 405 |
-| `Conflict` | 409 |
-| `RuleViolation` | 422 |
-| `InternalError` | 500 |
-
-- **204 (`NoContent`)** is special-cased by `MapDomainResponse`: no body at all, no `Content-Type` header — a
-  bare empty response, never the envelope builder.
-- **Empty `data`/`errors`/`meta`** are coerced to a JSON object (`{}` via `stdClass`), never `[]`, by
-  `BuildErrorResponse`.
-- **405** carries an RFC-7231 `Allow` header (`, `-joined allowed methods) — the only case that populates
-  `BuildErrorResponse`'s 5th (`allowedMethods`) parameter.
-- **422 (`RuleViolation`)** — `getData()` is serialized completely unchanged under `data`; for a Rules-Layer
-  violation this is typically `{rule, messageKey, context}`, but the mapper performs no reshaping.
-- `getEvents()` is deliberately NOT part of the client-facing envelope — only 4 top-level keys ever appear.
-
-## ERROR CONTRACT — `HandleThrowable`
-- `Exception\InvalidJsonBody` → 400, envelope `errors.message` = the exception's own (non-sensitive) message.
-- No exception type is answered 403 (since 3.0.0; the access-denied branch of the boundary is gone): the right of a route is checked by `RequireRight`. An exception that carries a message key and a context but no known type is an unknown exception -> 500.
-- Any other `Throwable` → 500, **generic** body (no message/class/trace) unless `AppConfig::$debug === true`
-  (then `errors.message`/`errors.exception`/`errors.trace` are added). The full exception always goes to the
-  injected PSR-3 logger at `error` level regardless of `$debug` — `LogThrowable` falls back to `error_log()`
-  when the logger is `null` or itself throws; the 500 response is unaffected either way.
-
-## E13/E14 — auto-HEAD, OPTIONS
-- **Auto-HEAD (E13):** `BuildDispatcher` registers `HEAD` automatically for every `GET` route unless an
-  explicit `HEAD` route already exists for the same path — no double registration. `EmitResponse` then
-  suppresses the body for a `HEAD` request but still sends `Content-Length`.
-- **OPTIONS is never auto-added (E14):** an unregistered `OPTIONS` on a path with no routes at all → 404; on a
-  path registered for other methods → 405 (`OPTIONS` absent from the `Allow` list) unless the app explicitly
-  registers an `OPTIONS` route itself.
 
 ## BOOTSTRAP-REZEPT
 `BuildDomainKernelFromEnv` (packer) → `DomainKernel` (DomainKernel) → Builder-generated domain(s) (`new

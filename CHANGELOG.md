@@ -2,6 +2,12 @@
 
 All notable changes to `jardiscore/app` are listed here. Versions only move forward (SemVer).
 
+## [3.7.1] - 2026-11-25
+
+### Changed
+- Docs only, `src/`, `tests/` and `composer.json` unchanged.
+- Component skill split into an index (`SKILL.md`, 9 KB instead of 41 KB) plus five flat `reference/` leaves behind a navigation table; content is unchanged. After a context compaction an assistant keeps only the first 5,000 tokens of a skill, so the tail of the former single file was lost.
+
 ## [3.7.0] - 2026-11-24
 
 Translators over the group contract and one repeat closure for bulk runs.
